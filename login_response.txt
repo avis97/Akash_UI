@@ -1,0 +1,28 @@
+HTTP/2 302 
+date: Wed, 02 Sep 2026 21:09:18 GMT
+content-type: text/html; charset=utf-8
+location: https://blanchedalmond-bat-253605.hostingersite.com/account-dashboard
+x-powered-by: PHP/8.2.33
+cache-control: no-cache, no-store, must-revalidate, max-age=0
+set-cookie: XSRF-TOKEN=eyJpdiI6IkhtSnh3b3FSM1ZzeVl3YmUzdHd0NEE9PSIsInZhbHVlIjoiRStqRVU4QVlabjkzdEhiemxyWDBvS2hoQ2cyMlhGNDc4KzRRYVUvVmhudmpjc08yUWV6bTluN2ZFYjZpbmVmdnE3NWNKaTJLRXdXL3FDd3JZRmVCckRZemNqY1l4UkpNTUpLWTlpc2FFYnB2Z3V4VDRYc3NvTWF0bXNkbklCZDc2RzU4YUp3eWVJSk5Tb25TWUxLWTl1a2lxSXAzZWRFUkZUa0phOFhUNVFPUDQrRVRnbyt3Q0ZobisydGxJY2VhQlhFZDV5K0VIajNQTHI1U3pvU0NRcm1FN25ZU1F0SVpuWDI3dTlnam9GbTlOWkJ4VVdmTm9zZkp0b1JkUVp6MStJeE0yY2luelRkVTBLSlZydExKNklxb0pZU3o2QTNqVmRFQTdyVURKZ2VnMkc5UFlYeWZGNDJnMXBadGVUY01obVk3V0IveDVSNndPb1krZW9FSG5OT1lib2wzWU9MUlkzbXZsSVh0ZWtsdjF0UlNFN2FISWh3Yjd4Y0ErNUxjL2swVFRzNXZuMmlsbzZHZW1jOUJ2VFlobDhLYTVGcjZSdzlzbkdKVVdDRlRzbUdoL2VOcTFLQVNoNFNJbjdPc0liNWYxcXpCN3AwVXRndHd0MGNaajRXSkM5YklmUW1qcVkxVkI0Tm5OQ2QvNmhNNmIwTFpEZkFqQktXcDZyOXMiLCJtYWMiOiIzZTUyNWU2Y2M3ZTQ3NGNlZmMzZTFiMjY5N2JjZjNiMGYyOGNhZDY5M2MxZWM5NDE0ZDAwZmRlY2Q1ZjkwYTMzIiwidGFnIjoiIn0%3D; expires=Wed, 02 Sep 2026 23:09:18 GMT; Max-Age=7200; path=/; secure
+set-cookie: akash_engineering_session=eyJpdiI6IkorTkRPNFlBSjEwZHEvNWNKTFQvUUE9PSIsInZhbHVlIjoiZmxnTkQ1VU5pQkNQeElkNnd0SmxqWGY5RWpBMGxaM0FVZlprTEhTbUlmeWIxSHhXMnhlcS9LVmUwY2FnalhwNmJyYVJheUNMeUVsM0V6UGZtcExKZXJvMUdvbTdGajI5a2pTTXJnbjlhZ09uZUU1SE5ydzJuU3QzeEx2aWg4bEsydHdoaHo1TW5DVEhhc0xQY0UvclFIYmtKNGZhMkpyVmFTbnBZRmthOWRrMmFDQ0ZucVR5cGVGVWE5WW1WWGhrR2x1THFXSHNrMjRWaVZTNEQ3Z3RpNld0YlB0VFB1MmgrYm9FQjN1dVprSG5ZMGwrV2E5eURUdEtZTmFIVFJGbGltMXB1ZWdjaGxtSFA5NU5jb2lsdUtqWjdvTHMvdHhOZXlCNmJUdmZscWlkMUkvTGltMFdsemk5M3NGUCtJL0RybDFucG5aSlR0THA0cU1PZCtrMVFvSlZTQUx3UVVnaWJjTlZ1QU9aUFRFWCtYV0wvTjdDZEtRV3pnQ3V0RjVMUU1KU1FBd1lPRHFYM2tHUUpQR0piK3BiTXlNNzlNWnhJN1dsQjVnSHNtdXZyUnBUOEJScnZMY296cmlyZXIwc212Y3ZxMTl5UC95aEFuY2JIWm0yMjVmSE9pTmdDRTBidU5VeElWV0JWQ053TUNuYkVOTjhJN29lczBhWUdTUGkiLCJtYWMiOiJmZWY1YWYzNGUxYzlmNmIyMTA3NTgyMjllNGM5NDRhNTkwNzFlNzUyMDExNzkyZjJiNDE0OTgxODBjNWJkNDlmIiwidGFnIjoiIn0%3D; expires=Wed, 02 Sep 2026 23:09:18 GMT; Max-Age=7200; path=/; secure; httponly
+platform: hostinger
+panel: hpanel
+content-security-policy: upgrade-insecure-requests
+server: hcdn
+x-hcdn-request-id: bc559ee8fef39199f847e7247527862b-mum-edge5
+x-hcdn-cache-status: DYNAMIC
+x-hcdn-upstream-rt: 0.578
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="refresh" content="0;url='https://blanchedalmond-bat-253605.hostingersite.com/account-dashboard'" />
+
+        <title>Redirecting to https://blanchedalmond-bat-253605.hostingersite.com/account-dashboard</title>
+    </head>
+    <body>
+        Redirecting to <a href="https://blanchedalmond-bat-253605.hostingersite.com/account-dashboard">https://blanchedalmond-bat-253605.hostingersite.com/account-dashboard</a>.
+    </body>
+</html>

@@ -1,0 +1,170 @@
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Align the form to the right */
+  position: relative;
+  background-image: url('/login-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 2rem 5%;
+}
+
+/* Dark overlay to ensure the right side glass card pops, but lets the warm colors bleed through */
+.login-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
+  z-index: 1;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.login-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Glassmorphism Card */
+.login-card {
+  width: 100%;
+  padding: 3.5rem 3rem;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 24px;
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.8);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.login-title {
+  margin-bottom: 2rem;
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 2.25rem;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.login-error {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #b91c1c;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Auth specific form elements */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  color: #1e293b;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.form-control:focus {
+  background-color: #ffffff;
+  border-color: var(--brand-yellow);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+}
+
+.form-options {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.5rem;
+}
+
+.forgot-password {
+  font-size: 0.875rem;
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--brand-gold);
+  transition: all 0.2s;
+}
+
+.forgot-password:hover {
+  color: var(--brand-yellow);
+  text-decoration: underline;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  border-radius: 12px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--brand-yellow) 0%, var(--brand-gold) 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 20px -5px rgba(217, 119, 6, 0.4);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px -5px rgba(217, 119, 6, 0.5);
+  background: linear-gradient(135deg, #fbbf24 0%, var(--brand-yellow) 100%);
+}
+
+.login-footer {
+  text-align: center;
+  padding-top: 2rem;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.875rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+@media (max-width: 768px) {
+  .login-wrapper {
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  
+  .login-card {
+    padding: 2.5rem 1.5rem;
+  }
+}

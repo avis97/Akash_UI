@@ -1,255 +1,93 @@
-import React, { useState } from 'react';
-import { 
-  MapPin, 
-  Navigation, 
-  BatteryCharging, 
-  AlertTriangle, 
-  Clock, 
-  ShieldAlert,
-  Radio,
-  User
-} from 'lucide-react';
+import React from 'react';
+import PageHeader from './common/PageHeader';
+import { MapPin, Navigation, History, Bell } from 'lucide-react';
 
-export default function LocationTracking({ data, onRefresh }) {
-  const [selectedPersonnel, setSelectedPersonnel] = useState(data.locations[0] || null);
-
+const LocationTracking = () => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ padding: '1rem' }}>
+      <PageHeader 
+        title="Location Tracking for Service Personnel" 
+        breadcrumbs={['Dashboard', 'Location Tracking']} 
+      />
       
-      {/* Top Banner Overview */}
-      <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--brand-green)', padding: '0.85rem', borderRadius: 'var(--radius-md)' }}>
-            <Radio style={{ width: 28, height: 28 }} className="animate-pulse" />
-          </div>
-          <div>
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 700 }}>
-              Live GPS Field Personnel Telemetry
-            </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Real-time location monitoring, travel efficiency tracking, and geofencing breach detection.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1.5rem' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--brand-green)' }}>
-              {data.locations.length} Active
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Field Devices Streaming</div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--brand-yellow)' }}>
-              {data.geofenceAlerts.length}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Geofence Alerts Today</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid: Personnel Cards + Map Simulator + Geofence Alerts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+      <div className="row" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
         
-        {/* Left Column: Personnel List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
-            Service Personnel On-Duty
-          </div>
-
-          {data.locations.map(loc => (
-            <div 
-              key={loc.id} 
-              className="glass-card" 
-              style={{
-                cursor: 'pointer',
-                borderColor: selectedPersonnel?.id === loc.id ? 'var(--brand-gold)' : 'var(--border-color)',
-                background: selectedPersonnel?.id === loc.id ? 'rgba(234, 179, 8, 0.08)' : 'var(--bg-card)'
-              }}
-              onClick={() => setSelectedPersonnel(loc)}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{loc.userName}</div>
-                <span className={`badge ${loc.status === 'ACTIVE' ? 'badge-approved' : 'badge-pending'}`}>
-                  {loc.status}
-                </span>
-              </div>
-
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
-                {loc.designation}
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', marginBottom: '0.4rem' }}>
-                <MapPin style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
-                <span>{loc.address}</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
-                <span>🔋 Battery: {loc.batteryLevel}%</span>
-                <span>⏱ Speed: {loc.speed} km/h</span>
-                <span>Updated: {loc.lastUpdated}</span>
-              </div>
-            </div>
-          ))}
-
-          {/* Geofence Breach Alert Box */}
-          <div className="glass-card" style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand-red)', fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem' }}>
-              <ShieldAlert style={{ width: 18, height: 18 }} />
-              Geofence Alerts & Deviation Logs
+        {/* Mock Map Area */}
+        <div style={{ flex: '1 1 60%', minWidth: '300px' }}>
+          <div className="glass-card" style={{ padding: '0', overflow: 'hidden', height: '600px', position: 'relative', backgroundColor: '#e2e8f0', backgroundImage: 'url("https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&q=80")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            {/* Map Overlay to wash it out */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(2px)' }}></div>
+            
+            {/* Mock Map Pins */}
+            <div style={{ position: 'absolute', top: '30%', left: '40%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ padding: '4px 8px', backgroundColor: 'var(--brand-primary)', color: 'white', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Alok Naiya</div>
+              <MapPin size={32} color="var(--brand-primary)" fill="white" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }} />
+              <div style={{ width: '12px', height: '12px', backgroundColor: 'var(--brand-primary)', borderRadius: '50%', opacity: 0.5, marginTop: '-8px', animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite' }}></div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {data.geofenceAlerts.map(alert => (
-                <div key={alert.id} style={{ fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(15,23,42,0.6)', borderRadius: 'var(--radius-sm)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--brand-yellow)', fontWeight: 600 }}>
-                    <span>{alert.userName}</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      {new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div style={{ marginTop: '0.2rem', color: 'var(--text-secondary)' }}>
-                    {alert.message}
-                  </div>
-                </div>
-              ))}
+            <div style={{ position: 'absolute', top: '60%', left: '20%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ padding: '4px 8px', backgroundColor: '#ef4444', color: 'white', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>Jayanta Basak (Geofence Alert)</div>
+              <MapPin size={32} color="#ef4444" fill="white" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }} />
+              <div style={{ width: '40px', height: '40px', border: '2px solid #ef4444', borderRadius: '50%', position: 'absolute', top: '24px', opacity: 0.5 }}></div>
+            </div>
+
+            <div style={{ position: 'absolute', top: '45%', left: '70%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ padding: '4px 8px', backgroundColor: '#10b981', color: 'white', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>BADAL NASKAR</div>
+              <MapPin size={32} color="#10b981" fill="white" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }} />
+            </div>
+
+            {/* Controls */}
+            <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button className="btn btn-outline" style={{ backgroundColor: 'white', width: '40px', height: '40px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Navigation size={20} /></button>
             </div>
           </div>
-
         </div>
 
-        {/* Right Column: Live Map View Simulator */}
-        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', minHeight: 450, position: 'relative', overflow: 'hidden' }}>
+        {/* Sidebar Data */}
+        <div style={{ flex: '1 1 35%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', zIndex: 5 }}>
-            <div>
-              <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.1rem' }}>
-                Kolkata Operational Sector Live Radar
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Targeting: {selectedPersonnel ? selectedPersonnel.userName : 'All Field Techs'}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <span className="badge badge-approved">GPS Fixed</span>
-              <span className="badge badge-scheduled">Geofence Enforced</span>
+          <div className="glass-card" style={{ padding: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Bell size={18} color="#ef4444" /> Geofencing Alerts</h3>
+            <div style={{ padding: '1rem', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px' }}>
+              <div style={{ fontWeight: 'bold', color: '#b91c1c' }}>Alert: Route Deviation</div>
+              <div style={{ fontSize: '0.85rem', color: '#dc2626', marginTop: '4px' }}>Jayanta Basak has deviated 2km from assigned route (TechCorp HVAC job).</div>
+              <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '8px' }}>Just now</div>
             </div>
           </div>
 
-          {/* Interactive Simulated Map Canvas */}
-          <div style={{
-            flex: 1,
-            background: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%)',
-            borderRadius: 'var(--radius-md)',
-            position: 'relative',
-            border: '1px solid var(--border-color)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-
-            {/* Grid overlay lines to simulate map coordinates */}
-            <div style={{
-              position: 'absolute',
-              top: 0, left: 0, right: 0, bottom: 0,
-              backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)',
-              backgroundSize: '40px 40px'
-            }} />
-
-            {/* Sector V Geofence Circle */}
-            <div style={{
-              position: 'absolute',
-              width: 260,
-              height: 260,
-              borderRadius: '50%',
-              border: '2px dashed var(--brand-gold)',
-              background: 'rgba(234, 179, 8, 0.05)',
-              display: 'flex',
-              alignItems: 'top',
-              justifyContent: 'center',
-              paddingTop: '8px'
-            }}>
-              <span style={{ fontSize: '0.65rem', color: 'var(--brand-yellow)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>
-                Sector V Designated Zone
-              </span>
-            </div>
-
-            {/* Sujan Pin */}
-            <div style={{
-              position: 'absolute',
-              top: '42%',
-              left: '48%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center'
-            }}>
-              <div style={{
-                background: 'var(--brand-gold)',
-                color: '#000',
-                padding: '0.35rem 0.6rem',
-                borderRadius: '9999px',
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                boxShadow: '0 0 15px var(--brand-gold)',
-                whiteSpace: 'nowrap'
-              }}>
-                📍 Sujan Mukhopadhyay (TCS Site)
+          <div className="glass-card" style={{ padding: '1.5rem', flex: 1 }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={18} /> Live Service Personnel</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ width: '12px', height: '12px', backgroundColor: 'var(--brand-primary)', borderRadius: '50%' }}></div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>Alok Naiya</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>En route to City Hospital (ETA: 15 mins)</div>
+                </div>
               </div>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--brand-yellow)', marginTop: 4 }} className="animate-ping" />
-            </div>
-
-            {/* Rajesh Pin */}
-            <div style={{
-              position: 'absolute',
-              top: '65%',
-              left: '32%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center'
-            }}>
-              <div style={{
-                background: 'var(--brand-cyan)',
-                color: '#000',
-                padding: '0.35rem 0.6rem',
-                borderRadius: '9999px',
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                boxShadow: '0 0 15px var(--brand-cyan)',
-                whiteSpace: 'nowrap'
-              }}>
-                📍 Rajesh Kumar (Dumdum HO)
-              </div>
-            </div>
-
-            {/* Map Legend Footer overlay */}
-            <div style={{
-              position: 'absolute',
-              bottom: 12,
-              left: 12,
-              right: 12,
-              background: 'rgba(15, 23, 42, 0.9)',
-              backdropFilter: 'blur(8px)',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-color)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '0.78rem'
-            }}>
-              <div>
-                <strong>Active GPS Node:</strong> {selectedPersonnel ? selectedPersonnel.address : 'Sector V Kolkata'}
-              </div>
-              <div style={{ color: 'var(--text-secondary)' }}>
-                Lat: {selectedPersonnel?.latitude || 22.5726} N • Lng: {selectedPersonnel?.longitude || 88.4331} E
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>BADAL NASKAR</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>On Site: Sunrise Plaza</div>
+                </div>
               </div>
             </div>
 
           </div>
 
         </div>
-
       </div>
-
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes ping {
+          75%, 100% { transform: scale(2.5); opacity: 0; }
+        }
+      `}} />
     </div>
   );
-}
+};
+
+export default LocationTracking;

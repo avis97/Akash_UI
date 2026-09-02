@@ -589,3 +589,101 @@ export const mockActivityLogs = [
     timestamp: "2026-09-02T15:10:00.000Z"
   }
 ];
+
+export const mockDashboardERP = {
+  summary: {
+    totalCustomers: 9,
+    totalVendors: 4,
+    totalInvoices: 3,
+    totalBills: 4
+  },
+  accountBalances: [
+    { bank: "Axis Bank", balance: "₹100.00" },
+    { bank: "Akash Engineering", balance: "₹100.00" }
+  ],
+  incomeVsExpense: {
+    incomeToday: "₹0.00",
+    incomeThisMonth: "₹1,500.00",
+    expenseToday: "₹0.00",
+    expenseThisMonth: "₹500.00"
+  },
+  cashflowChart: [
+    { name: "01-Sep", income: 400, expense: 240 },
+    { name: "02-Sep", income: 300, expense: 139 },
+    { name: "03-Sep", income: 200, expense: 980 },
+    { name: "04-Sep", income: 278, expense: 390 },
+    { name: "05-Sep", income: 189, expense: 480 },
+    { name: "06-Sep", income: 239, expense: 380 },
+    { name: "07-Sep", income: 349, expense: 430 },
+  ],
+  incomeExpenseChart: [
+    { name: "Aug", income: 4000, expense: 2400 },
+    { name: "Sep", income: 3000, expense: 1398 },
+    { name: "Oct", income: 2000, expense: 9800 },
+    { name: "Nov", income: 2780, expense: 3908 },
+    { name: "Dec", income: 1890, expense: 4800 },
+  ]
+};
+
+
+export const mockEmployees = [
+  { id: '#EMP00001', name: 'Alok Naiya', email: 'aloknaiya2026@outlook.com', branch: 'Kolkata', department: 'Site', designation: 'Fireman', dateOfJoining: '20-07-2022', lastLogin: '2026-01-03 10:49:04' },
+  { id: '#EMP00003', name: 'Amarnath Ghorui', email: 'amarnathg2026@outlook.com', branch: 'Kolkata', department: 'Site', designation: 'Fireman', dateOfJoining: '01-06-2024', lastLogin: '2025-11-29 19:03:26' },
+  { id: '#EMP00005', name: 'BADAL NASKAR', email: 'badal2026@outlook.com', branch: 'Kolkata', department: 'Office', designation: 'TECHNICIAN', dateOfJoining: '01-02-2017', lastLogin: '2026-02-19 18:32:14' },
+  { id: '#EMP00006', name: 'JOYDIP SENGUPTA', email: 'joydip2026@outlook.com', branch: 'Kolkata', department: 'Office', designation: 'BACK OFFICE', dateOfJoining: '01-02-2017', lastLogin: '2026-01-13 18:51:57' },
+  { id: '#EMP00007', name: 'Jayanta Basak', email: 'jayantabasak2026@outlook.com', branch: 'Kolkata', department: 'Office', designation: 'BACK OFFICE', dateOfJoining: '15-09-2025', lastLogin: '2026-04-04 16:07:26' }
+];
+
+export const mockPayroll = [
+  { id: '#PAY001', employee: 'Alok Naiya', salary: '₹25,000', month: 'August 2026', status: 'Paid', date: '01-09-2026' },
+  { id: '#PAY002', employee: 'Amarnath Ghorui', salary: '₹28,000', month: 'August 2026', status: 'Paid', date: '01-09-2026' },
+  { id: '#PAY003', employee: 'BADAL NASKAR', salary: '₹35,000', month: 'August 2026', status: 'Pending', date: '-' },
+  { id: '#PAY004', employee: 'JOYDIP SENGUPTA', salary: '₹32,000', month: 'August 2026', status: 'Pending', date: '-' }
+];
+
+export const mockLeads = [
+  { name: 'TechCorp Expansion', email: 'contact@techcorp.com', phone: '+91 9876543210', subject: 'New Office Setup', stage: 'Initial Contact', users: 'John Doe' },
+  { name: 'Global Logistics AMC', email: 'admin@globallogistics.com', phone: '+91 9123456789', subject: 'Annual Maintenance', stage: 'Qualified', users: 'Jane Smith' },
+  { name: 'Sunrise Plaza HVAC', email: 'facilities@sunriseplaza.com', phone: '+91 9988776655', subject: 'HVAC Installation', stage: 'Proposal Sent', users: 'John Doe' }
+];
+
+export const mockDeals = [
+  { name: 'TechCorp Expansion', price: '₹12,50,000', stage: 'In Negotiation', tasks: '3/5', users: 'John Doe' },
+  { name: 'City Hospital Fire Safety', price: '₹8,45,000', stage: 'Closed Won', tasks: '8/8', users: 'Jane Smith' },
+  { name: 'Global Logistics AMC', price: '₹2,00,000', stage: 'Proposal Accepted', tasks: '2/4', users: 'Jane Smith' }
+];
+
+export const mockProjects = [
+  { name: 'City Hospital Fire Safety', status: 'In Progress', progress: '65%', members: '4', deadline: '30-10-2026' },
+  { name: 'TechCorp Expansion', status: 'Not Started', progress: '0%', members: '3', deadline: '15-12-2026' },
+  { name: 'Sunrise Plaza HVAC', status: 'On Hold', progress: '40%', members: '2', deadline: '01-11-2026' }
+];
+
+export const mockTasks = [
+  { name: 'Site Inspection', project: 'City Hospital Fire Safety', priority: 'High', status: 'Done', assignee: 'BADAL NASKAR' },
+  { name: 'Procure Fire Extinguishers', project: 'City Hospital Fire Safety', priority: 'Medium', status: 'In Progress', assignee: 'Alok Naiya' },
+  { name: 'Draft Blueprint', project: 'TechCorp Expansion', priority: 'High', status: 'To Do', assignee: 'Jayanta Basak' }
+];
+
+export const mockBankAccounts = [
+  { name: 'HDFC Current Account', bank: 'HDFC Bank', accountNum: '**** **** 1234', currentBalance: '₹45,50,000', contact: 'hdfc-support@hdfc.com' },
+  { name: 'SBI Savings Account', bank: 'State Bank of India', accountNum: '**** **** 5678', currentBalance: '₹12,00,000', contact: 'sbi-branch@sbi.com' }
+];
+
+export const mockServiceMeetings = [
+  { id: 'MTG-001', date: '04-09-2026', client: 'City Hospital', assignee: 'BADAL NASKAR', status: 'Scheduled', priority: 'High', materialReqStatus: 'Approved' },
+  { id: 'MTG-002', date: '05-09-2026', client: 'TechCorp', assignee: 'Alok Naiya', status: 'In Progress', priority: 'Medium', materialReqStatus: 'Pending Admin' },
+  { id: 'MTG-003', date: '06-09-2026', client: 'Sunrise Plaza', assignee: 'Jayanta Basak', status: 'Completed', priority: 'Low', materialReqStatus: 'Delivered' }
+];
+
+export const mockInventory = [
+  { sku: 'INV-FEX-01', name: 'ABC Fire Extinguisher 5KG', category: 'Safety Equipment', stock: 45, minStock: 10, status: 'In Stock', barcode: '8901234567890' },
+  { sku: 'INV-HVAC-02', name: 'Compressor Unit X-200', category: 'HVAC Parts', stock: 2, minStock: 5, status: 'Low Stock', barcode: '8901234567891' },
+  { sku: 'INV-CBL-03', name: 'Copper Wiring 50m', category: 'Electrical', stock: 0, minStock: 20, status: 'Out of Stock', barcode: '8901234567892' }
+];
+
+export const mockAMCs = [
+  { client: 'Global Logistics', equipment: 'Central HVAC System', lastVisit: '15-08-2026', nextVisit: '15-09-2026', status: 'Upcoming', assignee: 'Amarnath Ghorui' },
+  { client: 'City Hospital', equipment: 'Fire Safety Network', lastVisit: '01-09-2026', nextVisit: '01-10-2026', status: 'Completed', assignee: 'Alok Naiya' }
+];
+
