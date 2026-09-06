@@ -16,15 +16,16 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
+    password: '',
     phone: '',
     designation: '',
-    role: 'SERVICE_PERSONNEL'
+    role: 'USER'
   });
 
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/users', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
@@ -32,7 +33,10 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
       const json = await res.json();
       if (json.success) {
         setShowAddUserModal(false);
-        onRefresh();
+        setNewUser({ name: '', email: '', password: '', phone: '', designation: '', role: 'USER' });
+        if (onRefresh) onRefresh();
+      } else {
+        alert(json.message || 'Error registering user');
       }
     } catch (err) {
       console.error(err);
@@ -45,7 +49,7 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
         method: 'PATCH'
       });
       const json = await res.json();
-      if (json.success) {
+      if (json.success && onRefresh) {
         onRefresh();
       }
     } catch (err) {
@@ -64,20 +68,20 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
             onClick={() => setActiveTab('users')}
           >
             <Users style={{ width: 16, height: 16 }} />
-            User Accounts & Roles ({data.users.length})
+            User Accounts & Roles ({data.users ? data.users.length : 0})
           </button>
           <button 
             className={`btn ${activeTab === 'activity-logs' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab('activity-logs')}
           >
             <Activity style={{ width: 16, height: 16 }} />
-            Full Audit Activity Logs ({data.activityLogs.length})
+            Full Audit Activity Logs ({data.activityLogs ? data.activityLogs.length : 0})
           </button>
         </div>
 
         <button className="btn btn-primary" onClick={() => setShowAddUserModal(true)}>
           <Plus style={{ width: 16, height: 16 }} />
-          Create User Account
+          Register New User
         </button>
       </div>
 
@@ -86,10 +90,10 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
-              Role-Based Access Control (RBAC) & Multi-Factor Security
+              Role-Based Access Control (RBAC) & Database User Table
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Master Admin • Sub Admin • Facility Manager • Service Personnel
+              Superadmin • Normal User • Master Admin • Sub Admin • Facility Manager • Service Personnel
             </span>
           </div>
 
@@ -105,11 +109,11 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
               </tr>
             </thead>
             <tbody>
-              {data.users.map(u => (
+              {data.users && data.users.map(u => (
                 <tr key={u.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <img src={u.avatarUrl} alt={u.name} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid var(--brand-gold)' }} />
+                      <img src={u.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'} alt={u.name} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid var(--brand-gold)' }} />
                       <div>
                         <div style={{ fontWeight: 700 }}>{u.name}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
@@ -118,6 +122,8 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
                   </td>
                   <td>
                     <span className={`role-badge ${
+                      u.role === 'SUPERADMIN' ? 'role-superadmin' :
+                      u.role === 'USER' ? 'role-user' :
                       u.role === 'MASTER_ADMIN' ? 'role-master' :
                       u.role === 'SUB_ADMIN' ? 'role-sub' :
                       u.role === 'FACILITY_MANAGER' ? 'role-facility' : 'role-service'
@@ -125,8 +131,8 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
                       {u.role.replace('_', ' ')}
                     </span>
                   </td>
-                  <td>{u.designation}</td>
-                  <td>{u.phone}</td>
+                  <td>{u.designation || 'Staff'}</td>
+                  <td>{u.phone || 'N/A'}</td>
                   <td>
                     {u.isMfaEnabled ? (
                       <span className="badge badge-approved">🔒 MFA ACTIVE</span>
@@ -171,7 +177,7 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
               </tr>
             </thead>
             <tbody>
-              {data.activityLogs.map(log => (
+              {data.activityLogs && data.activityLogs.map(log => (
                 <tr key={log.id}>
                   <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     {new Date(log.timestamp).toLocaleString()}
@@ -187,12 +193,12 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
         </div>
       )}
 
-      {/* Modal: Create User */}
+      {/* Modal: Register New User */}
       {showAddUserModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Create New System User Account
+              Register New System User in Database
             </h3>
             <form onSubmit={handleAddUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
@@ -205,6 +211,7 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
                   placeholder="e.g. Anish Ghosh"
                 />
               </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Email Address</label>
@@ -214,9 +221,23 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
                     required
                     value={newUser.email}
                     onChange={e => setNewUser({ ...newUser, email: e.target.value })}
-                    placeholder="name@vsdigitech.com"
+                    placeholder="name@akashcrm.com"
                   />
                 </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Account Password</label>
+                  <input 
+                    type="password"
+                    className="input-field" 
+                    required
+                    value={newUser.password}
+                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Phone Number</label>
                   <input 
@@ -226,8 +247,6 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
                     placeholder="+91 98300 00000"
                   />
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Job Designation</label>
                   <input 
@@ -235,26 +254,30 @@ export default function UserManagement({ data, currentRole, onRefresh }) {
                     required
                     value={newUser.designation}
                     onChange={e => setNewUser({ ...newUser, designation: e.target.value })}
-                    placeholder="e.g. Field Engineer"
+                    placeholder="e.g. Field Specialist"
                   />
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>System Role</label>
-                  <select 
-                    className="select-field"
-                    value={newUser.role}
-                    onChange={e => setNewUser({ ...newUser, role: e.target.value })}
-                  >
-                    <option value="MASTER_ADMIN">Master Admin</option>
-                    <option value="SUB_ADMIN">Sub Admin</option>
-                    <option value="FACILITY_MANAGER">Facility Manager</option>
-                    <option value="SERVICE_PERSONNEL">Service Personnel</option>
-                  </select>
-                </div>
               </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>System Role</label>
+                <select 
+                  className="select-field"
+                  value={newUser.role}
+                  onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                >
+                  <option value="SUPERADMIN">Superadmin</option>
+                  <option value="USER">Normal User</option>
+                  <option value="MASTER_ADMIN">Master Admin</option>
+                  <option value="SUB_ADMIN">Sub Admin</option>
+                  <option value="FACILITY_MANAGER">Facility Manager</option>
+                  <option value="SERVICE_PERSONNEL">Service Personnel</option>
+                </select>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAddUserModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create User Account</button>
+                <button type="submit" className="btn btn-primary">Register User Account</button>
               </div>
             </form>
           </div>

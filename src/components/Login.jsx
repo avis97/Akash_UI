@@ -5,15 +5,43 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email === 'company@example.com' && password === '1234') {
-      setError('');
-      onLogin({ email, role: 'master' });
-    } else {
-      setError('Invalid credentials. Please use company@example.com / 1234');
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+        onLogin(data);
+      } else {
+        setError(data.message || 'Invalid email or password');
+      }
+    } catch (err) {
+      console.error('Login request failed:', err);
+      setError('Unable to connect to login server. Please verify server status.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleQuickFill = (demoEmail, demoPassword) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError('');
   };
 
   return (
@@ -58,11 +86,31 @@ const Login = ({ onLogin }) => {
                 />
               </div>
 
+              {/* Quick Demo Login Selectors */}
+              <div style={{ margin: '1rem 0', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '6px', background: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}
+                  onClick={() => handleQuickFill('superadmin@akashcrm.com', 'password123')}
+                >
+                  ⚡ Superadmin Demo
+                </button>
+                <button
+                  type="button"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '6px', background: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}
+                  onClick={() => handleQuickFill('user@akashcrm.com', 'password123')}
+                >
+                  👤 Normal User Demo
+                </button>
+              </div>
+
               <div className="form-options">
                 <a href="#" className="forgot-password">Forgot password?</a>
               </div>
 
-              <button type="submit" className="btn-login">Sign In</button>
+              <button type="submit" className="btn-login" disabled={loading}>
+                {loading ? 'Signing In...' : 'Sign In'}
+              </button>
             </form>
           </div>
         </main>
@@ -76,3 +124,4 @@ const Login = ({ onLogin }) => {
 };
 
 export default Login;
+
