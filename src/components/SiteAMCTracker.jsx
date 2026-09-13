@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CheckSquare, 
   Calendar, 
@@ -7,20 +7,59 @@ import {
   CheckCircle, 
   FileCheck,
   Building,
-  Award
+  Award,
+  Edit2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
-export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
+export default function SiteAMCTracker({ data = {}, currentRole, onRefresh }) {
   const [showAMCModal, setShowAMCModal] = useState(false);
   const [selectedAmcSignOff, setSelectedAmcSignOff] = useState(null);
+
+  // Edit and Delete states
+  const [editingAmc, setEditingAmc] = useState(null);
+  const [deletingAmc, setDeletingAmc] = useState(null);
+
+  const [siteAMCs, setSiteAMCs] = useState(data.siteAMCs || data.amcs || []);
+  const [users, setUsers] = useState(data.users || []);
+
+  const fetchAmcData = useCallback(async () => {
+    try {
+      const [amcRes, usrRes] = await Promise.allSettled([
+        fetch('/api/amc').then(r => r.json()),
+        fetch('/api/users').then(r => r.json())
+      ]);
+
+      if (amcRes.status === 'fulfilled' && amcRes.value?.success) setSiteAMCs(amcRes.value.data);
+      if (usrRes.status === 'fulfilled' && usrRes.value?.success) setUsers(usrRes.value.data);
+    } catch (err) {
+      console.error('Error fetching AMC data:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAmcData();
+  }, [fetchAmcData]);
 
   // New AMC Form State
   const [newAmc, setNewAmc] = useState({
     siteName: '',
     clientName: '',
     address: '',
-    assignedEmployeeId: 'usr-4',
-    visitDate: '2026-09-15',
+    assignedEmployeeId: '',
+    visitDate: new Date().toISOString().slice(0, 10),
+    notes: ''
+  });
+
+  // Edit AMC Form State
+  const [editAmcData, setEditAmcData] = useState({
+    siteName: '',
+    clientName: '',
+    address: '',
+    assignedEmployeeId: '',
+    visitDate: '',
+    status: 'SCHEDULED',
     notes: ''
   });
 
@@ -37,7 +76,46 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
       const json = await res.json();
       if (json.success) {
         setShowAMCModal(false);
-        onRefresh();
+        setNewAmc({ siteName: '', clientName: '', address: '', assignedEmployeeId: '', visitDate: new Date().toISOString().slice(0, 10), notes: '' });
+        fetchAmcData();
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleEditAMC = async (e) => {
+    e.preventDefault();
+    if (!editingAmc) return;
+    try {
+      const res = await fetch(`/api/amc/${editingAmc.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editAmcData)
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEditingAmc(null);
+        fetchAmcData();
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteAMC = async () => {
+    if (!deletingAmc) return;
+    try {
+      const res = await fetch(`/api/amc/${deletingAmc.id}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      if (json.success) {
+        setDeletingAmc(null);
+        fetchAmcData();
+        if (onRefresh) onRefresh();
       }
     } catch (err) {
       console.error(err);
@@ -54,7 +132,8 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
       const json = await res.json();
       if (json.success) {
         setSelectedAmcSignOff(null);
-        onRefresh();
+        fetchAmcData();
+        if (onRefresh) onRefresh();
       }
     } catch (err) {
       console.error(err);
@@ -83,7 +162,7 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
 
       {/* AMC Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
-        {data.siteAMCs.map(amc => (
+        {siteAMCs.map(amc => (
           <div key={amc.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -91,7 +170,7 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
                   {amc.status}
                 </span>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  📅 Visit Date: {amc.visitDate}
+                  📅 Visit Date: {typeof amc.visitDate === 'string' ? amc.visitDate.slice(0, 10) : new Date(amc.visitDate).toISOString().slice(0, 10)}
                 </span>
               </div>
 
@@ -111,33 +190,65 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
               </div>
 
               {/* Digital Checklist Box */}
-              <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--brand-yellow)', marginBottom: '0.4rem' }}>
-                  AMC Compliance Checklist Tasks:
+              {amc.checklists && amc.checklists.length > 0 && (
+                <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--brand-yellow)', marginBottom: '0.4rem' }}>
+                    AMC Compliance Checklist Tasks:
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    {amc.checklists.map(chk => (
+                      <div key={chk.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
+                        <input type="checkbox" checked={chk.isCompleted} readOnly />
+                        <span style={{ color: chk.isCompleted ? 'var(--text-primary)' : 'var(--text-secondary)', textDecoration: chk.isCompleted ? 'line-through' : 'none' }}>
+                          {chk.taskName}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  {amc.checklists.map(chk => (
-                    <div key={chk.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
-                      <input type="checkbox" checked={chk.isCompleted} readOnly />
-                      <span style={{ color: chk.isCompleted ? 'var(--text-primary)' : 'var(--text-secondary)', textDecoration: chk.isCompleted ? 'line-through' : 'none' }}>
-                        {chk.taskName}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
 
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                  title="Edit AMC Record"
+                  onClick={() => {
+                    setEditingAmc(amc);
+                    setEditAmcData({
+                      siteName: amc.siteName || '',
+                      clientName: amc.clientName || '',
+                      address: amc.address || '',
+                      assignedEmployeeId: amc.assignedEmployeeId || '',
+                      visitDate: amc.visitDate ? new Date(amc.visitDate).toISOString().slice(0, 10) : '',
+                      status: amc.status || 'SCHEDULED',
+                      notes: amc.notes || ''
+                    });
+                  }}
+                >
+                  <Edit2 size={14} color="var(--brand-primary)" /> Edit
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                  title="Delete AMC Record"
+                  onClick={() => setDeletingAmc(amc)}
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
+
               {amc.status === 'COMPLETED' ? (
                 <div style={{ fontSize: '0.8rem', color: 'var(--brand-green)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <FileCheck style={{ width: 16, height: 16 }} />
                   Digital Sign-off by: {amc.digitalSignOffBy}
                 </div>
               ) : (
-                <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setSelectedAmcSignOff(amc)}>
-                  <CheckSquare style={{ width: 16, height: 16 }} />
-                  Perform Digital Sign-off
+                <button className="btn btn-primary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }} onClick={() => setSelectedAmcSignOff(amc)}>
+                  <CheckSquare style={{ width: 14, height: 14 }} />
+                  Sign-off
                 </button>
               )}
             </div>
@@ -191,8 +302,9 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
                     value={newAmc.assignedEmployeeId}
                     onChange={e => setNewAmc({ ...newAmc, assignedEmployeeId: e.target.value })}
                   >
-                    {data.users.filter(u => u.role === 'SERVICE_PERSONNEL').map(u => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
+                    <option value="">Select Service Staff</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
                     ))}
                   </select>
                 </div>
@@ -209,6 +321,86 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAMCModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Schedule Visit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 1B: Edit AMC Visit */}
+      {editingAmc && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
+              Edit AMC Visit ({editingAmc.siteName})
+            </h3>
+            <form onSubmit={handleEditAMC} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Site / Facility Name</label>
+                <input 
+                  className="input-field" 
+                  required
+                  value={editAmcData.siteName}
+                  onChange={e => setEditAmcData({ ...editAmcData, siteName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Organization</label>
+                <input 
+                  className="input-field" 
+                  required
+                  value={editAmcData.clientName}
+                  onChange={e => setEditAmcData({ ...editAmcData, clientName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Address</label>
+                <input 
+                  className="input-field" 
+                  required
+                  value={editAmcData.address}
+                  onChange={e => setEditAmcData({ ...editAmcData, address: e.target.value })}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assigned Staff</label>
+                  <select 
+                    className="select-field"
+                    value={editAmcData.assignedEmployeeId}
+                    onChange={e => setEditAmcData({ ...editAmcData, assignedEmployeeId: e.target.value })}
+                  >
+                    <option value="">Select Assignee</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Scheduled Date</label>
+                  <input 
+                    type="date"
+                    className="input-field" 
+                    value={editAmcData.visitDate}
+                    onChange={e => setEditAmcData({ ...editAmcData, visitDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
+                  <select 
+                    className="select-field"
+                    value={editAmcData.status}
+                    onChange={e => setEditAmcData({ ...editAmcData, status: e.target.value })}
+                  >
+                    <option value="SCHEDULED">SCHEDULED</option>
+                    <option value="IN_PROGRESS">IN PROGRESS</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingAmc(null)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save AMC Changes</button>
               </div>
             </form>
           </div>
@@ -247,6 +439,29 @@ export default function SiteAMCTracker({ data, currentRole, onRefresh }) {
               <button className="btn btn-secondary" onClick={() => setSelectedAmcSignOff(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={() => handleSignOffSubmit(selectedAmcSignOff.id)}>
                 Complete Sign-off
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete AMC Confirmation Modal */}
+      {deletingAmc && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '450px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', color: '#f87171' }}>
+              <AlertTriangle size={24} />
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0 }}>
+                Confirm Site AMC Deletion
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Are you sure you want to delete AMC site visit record <strong>{deletingAmc.siteName}</strong> for <strong>{deletingAmc.clientName}</strong>?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button className="btn btn-secondary" onClick={() => setDeletingAmc(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={handleDeleteAMC}>
+                Delete AMC Record
               </button>
             </div>
           </div>

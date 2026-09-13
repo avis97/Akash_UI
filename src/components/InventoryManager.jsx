@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Package, 
   Plus, 
@@ -8,20 +8,53 @@ import {
   ArrowDownRight, 
   Search,
   Filter,
-  Layers
+  Layers,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 
-export default function InventoryManager({ data, currentRole, onRefresh }) {
+export default function InventoryManager({ data = {}, currentRole, onRefresh }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [showAddProdModal, setShowAddProdModal] = useState(false);
   const [showTxModal, setShowTxModal] = useState(false);
   const [showScanModal, setShowScanModal] = useState(false);
 
+  const [products, setProducts] = useState(data.inventory || data.products || []);
+
+  // Edit and Delete Modal States
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [deletingProduct, setDeletingProduct] = useState(null);
+
+  const fetchInventory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/inventory');
+      const json = await res.json();
+      if (json.success) setProducts(json.data);
+    } catch (err) {
+      console.error('Error fetching inventory:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInventory();
+  }, [fetchInventory]);
+
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // New Product Form
   const [newProd, setNewProd] = useState({
+    name: '',
+    category: 'Networking Equipment',
+    brand: '',
+    stockQuantity: 10,
+    unit: 'Pcs',
+    minStockAlert: 5,
+    unitPrice: 5000
+  });
+
+  // Edit Product Form
+  const [editProd, setEditProd] = useState({
     name: '',
     category: 'Networking Equipment',
     brand: '',
@@ -38,10 +71,10 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
     referenceNo: 'PO-2026-REF'
   });
 
-  const categories = ['ALL', ...new Set(data.products.map(p => p.category))];
+  const categories = ['ALL', ...new Set(products.map(p => p.category))];
 
-  const filteredProducts = data.products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (p.code || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCat = categoryFilter === 'ALL' || p.category === categoryFilter;
     return matchesSearch && matchesCat;
   });
@@ -57,7 +90,54 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
       const json = await res.json();
       if (json.success) {
         setShowAddProdModal(false);
-        onRefresh();
+        setNewProd({
+          name: '',
+          category: 'Networking Equipment',
+          brand: '',
+          stockQuantity: 10,
+          unit: 'Pcs',
+          minStockAlert: 5,
+          unitPrice: 5000
+        });
+        fetchInventory();
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleEditProduct = async (e) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    try {
+      const res = await fetch(`/api/inventory/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editProd)
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEditingProduct(null);
+        fetchInventory();
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deletingProduct) return;
+    try {
+      const res = await fetch(`/api/inventory/${deletingProduct.id}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      if (json.success) {
+        setDeletingProduct(null);
+        fetchInventory();
+        if (onRefresh) onRefresh();
       }
     } catch (err) {
       console.error(err);
@@ -81,9 +161,9 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
       const json = await res.json();
       if (json.success) {
         setShowTxModal(false);
-        onRefresh();
-      } else {
-        alert(json.message);
+        setSelectedProduct(null);
+        fetchInventory();
+        if (onRefresh) onRefresh();
       }
     } catch (err) {
       console.error(err);
@@ -101,7 +181,7 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
             <input 
               className="input-field" 
               style={{ paddingLeft: '2.3rem' }}
-              placeholder="Search 150+ products by code or name..."
+              placeholder="Search products by code or name..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -131,7 +211,7 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
       </div>
 
       {/* Low Stock Alert Header Banner if items depleted */}
-      {data.products.some(p => p.stockQuantity <= p.minStockAlert) && (
+      {products.some(p => p.stockQuantity <= p.minStockAlert) && (
         <div style={{
           background: 'rgba(239, 68, 68, 0.15)',
           border: '1px solid rgba(239, 68, 68, 0.4)',
@@ -145,7 +225,7 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
           <div>
             <strong style={{ color: 'var(--brand-red)' }}>Replenishment Needed: </strong>
             <span>
-              {data.products.filter(p => p.stockQuantity <= p.minStockAlert).map(p => p.name).join(', ')} are below minimum safety stock thresholds!
+              {products.filter(p => p.stockQuantity <= p.minStockAlert).map(p => p.name).join(', ')} are below minimum safety stock thresholds!
             </span>
           </div>
         </div>
@@ -206,16 +286,45 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
                     )}
                   </td>
                   <td>
-                    <button 
-                      className="btn btn-secondary" 
-                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                      onClick={() => {
-                        setSelectedProduct(p);
-                        setShowTxModal(true);
-                      }}
-                    >
-                      Update Stock
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <button 
+                        className="btn btn-secondary" 
+                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          setSelectedProduct(p);
+                          setShowTxModal(true);
+                        }}
+                      >
+                        Stock +/-
+                      </button>
+                      <button 
+                        className="btn btn-secondary" 
+                        title="Edit Product Details"
+                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          setEditingProduct(p);
+                          setEditProd({
+                            name: p.name || '',
+                            category: p.category || 'Networking Equipment',
+                            brand: p.brand || '',
+                            stockQuantity: p.stockQuantity || 0,
+                            unit: p.unit || 'Pcs',
+                            minStockAlert: p.minStockAlert || 5,
+                            unitPrice: p.unitPrice || 0
+                          });
+                        }}
+                      >
+                        <Edit2 size={14} color="var(--brand-primary)" />
+                      </button>
+                      <button 
+                        className="btn btn-secondary" 
+                        title="Delete Product"
+                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                        onClick={() => setDeletingProduct(p)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -308,6 +417,88 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
         </div>
       )}
 
+      {/* Modal 1B: Edit Product */}
+      {editingProduct && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
+              Edit Product ({editingProduct.code})
+            </h3>
+            <form onSubmit={handleEditProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Product Name</label>
+                <input 
+                  className="input-field" 
+                  required
+                  value={editProd.name}
+                  onChange={e => setEditProd({ ...editProd, name: e.target.value })}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Category</label>
+                  <select 
+                    className="select-field"
+                    value={editProd.category}
+                    onChange={e => setEditProd({ ...editProd, category: e.target.value })}
+                  >
+                    <option value="Networking Equipment">Networking Equipment</option>
+                    <option value="Security & Surveillance">Security & Surveillance</option>
+                    <option value="Cables & Wiring">Cables & Wiring</option>
+                    <option value="Power Systems">Power Systems</option>
+                    <option value="Access Control">Access Control</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Brand / OEM</label>
+                  <input 
+                    className="input-field" 
+                    required
+                    value={editProd.brand}
+                    onChange={e => setEditProd({ ...editProd, brand: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stock Quantity</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    required
+                    value={editProd.stockQuantity}
+                    onChange={e => setEditProd({ ...editProd, stockQuantity: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Unit Price (₹)</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    required
+                    value={editProd.unitPrice}
+                    onChange={e => setEditProd({ ...editProd, unitPrice: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Min Alert Level</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    value={editProd.minStockAlert}
+                    onChange={e => setEditProd({ ...editProd, minStockAlert: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingProduct(null)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Product Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal 2: Inflow / Outflow Stock Transaction */}
       {showTxModal && selectedProduct && (
         <div className="modal-overlay">
@@ -374,6 +565,29 @@ export default function InventoryManager({ data, currentRole, onRefresh }) {
                 <button type="submit" className="btn btn-primary">Process Transaction</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Product Confirmation Modal */}
+      {deletingProduct && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '450px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', color: '#f87171' }}>
+              <AlertTriangle size={24} />
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', margin: 0 }}>
+                Confirm Product Deletion
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Are you sure you want to delete product <strong>{deletingProduct.name}</strong> ({deletingProduct.code})?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button className="btn btn-secondary" onClick={() => setDeletingProduct(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={handleDeleteProduct}>
+                Delete Product
+              </button>
+            </div>
           </div>
         </div>
       )}

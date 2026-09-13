@@ -3,7 +3,7 @@ import Dashboard from '../Dashboard';
 import ServiceMeetings from '../ServiceMeetings';
 import AttendancePayroll from '../AttendancePayroll';
 import LocationTracking from '../LocationTracking';
-import InventoryManagement from '../InventoryManagement';
+import InventoryManager from '../InventoryManager';
 import EmployeeSetup from '../hrm/EmployeeSetup';
 import BillingQuotations from '../BillingQuotations';
 import PurchaseVouchers from '../PurchaseVouchers';
@@ -14,56 +14,70 @@ export default function MainContent({
   activeTab, 
   activeLabel, 
   crmData, 
-  currentRole 
+  currentRole,
+  onRefresh = () => {}
 }) {
   return (
     <main className="content-body">
       {activeTab === 'dashboard' || activeTab.startsWith('dashboard_') ? (
         <Dashboard data={crmData} currentRole={currentRole} activeTab={activeTab} />
       ) : activeTab === 'service_meeting' ? (
-        <ServiceMeetings meetings={crmData.serviceMeetings} role={currentRole} />
+        <ServiceMeetings 
+          meetings={crmData.serviceMeetings} 
+          materialRequests={crmData.materialRequests}
+          role={currentRole} 
+          onRefresh={onRefresh}
+          users={crmData.users}
+        />
       ) : activeTab === 'material_request' ? (
-        <ServiceMeetings meetings={crmData.serviceMeetings} role={currentRole} defaultTab="material-requests" />
-      ) : activeTab === 'site_amc' ? (
-        <SiteAMCTracker amcs={crmData.amcs} />
+        <ServiceMeetings 
+          meetings={crmData.serviceMeetings} 
+          materialRequests={crmData.materialRequests}
+          role={currentRole} 
+          onRefresh={onRefresh}
+          users={crmData.users}
+        />
+      ) : activeTab === 'site_amc' || activeTab === 'site_amc_tracker' ? (
+        <SiteAMCTracker data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
       ) : activeTab === 'location_tracking' ? (
-        <LocationTracking />
-      ) : activeTab === 'products_inventory' || activeTab === 'products_stock' ? (
-        <InventoryManagement inventory={crmData.inventory} />
+        <LocationTracking data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+      ) : activeTab === 'products_inventory' || activeTab === 'products_stock' || activeTab === 'products' ? (
+        <InventoryManager data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
       ) : activeTab === 'hrm_sys_employee_setup' || activeTab === 'hrm_employee' ? (
         <EmployeeSetup employees={crmData.employees} />
       ) : activeTab === 'hrm_attendance' ? (
-        <AttendancePayroll data={crmData} defaultTab="attendance" />
+        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="attendance" />
       ) : activeTab === 'hrm_payroll' ? (
-        <AttendancePayroll data={crmData} defaultTab="payroll" />
+        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="payroll" />
       ) : activeTab === 'hrm_leave' ? (
-        <AttendancePayroll data={crmData} defaultTab="leaves" />
+        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="leaves" />
       ) : activeTab === 'hrm_shift' ? (
-        <AttendancePayroll data={crmData} defaultTab="shifts" />
-      ) : activeTab === 'acc_billing' ? (
-        <BillingQuotations quotations={crmData.quotations} invoices={crmData.invoices} />
+        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="shifts" />
+      ) : activeTab === 'acc_billing' || activeTab === 'billing' ? (
+        <BillingQuotations data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
       ) : activeTab === 'acc_invoices' ? (
-        <BillingQuotations quotations={crmData.quotations} invoices={crmData.invoices} defaultTab="invoices" />
-      ) : activeTab === 'acc_purchases' ? (
-        <PurchaseVouchers purchases={crmData.purchases} vouchers={crmData.vouchers} />
-      ) : activeTab === 'acc_vouchers' ? (
-        <PurchaseVouchers purchases={crmData.purchases} vouchers={crmData.vouchers} defaultTab="vouchers" />
+        <BillingQuotations data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="invoices" />
+      ) : activeTab === 'acc_purchases' || activeTab === 'purchases' ? (
+        <PurchaseVouchers data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+      ) : activeTab === 'acc_vouchers' || activeTab === 'vouchers' ? (
+        <PurchaseVouchers data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="vouchers" />
       ) : activeTab === 'user_accounts' || activeTab === 'user_activity_logs' || activeTab === 'user_management' ? (
-        <UserManagement data={crmData} currentRole={currentRole} onRefresh={() => {}} />
+        <UserManagement data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
       ) : (
         <div className="glass-card" style={{ padding: '2.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
             <div>
               <h2 style={{ color: 'var(--brand-primary)', margin: 0 }}>{activeLabel}</h2>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>URL Endpoint: <code>{window.location.hash}</code></span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>URL Endpoint: <code>{window.location.pathname}</code></span>
             </div>
-            <span className="badge badge-approved">⚡ Active UI Route</span>
+            <span className="badge badge-approved">⚡ Active System Route</span>
           </div>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            This system module is registered in the navigation router and fully accessible at URL <code>{window.location.hash}</code>.
+            This enterprise module is registered in the routing table and active at URL path <code>{window.location.pathname}</code>.
           </p>
         </div>
       )}
     </main>
   );
 }
+
