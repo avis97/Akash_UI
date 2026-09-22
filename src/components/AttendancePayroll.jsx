@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   UserCheck, 
   Calendar, 
@@ -115,7 +115,18 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   });
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
 
-  const isEmployee = currentRole === 'EMPLOYEE' || (currentUser && currentUser.role === 'EMPLOYEE');
+  // Resolve active logged-in user from props or localStorage fallback
+  const activeUser = useMemo(() => {
+    if (currentUser && (currentUser.id || currentUser.name)) return currentUser;
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  }, [currentUser]);
+
+  const isEmployee = currentRole === 'EMPLOYEE' || (activeUser && activeUser.role === 'EMPLOYEE');
 
   // Filter staffUsers to exclude CLIENT and USER role users
   const staffUsers = (users || []).filter(u => u.role !== 'CLIENT' && u.role !== 'USER');
@@ -124,7 +135,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const selectedUserObj = staffUsers.find(u => u.id === selectedStaffId);
 
   const displayedAttendance = isEmployee
-    ? attendance.filter(a => a.userId === currentUser?.id || (currentUser?.name && a.userName?.toLowerCase() === currentUser.name.toLowerCase()))
+    ? attendance.filter(a => !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase()))
     : attendance.filter(a => {
         const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStaff = selectedStaffId === 'ALL' || a.userId === selectedStaffId || (selectedUserObj && a.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
@@ -132,7 +143,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       });
 
   const displayedLeaves = isEmployee
-    ? leaves.filter(l => l.userId === currentUser?.id || (currentUser?.name && l.userName?.toLowerCase() === currentUser.name.toLowerCase()))
+    ? leaves.filter(l => !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase()))
     : leaves.filter(l => {
         const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && l.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
@@ -140,7 +151,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       });
 
   const displayedSalaryRecords = isEmployee
-    ? salaryRecords.filter(s => s.userId === currentUser?.id || (currentUser?.name && s.userName?.toLowerCase() === currentUser.name.toLowerCase()))
+    ? salaryRecords.filter(s => !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase()))
     : salaryRecords.filter(s => {
         const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStaff = selectedStaffId === 'ALL' || s.userId === selectedStaffId || (selectedUserObj && s.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
@@ -160,7 +171,9 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   const fetchAttendanceData = useCallback(async () => {
     try {
-      const queryParam = (isEmployee && currentUser?.id) ? `?userId=${currentUser.id}` : '';
+      const queryParam = (isEmployee && (activeUser?.id || activeUser?.name)) 
+        ? `?userId=${encodeURIComponent(activeUser?.id || '')}&userName=${encodeURIComponent(activeUser?.name || '')}` 
+        : '';
       const [attRes, lveRes, payRes, usrRes] = await Promise.allSettled([
         fetch(`/api/attendance${queryParam}`).then(r => r.json()),
         fetch(`/api/leaves${queryParam}`).then(r => r.json()),
@@ -175,7 +188,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     } catch (err) {
       console.error('Error fetching attendance data:', err);
     }
-  }, [isEmployee, currentUser?.id]);
+  }, [isEmployee, activeUser?.id, activeUser?.name]);
 
   const fetchMonthlyReport = useCallback(async () => {
     if (isEmployee) return;
@@ -351,11 +364,14 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   const [isPunching, setIsPunching] = useState(false);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
   const hasPunchedToday = (attendance || []).some(a => {
-    const isSameUser = (currentUser?.id && a.userId === currentUser.id) || (currentUser?.name && a.userName?.toLowerCase() === currentUser.name.toLowerCase());
-    const aDateStr = a.date ? new Date(a.date).toISOString().slice(0, 10) : '';
-    return isSameUser && aDateStr === todayStr;
+    const isSameUser = (activeUser?.id && a.userId === activeUser.id) || (activeUser?.name && a.userName?.toLowerCase() === activeUser.name.toLowerCase());
+    if (!isSameUser || !a.date) return false;
+    const aDate = new Date(a.date);
+    const now = new Date();
+    return aDate.getFullYear() === now.getFullYear() &&
+           aDate.getMonth() === now.getMonth() &&
+           aDate.getDate() === now.getDate();
   });
 
   const handleWebCheckIn = async () => {
@@ -368,8 +384,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     const submitPunch = async (coords = null) => {
       try {
         const payload = {
-          userId: currentUser?.id,
-          userName: currentUser?.name || currentUser?.email || 'Staff Member',
+          userId: activeUser?.id,
+          userName: activeUser?.name || activeUser?.email || 'Staff Member',
           method: 'WEB'
         };
         if (coords) {

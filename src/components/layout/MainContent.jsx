@@ -54,13 +54,13 @@ export default function MainContent({
       ) : activeTab === 'hrm_sys_employee_setup' || activeTab === 'hrm_employee' || activeTab === 'employee' ? (
         <UserManagement data={crmData} currentRole={currentRole} onRefresh={onRefresh} initialTab="employees" />
       ) : activeTab === 'hrm_attendance' ? (
-        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="attendance" />
+        <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="attendance" />
       ) : activeTab === 'hrm_payroll' ? (
-        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="payroll" />
+        <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="payroll" />
       ) : activeTab === 'hrm_leave' ? (
-        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="leaves" />
+        <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="leaves" />
       ) : activeTab === 'hrm_shift' ? (
-        <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="shifts" />
+        <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="shifts" />
       ) : activeTab === 'acc_billing' || activeTab === 'billing' ? (
         <BillingQuotations data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'acc_invoices' ? (

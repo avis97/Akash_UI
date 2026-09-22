@@ -20,7 +20,8 @@ import {
   Camera,
   Upload,
   Image as ImageIcon,
-  MessageSquare
+  MessageSquare,
+  Eye
 } from 'lucide-react';
 
 const BRANCH_OPTIONS = [
@@ -50,7 +51,7 @@ const PROJECT_OPTIONS = [
   'Routine Safety Inspection'
 ];
 
-const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: initialRequests = [], role = 'SUPERADMIN', currentUser, onRefresh = () => {}, users: initialUsers = [], projects: initialProjects = [] }) => {
+const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: initialRequests = [], role = 'SUPERADMIN', currentUser, onRefresh = () => {}, users: initialUsers = [], projects: initialProjects = [], products: initialProducts = [] }) => {
   const [activeTab, setActiveTab] = useState('meetings');
   const [meetingFilter, setMeetingFilter] = useState((role === 'EMPLOYEE' || currentUser?.role === 'EMPLOYEE') ? 'my' : 'all');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -61,16 +62,27 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
   const [materialRequests, setMaterialRequests] = useState(initialRequests);
   const [users, setUsers] = useState(initialUsers);
   const [projects, setProjects] = useState(initialProjects);
+  const [products, setProducts] = useState(initialProducts);
 
   // Sync prop updates if parent passes new data
   useEffect(() => {
     if (initialProjects && initialProjects.length > 0) setProjects(initialProjects);
-  }, [initialProjects]);
+    if (initialProducts && initialProducts.length > 0) setProducts(initialProducts);
+  }, [initialProjects, initialProducts]);
 
   // Deletion modals
   const [deletingMeeting, setDeletingMeeting] = useState(null);
   const [deletingMaterialReq, setDeletingMaterialReq] = useState(null);
   const [editingMatReq, setEditingMatReq] = useState(null);
+
+  // Card Expansion State for Service Meetings
+  const [expandedMeetings, setExpandedMeetings] = useState({});
+  const toggleExpandMeeting = (meetingId) => {
+    setExpandedMeetings(prev => ({
+      ...prev,
+      [meetingId]: !prev[meetingId]
+    }));
+  };
 
   // Filter meetings assigned to currently logged-in employee/user
   const myMeetings = meetings.filter(m => {
@@ -89,17 +101,19 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
   const fetchMeetingsData = useCallback(async () => {
     try {
-      const [mtgRes, matRes, usrRes, prjRes] = await Promise.allSettled([
+      const [mtgRes, matRes, usrRes, prjRes, prodRes] = await Promise.allSettled([
         fetch('/api/meetings').then(r => r.json()),
         fetch('/api/material-requests').then(r => r.json()),
         fetch('/api/users').then(r => r.json()),
-        fetch('/api/projects').then(r => r.json())
+        fetch('/api/projects').then(r => r.json()),
+        fetch('/api/inventory').then(r => r.json())
       ]);
 
       if (mtgRes.status === 'fulfilled' && mtgRes.value?.success) setMeetings(mtgRes.value.data);
       if (matRes.status === 'fulfilled' && matRes.value?.success) setMaterialRequests(matRes.value.data);
       if (usrRes.status === 'fulfilled' && usrRes.value?.success) setUsers(usrRes.value.data);
       if (prjRes.status === 'fulfilled' && prjRes.value?.success) setProjects(prjRes.value.data);
+      if (prodRes.status === 'fulfilled' && prodRes.value?.success) setProducts(prodRes.value.data);
     } catch (err) {
       console.error('Error fetching meetings data:', err);
     }
@@ -228,16 +242,18 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
   };
 
   // Material Request Form State
+  const defaultNextWeekMtg = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
   const [newMatReq, setNewMatReq] = useState({
     subject: '',
     requestedForUserId: '',
     requestedForUserName: '',
     priority: 'Low',
     status: 'Open',
-    endDate: '',
+    endDate: defaultNextWeekMtg,
     description: '',
     attachmentUrl: '',
     meetingId: '',
+    selectedProdId: '',
     itemTitle: '',
     quantity: 1,
     unit: 'Pcs',
@@ -779,157 +795,173 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                         </div>
                       </div>
 
-                      {/* Agenda */}
-                      {m.agenda && (
-                        <div style={{ fontSize: '0.76rem', color: '#0369a1', marginBottom: '0.45rem', background: '#f0f9ff', padding: '0.45rem 0.65rem', borderRadius: '8px', borderLeft: '3px solid #0284c7' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 700, color: '#0284c7', marginBottom: '0.1rem' }}>
-                            <FileText size={12} /> Agenda
-                          </div>
-                          <div style={{ wordBreak: 'break-word' }}>{m.agenda}</div>
-                        </div>
-                      )}
+                      {/* View Details Toggle Button */}
+                      <div style={{ marginTop: '0.45rem', marginBottom: expandedMeetings[m.id] ? '0.5rem' : '0' }}>
+                        <button 
+                          className="btn btn-secondary"
+                          type="button"
+                          onClick={() => toggleExpandMeeting(m.id)}
+                          style={{
+                            width: '100%',
+                            padding: '0.38rem 0.65rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            color: expandedMeetings[m.id] ? '#15803d' : '#0284c7',
+                            background: expandedMeetings[m.id] ? '#f0fdf4' : '#f0f9ff',
+                            borderColor: expandedMeetings[m.id] ? '#bbf7d0' : '#bae6fd',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.35rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <Eye size={14} /> {expandedMeetings[m.id] ? 'Hide Details' : 'View Details'}
+                        </button>
+                      </div>
 
-                      {/* Meeting Feedback */}
-                      {m.meetingFeedback && (
-                        <div style={{ fontSize: '0.76rem', color: '#15803d', marginBottom: '0.45rem', background: '#f0fdf4', padding: '0.45rem 0.65rem', borderRadius: '8px', borderLeft: '3px solid #22c55e' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 700, color: '#166534', marginBottom: '0.1rem' }}>
-                            <MessageSquare size={12} /> Meeting Feedback
-                          </div>
-                          <div style={{ wordBreak: 'break-word' }}>{m.meetingFeedback}</div>
-                        </div>
-                      )}
-
-                      {/* Attached Photos Gallery */}
-                      {(() => {
-                        let photoList = [];
-                        try {
-                          if (Array.isArray(m.photos)) photoList = m.photos;
-                          else if (typeof m.photos === 'string' && m.photos.trim().startsWith('[')) photoList = JSON.parse(m.photos);
-                          else if (typeof m.photos === 'string' && m.photos.length > 0) photoList = [m.photos];
-                        } catch (e) {}
-
-                        if (photoList.length === 0) return null;
-
-                        return (
-                          <div style={{ marginBottom: '0.45rem', background: '#f8fafc', padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                              <Camera size={12} color="#16a34a" /> Attached Photos ({photoList.length}):
+                      {/* Expandable Details (Agenda, Feedback, Photos, Real-time updates, Actions) */}
+                      {expandedMeetings[m.id] && (
+                        <>
+                          {/* Agenda */}
+                          {m.agenda && (
+                            <div style={{ fontSize: '0.76rem', color: '#0369a1', marginBottom: '0.45rem', background: '#f0f9ff', padding: '0.45rem 0.65rem', borderRadius: '8px', borderLeft: '3px solid #0284c7' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 700, color: '#0284c7', marginBottom: '0.1rem' }}>
+                                <FileText size={12} /> Agenda
+                              </div>
+                              <div style={{ wordBreak: 'break-word' }}>{m.agenda}</div>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                              {photoList.map((pUrl, idx) => (
-                                <img 
-                                  key={idx} 
-                                  src={pUrl} 
-                                  alt={`Meeting Photo ${idx+1}`} 
-                                  style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', cursor: 'pointer', border: '1px solid #cbd5e1', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 0.15s ease' }}
-                                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
-                                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                  onClick={() => setViewingPhoto(pUrl)}
-                                />
-                              ))}
+                          )}
+
+                          {/* Meeting Feedback */}
+                          {m.meetingFeedback && (
+                            <div style={{ fontSize: '0.76rem', color: '#15803d', marginBottom: '0.45rem', background: '#f0fdf4', padding: '0.45rem 0.65rem', borderRadius: '8px', borderLeft: '3px solid #22c55e' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 700, color: '#166534', marginBottom: '0.1rem' }}>
+                                <MessageSquare size={12} /> Meeting Feedback
+                              </div>
+                              <div style={{ wordBreak: 'break-word' }}>{m.meetingFeedback}</div>
                             </div>
-                          </div>
-                        );
-                      })()}
+                          )}
 
-                      {/* Real-time Service Updates */}
-                      {m.serviceUpdates && (
-                        <div style={{ fontSize: '0.76rem', color: '#92400e', background: '#fffbeb', padding: '0.45rem 0.65rem', borderRadius: '8px', borderLeft: '3px solid #f59e0b', marginBottom: '0.45rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 700, color: '#b45309', marginBottom: '0.1rem' }}>
-                            <Clock size={12} /> Real-time Update
+                          {/* Attached Photos Gallery */}
+                          {(() => {
+                            let photoList = [];
+                            try {
+                              if (Array.isArray(m.photos)) photoList = m.photos;
+                              else if (typeof m.photos === 'string' && m.photos.trim().startsWith('[')) photoList = JSON.parse(m.photos);
+                              else if (typeof m.photos === 'string' && m.photos.length > 0) photoList = [m.photos];
+                            } catch (e) {}
+
+                            if (photoList.length === 0) return null;
+
+                            return (
+                              <div style={{ marginBottom: '0.45rem', background: '#f8fafc', padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                  <Camera size={12} color="#16a34a" /> Attached Photos ({photoList.length}):
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                  {photoList.map((pUrl, idx) => (
+                                    <img 
+                                      key={idx} 
+                                      src={pUrl} 
+                                      alt={`Meeting Photo ${idx+1}`} 
+                                      style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', cursor: 'pointer', border: '1px solid #cbd5e1', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 0.15s ease' }}
+                                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+                                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                      onClick={() => setViewingPhoto(pUrl)}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Real-time Service Updates */}
+                          {m.serviceUpdates && (
+                            <div style={{ fontSize: '0.76rem', color: '#92400e', background: '#fffbeb', padding: '0.45rem 0.65rem', borderRadius: '8px', borderLeft: '3px solid #f59e0b', marginBottom: '0.45rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 700, color: '#b45309', marginBottom: '0.1rem' }}>
+                                <Clock size={12} /> Real-time Update
+                              </div>
+                              <div style={{ wordBreak: 'break-word' }}>{m.serviceUpdates}</div>
+                            </div>
+                          )}
+
+                          {/* Card Action Buttons */}
+                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', marginTop: '0.4rem', display: 'flex', justifyContent: 'flex-end', gap: '0.45rem' }}>
+                            <button 
+                              className="btn" 
+                              style={{ 
+                                padding: '0.35rem 0.65rem', 
+                                fontSize: '0.76rem', 
+                                color: '#dc2626', 
+                                border: '1px solid #fecaca', 
+                                background: '#fef2f2', 
+                                borderRadius: '8px', 
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                transition: 'all 0.2s'
+                              }}
+                              onClick={() => setDeletingMeeting(m)}
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                            <button 
+                              className="btn" 
+                              style={{ 
+                                padding: '0.38rem 0.75rem', 
+                                fontSize: '0.78rem', 
+                                borderRadius: '8px', 
+                                fontWeight: 700, 
+                                background: 'linear-gradient(135deg, #22c55e, #16a34a)', 
+                                color: '#ffffff',
+                                border: 'none', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.35rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 3px 10px rgba(34, 197, 94, 0.25)',
+                                transition: 'transform 0.15s, box-shadow 0.15s'
+                              }}
+                              onClick={() => {
+                                setSelectedMeeting(m);
+                                let parsedPhotos = [];
+                                try {
+                                  if (Array.isArray(m.photos)) parsedPhotos = m.photos;
+                                  else if (typeof m.photos === 'string' && m.photos.trim().startsWith('[')) parsedPhotos = JSON.parse(m.photos);
+                                  else if (typeof m.photos === 'string' && m.photos.length > 0) parsedPhotos = [m.photos];
+                                } catch (e) {}
+
+                                setUpdateData({
+                                  title: m.title || '',
+                                  branch: m.branch || '',
+                                  department: m.department || '',
+                                  project: m.project || '',
+                                  clientName: m.clientName || m.client || '',
+                                  clientAddress: m.clientAddress || '',
+                                  location: m.location || '',
+                                  meetingFeedback: m.meetingFeedback || '',
+                                  photos: parsedPhotos,
+                                  scheduledAt: toDatetimeLocal(m.scheduledAt || m.date),
+                                  assignedToId: m.assignedToId || '',
+                                  agenda: m.agenda || '',
+                                  deliverables: m.deliverables || '',
+                                  status: m.status || 'SCHEDULED',
+                                  outcomeNotes: m.outcomeNotes || '',
+                                  serviceUpdates: m.serviceUpdates || ''
+                                });
+                                setShowUpdateModal(true);
+                              }}
+                            >
+                              <Edit3 size={15} /> Edit Schedule & Notes
+                            </button>
                           </div>
-                          <div style={{ wordBreak: 'break-word' }}>{m.serviceUpdates}</div>
-                        </div>
+                        </>
                       )}
-                    </div>
-
-                    {/* Card Action Buttons */}
-                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', display: 'flex', justifyContent: 'flex-end', gap: '0.45rem' }}>
-                      <button 
-                        className="btn" 
-                        style={{ 
-                          padding: '0.35rem 0.65rem', 
-                          fontSize: '0.76rem', 
-                          color: '#dc2626', 
-                          border: '1px solid #fecaca', 
-                          background: '#fef2f2', 
-                          borderRadius: '8px', 
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.3rem',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = '#dc2626';
-                          e.currentTarget.style.color = '#ffffff';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = '#fef2f2';
-                          e.currentTarget.style.color = '#dc2626';
-                        }}
-                        onClick={() => setDeletingMeeting(m)}
-                      >
-                        <Trash2 size={13} /> Delete
-                      </button>
-                      <button 
-                        className="btn" 
-                        style={{ 
-                          padding: '0.38rem 0.75rem', 
-                          fontSize: '0.78rem', 
-                          borderRadius: '8px', 
-                          fontWeight: 700, 
-                          background: 'linear-gradient(135deg, #22c55e, #16a34a)', 
-                          color: '#ffffff',
-                          border: 'none', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '0.35rem',
-                          cursor: 'pointer',
-                          boxShadow: '0 3px 10px rgba(34, 197, 94, 0.25)',
-                          transition: 'transform 0.15s, box-shadow 0.15s'
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 5px 14px rgba(34, 197, 94, 0.32)';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 3px 10px rgba(34, 197, 94, 0.25)';
-                        }}
-                        onClick={() => {
-                          setSelectedMeeting(m);
-                          let parsedPhotos = [];
-                          try {
-                            if (Array.isArray(m.photos)) parsedPhotos = m.photos;
-                            else if (typeof m.photos === 'string' && m.photos.trim().startsWith('[')) parsedPhotos = JSON.parse(m.photos);
-                            else if (typeof m.photos === 'string' && m.photos.length > 0) parsedPhotos = [m.photos];
-                          } catch (e) {}
-
-                          setUpdateData({
-                            title: m.title || '',
-                            branch: m.branch || '',
-                            department: m.department || '',
-                            project: m.project || '',
-                            clientName: m.clientName || m.client || '',
-                            clientAddress: m.clientAddress || '',
-                            location: m.location || '',
-                            meetingFeedback: m.meetingFeedback || '',
-                            photos: parsedPhotos,
-                            scheduledAt: toDatetimeLocal(m.scheduledAt || m.date),
-                            assignedToId: m.assignedToId || '',
-                            agenda: m.agenda || '',
-                            deliverables: m.deliverables || '',
-                            status: m.status || 'SCHEDULED',
-                            outcomeNotes: m.outcomeNotes || '',
-                            serviceUpdates: m.serviceUpdates || ''
-                          });
-                          setShowUpdateModal(true);
-                        }}
-                      >
-                        <Edit3 size={15} /> Edit Schedule & Notes
-                      </button>
                     </div>
                   </div>
                 );
@@ -1907,13 +1939,50 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.85rem' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Material / Item Description</label>
-                    <input 
-                      className="input-field" 
-                      placeholder="e.g. Copper Wire Coil 50m"
-                      value={newMatReq.itemTitle}
-                      onChange={e => setNewMatReq({ ...newMatReq, itemTitle: e.target.value })}
+                    <select 
+                      className="select-field"
+                      value={
+                        newMatReq.selectedProdId || 
+                        ((products || []).some(p => p.name === newMatReq.itemTitle) ? (products || []).find(p => p.name === newMatReq.itemTitle)?.id : (newMatReq.itemTitle ? 'CUSTOM' : ''))
+                      }
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === 'CUSTOM') {
+                          setNewMatReq(prev => ({ ...prev, selectedProdId: 'CUSTOM', itemTitle: '' }));
+                        } else if (val) {
+                          const prod = (products || []).find(p => p.id === val);
+                          if (prod) {
+                            setNewMatReq(prev => ({ 
+                              ...prev, 
+                              selectedProdId: val,
+                              itemTitle: prod.name, 
+                              unit: prod.unit || 'Pcs' 
+                            }));
+                          }
+                        } else {
+                          setNewMatReq(prev => ({ ...prev, selectedProdId: '', itemTitle: '' }));
+                        }
+                      }}
                       style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
-                    />
+                    >
+                      <option value="">Select Material / Item from Inventory...</option>
+                      {(products || []).map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.category || 'Stock'}) — {p.stockQuantity} {p.unit} in stock
+                        </option>
+                      ))}
+                      <option value="CUSTOM">✏ Enter Custom Item Description...</option>
+                    </select>
+
+                    {(newMatReq.selectedProdId === 'CUSTOM' || (!(products || []).some(p => p.name === newMatReq.itemTitle) && newMatReq.itemTitle)) && (
+                      <input 
+                        className="input-field" 
+                        placeholder="e.g. Copper Wire Coil 50m"
+                        value={newMatReq.itemTitle}
+                        onChange={e => setNewMatReq({ ...newMatReq, itemTitle: e.target.value })}
+                        style={{ marginTop: '0.35rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
+                      />
+                    )}
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Quantity</label>
