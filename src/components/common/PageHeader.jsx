@@ -1,21 +1,24 @@
 import React from 'react';
 import { Plus, Download, Upload } from 'lucide-react';
 
-const PageHeader = ({ title, breadcrumbs, onAdd, onExport, onImport }) => {
+const PageHeader = ({ title, subtitle, breadcrumbs = [], onAdd, onExport, onImport }) => {
   return (
-    <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
       <div className="page-title">
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-color)', marginBottom: '0.5rem' }}>{title}</h2>
-        <div className="breadcrumbs" style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-          {breadcrumbs.map((crumb, index) => (
-            <span key={index}>
-              {index > 0 && <span style={{ margin: '0 0.5rem' }}>/</span>}
-              <span style={{ color: index === breadcrumbs.length - 1 ? 'var(--primary-color)' : 'inherit' }}>
-                {crumb}
+        <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '0.15rem', letterSpacing: '-0.2px' }}>{title}</h2>
+        {subtitle && <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, marginBottom: '0.15rem' }}>{subtitle}</p>}
+        {Array.isArray(breadcrumbs) && breadcrumbs.length > 0 && (
+          <div className="breadcrumbs" style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+            {breadcrumbs.map((crumb, index) => (
+              <span key={index}>
+                {index > 0 && <span style={{ margin: '0 0.35rem' }}>/</span>}
+                <span style={{ color: index === breadcrumbs.length - 1 ? 'var(--primary-color)' : 'inherit', fontWeight: index === breadcrumbs.length - 1 ? 600 : 400 }}>
+                  {crumb}
+                </span>
               </span>
-            </span>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
       
       <div className="page-actions" style={{ display: 'flex', gap: '0.75rem' }}>

@@ -51,7 +51,11 @@ const Login = ({ onLogin }) => {
         
         <header className="login-header">
           <img 
-            src="https://blanchedalmond-bat-253605.hostingersite.com//storage/uploads/logo/2-logo-dark.png" 
+            src="/logo.webp" 
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "https://blanchedalmond-bat-253605.hostingersite.com//storage/uploads/logo/2-logo-dark.png";
+            }}
             alt="Akash Engineering" 
             style={{ height: '50px', objectFit: 'contain' }}
           />
@@ -87,21 +91,28 @@ const Login = ({ onLogin }) => {
                 />
               </div>
 
-              {/* Quick Demo Login Selectors */}
-              <div style={{ margin: '1rem 0', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+              {/* Quick Demo Login Selectors for the 3 Primary Roles */}
+              <div style={{ margin: '1rem 0', display: 'flex', gap: '0.4rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
                   type="button"
-                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '6px', background: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}
-                  onClick={() => handleQuickFill('superadmin@akashcrm.com', 'password123')}
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '6px', background: 'rgba(168, 85, 247, 0.08)', color: '#7e22ce', cursor: 'pointer', fontWeight: 600 }}
+                  onClick={() => handleQuickFill('superadmin@example.com', 'password123')}
                 >
-                  ⚡ Superadmin Demo
+                  🛡️ Superadmin
                 </button>
                 <button
                   type="button"
-                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '6px', background: 'rgba(255,255,255,0.8)', cursor: 'pointer' }}
-                  onClick={() => handleQuickFill('user@akashcrm.com', 'password123')}
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.08)', color: '#1d4ed8', cursor: 'pointer', fontWeight: 600 }}
+                  onClick={() => handleQuickFill('employee@akashcrm.com', 'password123')}
                 >
-                  👤 Normal User Demo
+                  💼 Employee
+                </button>
+                <button
+                  type="button"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.08)', color: '#047857', cursor: 'pointer', fontWeight: 600 }}
+                  onClick={() => handleQuickFill('client@akashcrm.com', 'password123')}
+                >
+                  🤝 Client
                 </button>
               </div>
 

@@ -12,13 +12,41 @@ import {
   Building,
   Edit2,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  BarChart3,
+  Zap,
+  Search,
+  Filter,
+  ShieldCheck,
+  Check,
+  X
 } from 'lucide-react';
 
-export default function AttendancePayroll({ data = {}, currentRole, onRefresh, defaultTab }) {
-  const [activeTab, setActiveTab] = useState(defaultTab || 'attendance'); // 'attendance' | 'leaves' | 'payroll'
+const formatUserRole = (role) => {
+  if (!role) return 'Employee';
+  switch (role) {
+    case 'SUPERADMIN': return 'Super Admin';
+    case 'MASTER_ADMIN': return 'Main Admin';
+    case 'SUB_ADMIN': return 'Sub Admin';
+    case 'FACILITY_MANAGER': return 'Facility Manager';
+    case 'SERVICE_PERSONNEL': return 'Service Personnel';
+    case 'EMPLOYEE': return 'Employee';
+    case 'CLIENT': return 'Client';
+    default: return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  }
+};
+
+export default function AttendancePayroll({ data = {}, currentRole, currentUser, onRefresh, defaultTab }) {
+  const [activeTab, setActiveTab] = useState(defaultTab || 'attendance'); // 'attendance' | 'monthly_report' | 'leaves' | 'payroll'
   const [selectedSalarySlip, setSelectedSalarySlip] = useState(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+
+  // Month, Year & Staff Filter
+  const [selectedMonth, setSelectedMonth] = useState('September');
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const [selectedStaffId, setSelectedStaffId] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Edit / Delete states
   const [editingAtt, setEditingAtt] = useState(null);
@@ -30,6 +58,46 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
   const [editingSal, setEditingSal] = useState(null);
   const [deletingSal, setDeletingSal] = useState(null);
 
+  // Set Basic Salary Modal State
+  const [showBasicSalaryModal, setShowBasicSalaryModal] = useState(false);
+  const [basicSalaryUser, setBasicSalaryUser] = useState(null);
+  const [basicSalaryInput, setBasicSalaryInput] = useState('30000');
+
+  const handleOpenBasicSalaryModal = (user) => {
+    setBasicSalaryUser(user);
+    setBasicSalaryInput((user.baseSalary || user.basicSalary || 30000).toString());
+    setShowBasicSalaryModal(true);
+  };
+
+  const handleSaveBasicSalary = async (e) => {
+    e.preventDefault();
+    if (!basicSalaryUser) return;
+    try {
+      const targetUserId = basicSalaryUser.userId || basicSalaryUser.id;
+      const res = await fetch(`/api/users/${targetUserId}/basic-salary`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(localStorage.getItem('token') ? { 'Authorization': `Bearer ${localStorage.getItem('token')}` } : {})
+        },
+        body: JSON.stringify({ basicSalary: Number(basicSalaryInput) })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setShowBasicSalaryModal(false);
+        fetchAttendanceData();
+        fetchMonthlyReport();
+        if (onRefresh) onRefresh();
+        alert(`Basic salary updated for ${basicSalaryUser.userName || basicSalaryUser.name} to ₹${Number(basicSalaryInput).toLocaleString()}`);
+      } else {
+        alert(json.message || 'Failed to update basic salary');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating basic salary');
+    }
+  };
+
   useEffect(() => {
     if (defaultTab) setActiveTab(defaultTab);
   }, [defaultTab]);
@@ -38,13 +106,65 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
   const [leaves, setLeaves] = useState(data.leaves || []);
   const [salaryRecords, setSalaryRecords] = useState(data.salaryRecords || []);
   const [users, setUsers] = useState(data.users || []);
+  const [monthlyReport, setMonthlyReport] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState({
+    totalEmployees: 0,
+    totalPresentDays: 0,
+    totalLateEntries: 0,
+    totalSalariesProcessed: 0
+  });
+  const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
+
+  const isEmployee = currentRole === 'EMPLOYEE' || (currentUser && currentUser.role === 'EMPLOYEE');
+
+  // Filter staffUsers to exclude CLIENT and USER role users
+  const staffUsers = (users || []).filter(u => u.role !== 'CLIENT' && u.role !== 'USER');
+
+  // Scoped lists based on role and selected employee
+  const selectedUserObj = staffUsers.find(u => u.id === selectedStaffId);
+
+  const displayedAttendance = isEmployee
+    ? attendance.filter(a => a.userId === currentUser?.id || (currentUser?.name && a.userName?.toLowerCase() === currentUser.name.toLowerCase()))
+    : attendance.filter(a => {
+        const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStaff = selectedStaffId === 'ALL' || a.userId === selectedStaffId || (selectedUserObj && a.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
+        return matchesSearch && matchesStaff;
+      });
+
+  const displayedLeaves = isEmployee
+    ? leaves.filter(l => l.userId === currentUser?.id || (currentUser?.name && l.userName?.toLowerCase() === currentUser.name.toLowerCase()))
+    : leaves.filter(l => {
+        const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && l.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
+        return matchesSearch && matchesStaff;
+      });
+
+  const displayedSalaryRecords = isEmployee
+    ? salaryRecords.filter(s => s.userId === currentUser?.id || (currentUser?.name && s.userName?.toLowerCase() === currentUser.name.toLowerCase()))
+    : salaryRecords.filter(s => {
+        const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStaff = selectedStaffId === 'ALL' || s.userId === selectedStaffId || (selectedUserObj && s.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
+        return matchesSearch && matchesStaff;
+      });
+
+  const filteredMonthlyReport = monthlyReport.filter(r => {
+    const matchesSearch = !searchQuery || r.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || r.designation?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStaff = selectedStaffId === 'ALL' || r.userId === selectedStaffId || (selectedUserObj && r.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
+    return matchesSearch && matchesStaff;
+  });
+
+  // Employee personal summary statistics
+  const employeePresentDays = displayedAttendance.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length;
+  const employeeLateDays = displayedAttendance.filter(a => a.status === 'LATE').length;
+  const employeeLeavesCount = displayedLeaves.filter(l => l.status === 'APPROVED').length;
 
   const fetchAttendanceData = useCallback(async () => {
     try {
+      const queryParam = (isEmployee && currentUser?.id) ? `?userId=${currentUser.id}` : '';
       const [attRes, lveRes, payRes, usrRes] = await Promise.allSettled([
-        fetch('/api/attendance').then(r => r.json()),
-        fetch('/api/leaves').then(r => r.json()),
-        fetch('/api/payroll').then(r => r.json()),
+        fetch(`/api/attendance${queryParam}`).then(r => r.json()),
+        fetch(`/api/leaves${queryParam}`).then(r => r.json()),
+        fetch(`/api/payroll${queryParam}`).then(r => r.json()),
         fetch('/api/users').then(r => r.json())
       ]);
 
@@ -55,17 +175,32 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
     } catch (err) {
       console.error('Error fetching attendance data:', err);
     }
-  }, []);
+  }, [isEmployee, currentUser?.id]);
+
+  const fetchMonthlyReport = useCallback(async () => {
+    if (isEmployee) return;
+    try {
+      const res = await fetch(`/api/attendance/monthly-report?month=${selectedMonth}&year=${selectedYear}`);
+      const json = await res.json();
+      if (json.success) {
+        setMonthlyReport(json.data || []);
+        if (json.summary) setMonthlyStats(json.summary);
+      }
+    } catch (err) {
+      console.error('Error fetching monthly report:', err);
+    }
+  }, [isEmployee, selectedMonth, selectedYear]);
 
   useEffect(() => {
     fetchAttendanceData();
-  }, [fetchAttendanceData]);
+    fetchMonthlyReport();
+  }, [fetchAttendanceData, fetchMonthlyReport]);
 
   // Leave Form state
   const [newLeave, setNewLeave] = useState({
     leaveType: 'CASUAL',
-    startDate: '2026-09-10',
-    endDate: '2026-09-12',
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date().toISOString().slice(0, 10),
     reason: ''
   });
 
@@ -91,24 +226,67 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [newSalary, setNewSalary] = useState({
     userId: '',
-    month: 'September',
-    year: '2026',
+    month: selectedMonth,
+    year: selectedYear,
     baseSalary: '45000',
-    overtimeHours: '10',
+    overtimeHours: '0',
     allowances: '2500',
-    deductions: '1000'
+    deductions: '0'
   });
 
   // Edit Salary Form state
   const [editSalData, setEditSalData] = useState({
-    month: 'September',
-    year: '2026',
+    month: selectedMonth,
+    year: selectedYear,
     baseSalary: 45000,
-    overtimeHours: 10,
+    overtimeHours: 0,
     allowances: 2500,
-    deductions: 1000,
+    deductions: 0,
     status: 'PROCESSED'
   });
+
+  const handleSelectSalaryUser = (userId) => {
+    const selectedUser = (users || []).find(u => u.id === userId);
+    if (!selectedUser) {
+      setNewSalary(prev => ({ ...prev, userId }));
+      return;
+    }
+
+    const userAtt = attendance.filter(a => a.userId === userId || a.userName === selectedUser.name);
+    const lateCount = userAtt.filter(a => a.status === 'LATE').length;
+    const baseSal = selectedUser.salary || selectedUser.baseSalary || 45000;
+    const autoDeductions = lateCount * 250;
+
+    setNewSalary(prev => ({
+      ...prev,
+      userId,
+      baseSalary: baseSal.toString(),
+      deductions: autoDeductions.toString()
+    }));
+  };
+
+  const handleBatchGenerateSalaries = async () => {
+    if (!window.confirm(`Generate & process digital salary slips for ALL employees for ${selectedMonth} ${selectedYear}?`)) return;
+    setIsGeneratingBatch(true);
+    try {
+      const res = await fetch('/api/payroll/generate-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month: selectedMonth, year: selectedYear })
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert(json.message);
+        fetchAttendanceData();
+        fetchMonthlyReport();
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsGeneratingBatch(false);
+    }
+  };
 
   const handleGenerateSalary = async (e) => {
     e.preventDefault();
@@ -126,6 +304,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       if (json.success) {
         setShowSalaryModal(false);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -146,6 +325,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       if (json.success) {
         setEditingSal(null);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -161,6 +341,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       if (json.success) {
         setDeletingSal(null);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -168,26 +349,75 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
     }
   };
 
+  const [isPunching, setIsPunching] = useState(false);
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const hasPunchedToday = (attendance || []).some(a => {
+    const isSameUser = (currentUser?.id && a.userId === currentUser.id) || (currentUser?.name && a.userName?.toLowerCase() === currentUser.name.toLowerCase());
+    const aDateStr = a.date ? new Date(a.date).toISOString().slice(0, 10) : '';
+    return isSameUser && aDateStr === todayStr;
+  });
+
   const handleWebCheckIn = async () => {
-    try {
-      const res = await fetch('/api/attendance/check-in', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 'usr-4',
-          userName: 'Sujan Mukhopadhyay',
-          location: 'VS DIGITECH HO Dumdum',
+    if (hasPunchedToday) {
+      alert("You have already punched attendance for today! Multiple punches on the same day are not allowed.");
+      return;
+    }
+    setIsPunching(true);
+
+    const submitPunch = async (coords = null) => {
+      try {
+        const payload = {
+          userId: currentUser?.id,
+          userName: currentUser?.name || currentUser?.email || 'Staff Member',
           method: 'WEB'
-        })
-      });
-      const json = await res.json();
-      if (json.success) {
-        fetchAttendanceData();
-        if (onRefresh) onRefresh();
-        alert('Web Attendance Check-in Successful!');
+        };
+        if (coords) {
+          payload.latitude = coords.latitude;
+          payload.longitude = coords.longitude;
+          payload.location = `GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`;
+        } else {
+          payload.location = 'Office HO (Web Punch)';
+        }
+
+        const res = await fetch('/api/attendance/check-in', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          fetchAttendanceData();
+          fetchMonthlyReport();
+          if (onRefresh) onRefresh();
+          alert(`Attendance Check-in Successful!\nStatus: ${json.data.status}\nTime: ${json.data.checkInTime}\nLocation: ${json.data.location}`);
+        } else {
+          alert(json.message || 'Attendance check-in failed');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error recording attendance check-in');
+      } finally {
+        setIsPunching(false);
       }
-    } catch (err) {
-      console.error(err);
+    };
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          submitPunch({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.warn('Geolocation unavailable or denied:', error.message);
+          submitPunch(null);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    } else {
+      submitPunch(null);
     }
   };
 
@@ -204,6 +434,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       if (json.success) {
         setEditingAtt(null);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -219,6 +450,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       if (json.success) {
         setDeletingAtt(null);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -234,14 +466,15 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newLeave,
-          userId: 'usr-4',
-          userName: 'Sujan Mukhopadhyay'
+          userId: currentUser?.id || 'usr-4',
+          userName: currentUser?.name || currentUser?.email || 'Staff Member'
         })
       });
       const json = await res.json();
       if (json.success) {
         setShowLeaveModal(false);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -262,6 +495,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       if (json.success) {
         setEditingLeave(null);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -277,6 +511,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       if (json.success) {
         setDeletingLeave(null);
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -289,11 +524,12 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
       const res = await fetch(`/api/leaves/${leaveId}/approve`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approverName: currentRole === 'MASTER_ADMIN' ? 'Rahul Sharma' : 'Amitabh Roy' })
+        body: JSON.stringify({ approverName: currentRole === 'MASTER_ADMIN' ? 'Rahul Sharma' : 'Super Admin' })
       });
       const json = await res.json();
       if (json.success) {
         fetchAttendanceData();
+        fetchMonthlyReport();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
@@ -304,57 +540,284 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* Top Tabs */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(15, 23, 42, 0.6)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+      {/* Enterprise HR Header Controls */}
+      <div style={{
+        display: 'flex',
+        justify: 'space-between',
+        alignItems: 'center',
+        background: '#ffffff',
+        padding: '1rem 1.25rem',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+        border: '1px solid var(--border-color)',
+        flexWrap: 'wrap',
+        gap: '1rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: 42,
+            height: 42,
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justify: 'center',
+            color: '#fff',
+            fontWeight: 'bold'
+          }}>
+            <ShieldCheck size={24} />
+          </div>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#1e293b' }}>
+              {isEmployee ? 'My Attendance & Salary Portal' : 'HR Portal & Payroll Management'}
+            </h2>
+            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+              {isEmployee ? `Logged in as ${currentUser?.name || 'Employee'}` : 'Superadmin HR Overview & Payroll Generation System'}
+            </div>
+          </div>
+        </div>
+
+        {/* Month, Year & Staff Filters */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {!isEmployee && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+              <Users size={15} color="#64748b" />
+              <select 
+                value={selectedStaffId} 
+                onChange={e => setSelectedStaffId(e.target.value)}
+                style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', outline: 'none', maxWidth: 210 }}
+              >
+                <option value="ALL">👤 All Staff</option>
+                {staffUsers.map(u => (
+                  <option key={u.id} value={u.id}>👤 {u.name} ({formatUserRole(u.role)})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+            <Calendar size={15} color="#64748b" />
+            <select 
+              value={selectedMonth} 
+              onChange={e => setSelectedMonth(e.target.value)}
+              style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
+            >
+              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <select 
+              value={selectedYear} 
+              onChange={e => setSelectedYear(e.target.value)}
+              style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
+            >
+              {['2025', '2026', '2027'].map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+            <input 
+              type="text"
+              placeholder="Search staff..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                padding: '0.35rem 0.65rem 0.35rem 2rem',
+                fontSize: '0.82rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid #e2e8f0',
+                background: '#f8fafc',
+                outline: 'none',
+                width: 150
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Overview Metric Cards */}
+      {isEmployee ? (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', 
+          gap: '1rem'
+        }}>
+          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Present Days</div>
+            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>{employeePresentDays} Days</div>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Out of 22 Working Days</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Late Entries</div>
+            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.2rem' }}>{employeeLateDays} Times</div>
+            <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.25rem' }}>Late after 09:30 AM (₹250/late)</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Approved Leaves</div>
+            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#3b82f6', marginTop: '0.2rem' }}>{employeeLeavesCount} Days</div>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Casual & Privilege Leaves</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Salary Status</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', marginTop: '0.3rem' }}>
+              {displayedSalaryRecords.length > 0 ? displayedSalaryRecords[0].status : 'PROCESSED'}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Payslip available in Payroll tab</div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', 
+          gap: '1rem'
+        }}>
+          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
+                {selectedStaffId !== 'ALL' ? (selectedUserObj?.name || 'Selected Employee') : 'Total Staff'}
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem' }}>
+                {selectedStaffId !== 'ALL' ? (selectedUserObj?.designation || 'Staff') : `${monthlyStats.totalEmployees ?? users.length} Staff`}
+              </div>
+            </div>
+            <Users size={32} color="#3b82f6" style={{ opacity: 0.8 }} />
+          </div>
+
+          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
+                Present Days ({selectedMonth})
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>
+                {selectedStaffId !== 'ALL'
+                  ? displayedAttendance.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length
+                  : (monthlyStats.totalPresentDays ?? 0)} Days
+              </div>
+            </div>
+            <UserCheck size={32} color="#10b981" style={{ opacity: 0.8 }} />
+          </div>
+
+          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Late Entries Count</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.2rem' }}>
+                {selectedStaffId !== 'ALL'
+                  ? displayedAttendance.filter(a => a.status === 'LATE').length
+                  : (monthlyStats.totalLateEntries ?? 0)} Times
+              </div>
+            </div>
+            <Clock size={32} color="#f59e0b" style={{ opacity: 0.8 }} />
+          </div>
+
+          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Salaries Generated</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#6366f1', marginTop: '0.2rem' }}>
+                {selectedStaffId !== 'ALL'
+                  ? displayedSalaryRecords.length
+                  : (monthlyStats.totalSalariesProcessed ?? 0)} Slips
+              </div>
+            </div>
+            <DollarSign size={32} color="#6366f1" style={{ opacity: 0.8 }} />
+          </div>
+        </div>
+      )}
+
+      {/* Navigation Tabs Bar & Primary Actions */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', background: '#ffffff', padding: '0.45rem 0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.18rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
           <button 
             className={`btn ${activeTab === 'attendance' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
             onClick={() => setActiveTab('attendance')}
           >
-            <UserCheck style={{ width: 16, height: 16 }} />
-            Attendance Register ({attendance.length})
+            <UserCheck style={{ width: 14, height: 14 }} />
+            Daily Punch Log ({displayedAttendance.length})
           </button>
+
+          {!isEmployee && (
+            <button 
+              className={`btn ${activeTab === 'monthly_report' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+              onClick={() => setActiveTab('monthly_report')}
+            >
+              <BarChart3 style={{ width: 14, height: 14 }} />
+              HR Monthly Report ({monthlyReport.length})
+            </button>
+          )}
+
           <button 
             className={`btn ${activeTab === 'leaves' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
             onClick={() => setActiveTab('leaves')}
           >
-            <Calendar style={{ width: 16, height: 16 }} />
-            Leave Requests ({leaves.length})
+            <Calendar style={{ width: 14, height: 14 }} />
+            Leave Requests ({displayedLeaves.length})
           </button>
+          
           <button 
             className={`btn ${activeTab === 'payroll' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
             onClick={() => setActiveTab('payroll')}
           >
-            <DollarSign style={{ width: 16, height: 16 }} />
-            Salary & Payroll ({salaryRecords.length})
+            <DollarSign style={{ width: 14, height: 14 }} />
+            Salary Slips & Payroll ({displayedSalaryRecords.length})
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn btn-secondary" onClick={handleWebCheckIn}>
-            <Clock style={{ width: 16, height: 16, color: 'var(--brand-yellow)' }} />
+        <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+          <button className="btn btn-secondary" style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={handleWebCheckIn}>
+            <Clock style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
             Web Attendance Punch
           </button>
+          
           <button className="btn btn-secondary" onClick={() => setShowLeaveModal(true)}>
             <Plus style={{ width: 16, height: 16 }} />
             Apply Leave
           </button>
-          <button className="btn btn-primary" onClick={() => setShowSalaryModal(true)}>
-            <DollarSign style={{ width: 16, height: 16 }} />
-            Process Salary Slip
-          </button>
+
+          {!isEmployee && (
+            <>
+              <button 
+                className="btn btn-secondary" 
+                style={{ borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
+                onClick={() => handleOpenBasicSalaryModal(selectedUserObj || staffUsers[0])}
+              >
+                <DollarSign style={{ width: 16, height: 16, color: '#0d9488' }} />
+                Set Basic Salary
+              </button>
+
+              <button 
+                className="btn btn-secondary" 
+                style={{ borderColor: '#6366f1', color: '#6366f1', background: 'rgba(99, 102, 241, 0.05)' }} 
+                onClick={handleBatchGenerateSalaries}
+                disabled={isGeneratingBatch}
+              >
+                <Zap style={{ width: 16, height: 16, color: '#6366f1' }} />
+                {isGeneratingBatch ? 'Generating Payroll...' : `Batch Generate ${selectedMonth} Salary`}
+              </button>
+
+              <button className="btn btn-primary" onClick={() => setShowSalaryModal(true)}>
+                <DollarSign style={{ width: 16, height: 16 }} />
+                Process Salary Slip
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* TAB 1: Attendance Register */}
+      {/* TAB 1: Daily Attendance Register */}
       {activeTab === 'attendance' && (
         <div className="glass-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
-              Daily Attendance Register & Verification Method
+              {isEmployee ? 'My Daily Punch & Attendance Logs' : 'All Staff Daily Attendance Register'}
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Log Source: Biometric Hardware / Mobile GPS / Web Portal
+              Source: Mobile GPS / Biometric Hardware / Web Check-in
             </span>
           </div>
 
@@ -368,13 +831,13 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
                 <th>Location / Site</th>
                 <th>Punch Method</th>
                 <th>Status</th>
-                <th>Actions</th>
+                {!isEmployee && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {attendance.map(att => (
+              {displayedAttendance.map(att => (
                 <tr key={att.id}>
-                  <td><strong>{att.userName}</strong></td>
+                  <td><strong>{(users || []).find(u => u.id === att.userId)?.name || (att.userName && att.userName !== 'Staff Member' ? att.userName : 'Staff Member')}</strong></td>
                   <td>{typeof att.date === 'string' ? att.date.slice(0, 10) : new Date(att.date).toISOString().slice(0, 10)}</td>
                   <td>{att.checkInTime}</td>
                   <td>{att.checkOutTime || 'Present In Field'}</td>
@@ -391,34 +854,134 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
                     </span>
                   </td>
                   <td>
-                    <span className="badge badge-present">✓ {att.status}</span>
+                    <span className={`badge ${att.status === 'LATE' ? 'badge-pending' : 'badge-present'}`}>
+                      {att.status === 'LATE' ? '⏰ LATE ENTRY' : `✓ ${att.status}`}
+                    </span>
+                  </td>
+                  {!isEmployee && (
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                        <button 
+                          className="btn btn-secondary"
+                          style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
+                          title="Edit Attendance Record"
+                          onClick={() => {
+                            setEditingAtt(att);
+                            setEditAttData({
+                              checkInTime: att.checkInTime || '09:30 AM',
+                              checkOutTime: att.checkOutTime || '06:30 PM',
+                              status: att.status || 'PRESENT',
+                              location: att.location || '',
+                              method: att.method || 'WEB'
+                            });
+                          }}
+                        >
+                          <Edit2 size={14} color="#2563eb" />
+                        </button>
+                        <button 
+                          className="btn btn-secondary"
+                          style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                          title="Delete Attendance Record"
+                          onClick={() => setDeletingAtt(att)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* TAB 2: HR Monthly Report & Overview (Superadmin Only) */}
+      {!isEmployee && activeTab === 'monthly_report' && (
+        <div className="glass-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
+                HR Monthly Attendance & Payroll Summary Report ({selectedMonth} {selectedYear})
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Aggregates working days, present days, late entry counts, and salary status per employee.
+              </p>
+            </div>
+            <button className="btn btn-primary" onClick={handleBatchGenerateSalaries} disabled={isGeneratingBatch}>
+              <Zap size={15} /> {isGeneratingBatch ? 'Processing...' : `Generate All Staff Salary Slips`}
+            </button>
+          </div>
+
+          <table className="custom-table">
+            <thead>
+              <tr>
+                <th>Employee Name</th>
+                <th>Role / Dept</th>
+                <th>Working Days</th>
+                <th>Present Days</th>
+                <th>Late Entries</th>
+                <th>Absent Days</th>
+                <th>Leaves</th>
+                <th>Base Salary</th>
+                <th>Salary Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMonthlyReport.map(item => (
+                <tr key={item.userId}>
+                  <td>
+                    <strong>{item.userName}</strong>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.email}</div>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                      {item.designation}
+                    </span>
+                  </td>
+                  <td>{item.totalWorkingDays} Days</td>
+                  <td><strong style={{ color: '#10b981' }}>{item.presentDays} Days</strong></td>
+                  <td>
+                    <span style={{ color: item.lateEntries > 0 ? '#f59e0b' : '#64748b', fontWeight: item.lateEntries > 0 ? 700 : 400 }}>
+                      {item.lateEntries} Times
+                    </span>
+                  </td>
+                  <td>{item.absentDays} Days</td>
+                  <td>{item.approvedLeaves} Days</td>
+                  <td>₹{item.baseSalary ? item.baseSalary.toLocaleString() : 45000}</td>
+                  <td>
+                    <span className={`badge ${item.salaryStatus === 'PROCESSED' ? 'badge-approved' : 'badge-pending'}`}>
+                      {item.salaryStatus}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                       <button 
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
-                        title="Edit Attendance Record"
-                        onClick={() => {
-                          setEditingAtt(att);
-                          setEditAttData({
-                            checkInTime: att.checkInTime || '09:30 AM',
-                            checkOutTime: att.checkOutTime || '06:30 PM',
-                            status: att.status || 'PRESENT',
-                            location: att.location || '',
-                            method: att.method || 'WEB'
-                          });
-                        }}
+                        className="btn btn-secondary" 
+                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
+                        onClick={() => handleOpenBasicSalaryModal(item)}
+                        title="Set or Edit Employee Basic Salary"
                       >
-                        <Edit2 size={14} color="var(--brand-primary)" />
+                        <Edit2 size={13} /> Set Basic Sal
                       </button>
                       <button 
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                        title="Delete Attendance Record"
-                        onClick={() => setDeletingAtt(att)}
+                        className="btn btn-secondary" 
+                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          setNewSalary({
+                            userId: item.userId,
+                            month: selectedMonth,
+                            year: selectedYear,
+                            baseSalary: (item.baseSalary || 30000).toString(),
+                            overtimeHours: '0',
+                            allowances: '2500',
+                            deductions: (item.lateEntries * 250).toString()
+                          });
+                          setShowSalaryModal(true);
+                        }}
                       >
-                        <Trash2 size={14} />
+                        <DollarSign size={13} /> Process Salary
                       </button>
                     </div>
                   </td>
@@ -429,18 +992,18 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
         </div>
       )}
 
-      {/* TAB 2: Leave Management & Approvals */}
+      {/* TAB 3: Leave Management & Approvals */}
       {activeTab === 'leaves' && (
         <div className="glass-card">
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700, marginBottom: '1rem' }}>
-            Employee Leave Applications & Workflow
+            {isEmployee ? 'My Leave Applications & Approval Status' : 'Employee Leave Requests & Approval Workflow'}
           </h3>
 
           <table className="custom-table">
             <thead>
               <tr>
                 <th>Employee</th>
-                <th>Type</th>
+                <th>Leave Type</th>
                 <th>Duration</th>
                 <th>Reason</th>
                 <th>Approval Status</th>
@@ -449,7 +1012,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
               </tr>
             </thead>
             <tbody>
-              {leaves.map(l => (
+              {displayedLeaves.map(l => (
                 <tr key={l.id}>
                   <td><strong>{l.userName}</strong></td>
                   <td><span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>{l.leaveType}</span></td>
@@ -463,36 +1026,40 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
                   <td>{l.approvedBy || '—'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      {l.status === 'PENDING' && (currentRole === 'MASTER_ADMIN' || currentRole === 'FACILITY_MANAGER' || currentRole === 'SUPERADMIN') && (
+                      {l.status === 'PENDING' && !isEmployee && (
                         <button className="btn btn-primary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }} onClick={() => handleApproveLeave(l.id)}>
                           Approve
                         </button>
                       )}
-                      <button 
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
-                        title="Edit Leave Request"
-                        onClick={() => {
-                          setEditingLeave(l);
-                          setEditLeaveData({
-                            leaveType: l.leaveType || 'CASUAL',
-                            startDate: l.startDate ? new Date(l.startDate).toISOString().slice(0, 10) : '',
-                            endDate: l.endDate ? new Date(l.endDate).toISOString().slice(0, 10) : '',
-                            reason: l.reason || '',
-                            status: l.status || 'PENDING'
-                          });
-                        }}
-                      >
-                        <Edit2 size={14} color="var(--brand-primary)" />
-                      </button>
-                      <button 
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                        title="Delete Leave Request"
-                        onClick={() => setDeletingLeave(l)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {!isEmployee && (
+                        <>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
+                            title="Edit Leave Request"
+                            onClick={() => {
+                              setEditingLeave(l);
+                              setEditLeaveData({
+                                leaveType: l.leaveType || 'CASUAL',
+                                startDate: l.startDate ? new Date(l.startDate).toISOString().slice(0, 10) : '',
+                                endDate: l.endDate ? new Date(l.endDate).toISOString().slice(0, 10) : '',
+                                reason: l.reason || '',
+                                status: l.status || 'PENDING'
+                              });
+                            }}
+                          >
+                            <Edit2 size={14} color="#2563eb" />
+                          </button>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                            title="Delete Leave Request"
+                            onClick={() => setDeletingLeave(l)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -502,16 +1069,16 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
         </div>
       )}
 
-      {/* TAB 3: Salary Management & Salary Slips */}
+      {/* TAB 4: Salary Management & Salary Slips */}
       {activeTab === 'payroll' && (
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div>
               <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
-                Payroll Integration & Digital Salary Slips
+                {isEmployee ? 'My Digital Salary Slips' : 'Payroll Integration & Digital Salary Slips'}
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Calculates base, overtime, Statutory PF, and Tax deductions automatically.
+                Calculates base salary, overtime, statutory PF, tax, and late entry deductions automatically.
               </p>
             </div>
           </div>
@@ -530,19 +1097,19 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
               </tr>
             </thead>
             <tbody>
-              {salaryRecords.map(sal => (
+              {displayedSalaryRecords.map(sal => (
                 <tr key={sal.id}>
                   <td>
                     <strong>{sal.userName}</strong>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sal.designation}</div>
                   </td>
                   <td>{sal.month} {sal.year}</td>
-                  <td>₹{sal.baseSalary.toLocaleString()}</td>
-                  <td>{sal.overtimeHours} hrs (₹{sal.overtimePay})</td>
+                  <td>₹{sal.baseSalary ? sal.baseSalary.toLocaleString() : 0}</td>
+                  <td>{sal.overtimeHours} hrs (₹{sal.overtimePay ? sal.overtimePay.toLocaleString() : 0})</td>
                   <td style={{ fontSize: '0.8rem', color: 'var(--brand-red)' }}>
-                    -₹{(sal.pfDeduction + sal.taxDeduction).toLocaleString()}
+                    -₹{((sal.pfDeduction || 0) + (sal.taxDeduction || 0)).toLocaleString()}
                   </td>
-                  <td><strong style={{ color: 'var(--brand-green)', fontSize: '0.95rem' }}>₹{sal.netSalary.toLocaleString()}</strong></td>
+                  <td><strong style={{ color: 'var(--brand-green)', fontSize: '0.95rem' }}>₹{sal.netSalary ? sal.netSalary.toLocaleString() : 0}</strong></td>
                   <td>
                     <span className="badge badge-approved">{sal.status}</span>
                   </td>
@@ -551,33 +1118,37 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
                       <button className="btn btn-secondary" style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }} onClick={() => setSelectedSalarySlip(sal)} title="View Slip">
                         <FileText style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
                       </button>
-                      <button 
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
-                        title="Edit Salary Record"
-                        onClick={() => {
-                          setEditingSal(sal);
-                          setEditSalData({
-                            month: sal.month || 'September',
-                            year: sal.year || 2026,
-                            baseSalary: sal.baseSalary || 40000,
-                            overtimeHours: sal.overtimeHours || 0,
-                            allowances: sal.allowances || 0,
-                            deductions: sal.deductions || 0,
-                            status: sal.status || 'PROCESSED'
-                          });
-                        }}
-                      >
-                        <Edit2 size={14} color="var(--brand-primary)" />
-                      </button>
-                      <button 
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                        title="Delete Salary Record"
-                        onClick={() => setDeletingSal(sal)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {!isEmployee && (
+                        <>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
+                            title="Edit Salary Record"
+                            onClick={() => {
+                              setEditingSal(sal);
+                              setEditSalData({
+                                month: sal.month || selectedMonth,
+                                year: sal.year || selectedYear,
+                                baseSalary: sal.baseSalary || 45000,
+                                overtimeHours: sal.overtimeHours || 0,
+                                allowances: sal.allowances || 0,
+                                deductions: sal.deductions || 0,
+                                status: sal.status || 'PROCESSED'
+                              });
+                            }}
+                          >
+                            <Edit2 size={14} color="#2563eb" />
+                          </button>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                            title="Delete Salary Record"
+                            onClick={() => setDeletingSal(sal)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -587,12 +1158,12 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
         </div>
       )}
 
-      {/* Modal 1: Apply Leave */}
+      {/* Modal 1: Apply Leave Modal */}
       {showLeaveModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Request Employee Leave
+              Apply for Employee Leave
             </h3>
             <form onSubmit={handleApplyLeave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
@@ -628,95 +1199,195 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Reason for Request</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Reason for Application</label>
                 <textarea 
                   className="input-field" 
                   rows={2}
                   value={newLeave.reason}
                   onChange={e => setNewLeave({ ...newLeave, reason: e.target.value })}
-                  placeholder="Provide context for approval"
+                  placeholder="State the reason for leave"
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowLeaveModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Submit Leave Request</button>
+                <button type="submit" className="btn btn-primary">Submit Leave Application</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal 1B: Edit Leave Request */}
-      {editingLeave && (
+      {/* Modal 2: Process Salary Slip Modal */}
+      {showSalaryModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Edit Leave Request for {editingLeave.userName}
+              Generate Employee Salary Slip
             </h3>
-            <form onSubmit={handleEditLeave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleGenerateSalary} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Leave Type</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Employee</label>
                 <select 
                   className="select-field"
-                  value={editLeaveData.leaveType}
-                  onChange={e => setEditLeaveData({ ...editLeaveData, leaveType: e.target.value })}
+                  value={newSalary.userId}
+                  onChange={e => handleSelectSalaryUser(e.target.value)}
                 >
-                  <option value="CASUAL">Casual Leave (CL)</option>
-                  <option value="SICK">Sick Leave (SL)</option>
-                  <option value="EARNED">Earned Privilege Leave (EL)</option>
+                  <option value="">Select Employee</option>
+                  {staffUsers.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({formatUserRole(u.role)})</option>
+                  ))}
                 </select>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Start Date</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Month</label>
                   <input 
-                    type="date"
                     className="input-field" 
-                    value={editLeaveData.startDate}
-                    onChange={e => setEditLeaveData({ ...editLeaveData, startDate: e.target.value })}
+                    value={newSalary.month}
+                    onChange={e => setNewSalary({ ...newSalary, month: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>End Date</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Year</label>
                   <input 
-                    type="date"
+                    type="number"
                     className="input-field" 
-                    value={editLeaveData.endDate}
-                    onChange={e => setEditLeaveData({ ...editLeaveData, endDate: e.target.value })}
+                    value={newSalary.year}
+                    onChange={e => setNewSalary({ ...newSalary, year: e.target.value })}
                   />
                 </div>
               </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Reason</label>
-                <textarea 
-                  className="input-field" 
-                  rows={2}
-                  value={editLeaveData.reason}
-                  onChange={e => setEditLeaveData({ ...editLeaveData, reason: e.target.value })}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Base Salary (₹)</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    value={newSalary.baseSalary}
+                    onChange={e => setNewSalary({ ...newSalary, baseSalary: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overtime Hours</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    value={newSalary.overtimeHours}
+                    onChange={e => setNewSalary({ ...newSalary, overtimeHours: e.target.value })}
+                  />
+                </div>
               </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                <select 
-                  className="select-field"
-                  value={editLeaveData.status}
-                  onChange={e => setEditLeaveData({ ...editLeaveData, status: e.target.value })}
-                >
-                  <option value="PENDING">PENDING</option>
-                  <option value="APPROVED">APPROVED</option>
-                  <option value="REJECTED">REJECTED</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Allowances (₹)</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    value={newSalary.allowances}
+                    onChange={e => setNewSalary({ ...newSalary, allowances: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Late & Other Deductions (₹)</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    value={newSalary.deductions}
+                    onChange={e => setNewSalary({ ...newSalary, deductions: e.target.value })}
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingLeave(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Leave Changes</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowSalaryModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Generate & Save Payslip</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal 2: Edit Attendance Record */}
+      {/* Modal 3: Digital Salary Slip Preview */}
+      {selectedSalarySlip && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ border: '2px solid var(--brand-gold)', maxWidth: 650 }}>
+            <div style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--brand-yellow)' }}>
+                VS DIGITECH TECHNOLOGY
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                115/1 Purba Sinthee Bye Lane, Dumdum Junction, Kolkata 700030
+              </div>
+              <div style={{ marginTop: '0.5rem', fontWeight: 700, fontSize: '1rem' }}>
+                PAYSLIP FOR THE MONTH OF {selectedSalarySlip.month ? selectedSalarySlip.month.toUpperCase() : ''} {selectedSalarySlip.year}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem', marginBottom: '1.25rem', background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+              <div><strong>Employee Name:</strong> {selectedSalarySlip.userName}</div>
+              <div><strong>Designation:</strong> {selectedSalarySlip.designation || 'Staff'}</div>
+              <div><strong>Status:</strong> {selectedSalarySlip.status}</div>
+              <div><strong>Generated Date:</strong> {selectedSalarySlip.generatedAt ? new Date(selectedSalarySlip.generatedAt).toLocaleDateString() : 'N/A'}</div>
+            </div>
+
+            {/* Salary Breakdown Table */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              <div>
+                <h4 style={{ color: 'var(--brand-green)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                  EARNINGS
+                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Basic Pay:</span>
+                  <strong>₹{selectedSalarySlip.baseSalary?.toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Overtime Pay ({selectedSalarySlip.overtimeHours}h):</span>
+                  <strong>₹{selectedSalarySlip.overtimePay?.toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Allowances:</span>
+                  <strong>₹{selectedSalarySlip.allowances?.toLocaleString()}</strong>
+                </div>
+              </div>
+
+              <div>
+                <h4 style={{ color: 'var(--brand-red)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                  DEDUCTIONS & STATUTORY
+                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Provident Fund (PF):</span>
+                  <strong>₹{selectedSalarySlip.pfDeduction?.toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Tax Deduction (TDS):</span>
+                  <strong>₹{selectedSalarySlip.taxDeduction?.toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Late & Other Deductions:</span>
+                  <strong>₹{selectedSalarySlip.deductions?.toLocaleString()}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>NET PAYABLE SALARY:</div>
+              <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--brand-green)' }}>
+                ₹{selectedSalarySlip.netSalary?.toLocaleString()}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
+              <button className="btn btn-secondary" onClick={() => window.print()}>
+                <Download style={{ width: 16, height: 16 }} /> Print / Download Payslip
+              </button>
+              <button className="btn btn-primary" onClick={() => setSelectedSalarySlip(null)}>
+                Close Payslip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 4: Edit Attendance Log */}
       {editingAtt && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -786,252 +1457,6 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
         </div>
       )}
 
-      {/* Modal 3: Process Salary Slip Modal */}
-      {showSalaryModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Generate Employee Salary Slip (Database POST)
-            </h3>
-            <form onSubmit={handleGenerateSalary} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Employee</label>
-                <select 
-                  className="select-field"
-                  value={newSalary.userId}
-                  onChange={e => setNewSalary({ ...newSalary, userId: e.target.value })}
-                >
-                  <option value="">Select Employee</option>
-                  {(users || []).map(u => (
-                    <option key={u.id} value={u.id}>{u.name} ({u.designation || u.role})</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Month</label>
-                  <input 
-                    className="input-field" 
-                    value={newSalary.month}
-                    onChange={e => setNewSalary({ ...newSalary, month: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Year</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newSalary.year}
-                    onChange={e => setNewSalary({ ...newSalary, year: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Base Salary (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newSalary.baseSalary}
-                    onChange={e => setNewSalary({ ...newSalary, baseSalary: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overtime Hours</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newSalary.overtimeHours}
-                    onChange={e => setNewSalary({ ...newSalary, overtimeHours: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Allowances (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newSalary.allowances}
-                    onChange={e => setNewSalary({ ...newSalary, allowances: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Deductions (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newSalary.deductions}
-                    onChange={e => setNewSalary({ ...newSalary, deductions: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowSalaryModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Generate & Save Payslip</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 3B: Edit Salary Slip */}
-      {editingSal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Edit Salary Record for {editingSal.userName}
-            </h3>
-            <form onSubmit={handleEditSalary} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Month</label>
-                  <input 
-                    className="input-field" 
-                    value={editSalData.month}
-                    onChange={e => setEditSalData({ ...editSalData, month: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Year</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={editSalData.year}
-                    onChange={e => setEditSalData({ ...editSalData, year: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Base Salary (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={editSalData.baseSalary}
-                    onChange={e => setEditSalData({ ...editSalData, baseSalary: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overtime Hours</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={editSalData.overtimeHours}
-                    onChange={e => setEditSalData({ ...editSalData, overtimeHours: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Allowances (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={editSalData.allowances}
-                    onChange={e => setEditSalData({ ...editSalData, allowances: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Deductions (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={editSalData.deductions}
-                    onChange={e => setEditSalData({ ...editSalData, deductions: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingSal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Salary Changes</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 4: Digital Salary Slip Preview */}
-      {selectedSalarySlip && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ border: '2px solid var(--brand-gold)', maxWidth: 650 }}>
-            <div style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--brand-yellow)' }}>
-                VS DIGITECH TECHNOLOGY
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                115/1 Purba Sinthee Bye Lane, Dumdum Junction, Kolkata 700030
-              </div>
-              <div style={{ marginTop: '0.5rem', fontWeight: 700, fontSize: '1rem' }}>
-                PAYSLIP FOR THE MONTH OF {selectedSalarySlip.month ? selectedSalarySlip.month.toUpperCase() : ''} {selectedSalarySlip.year}
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem', marginBottom: '1.25rem', background: 'rgba(15,23,42,0.6)', padding: '0.85rem', borderRadius: 'var(--radius-md)' }}>
-              <div><strong>Employee Name:</strong> {selectedSalarySlip.userName}</div>
-              <div><strong>Designation:</strong> {selectedSalarySlip.designation || 'Staff'}</div>
-              <div><strong>Status:</strong> {selectedSalarySlip.status}</div>
-              <div><strong>Generated Date:</strong> {selectedSalarySlip.generatedAt ? new Date(selectedSalarySlip.generatedAt).toLocaleDateString() : 'N/A'}</div>
-            </div>
-
-            {/* Salary Breakdown Table */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div>
-                <h4 style={{ color: 'var(--brand-green)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-                  EARNINGS
-                </h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Basic Pay:</span>
-                  <strong>₹{selectedSalarySlip.baseSalary?.toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Overtime Pay ({selectedSalarySlip.overtimeHours}h):</span>
-                  <strong>₹{selectedSalarySlip.overtimePay?.toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Allowances:</span>
-                  <strong>₹{selectedSalarySlip.allowances?.toLocaleString()}</strong>
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ color: 'var(--brand-red)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-                  DEDUCTIONS & STATUTORY
-                </h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Provident Fund (PF):</span>
-                  <strong>₹{selectedSalarySlip.pfDeduction?.toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Tax Deduction (TDS):</span>
-                  <strong>₹{selectedSalarySlip.taxDeduction?.toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Other Deductions:</span>
-                  <strong>₹{selectedSalarySlip.deductions?.toLocaleString()}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>NET PAYABLE SALARY:</div>
-              <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--brand-green)' }}>
-                ₹{selectedSalarySlip.netSalary?.toLocaleString()}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
-              <button className="btn btn-secondary" onClick={() => window.print()}>
-                <Download style={{ width: 16, height: 16 }} /> Download PDF Slip
-              </button>
-              <button className="btn btn-primary" onClick={() => setSelectedSalarySlip(null)}>
-                Close Payslip
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Delete Attendance Confirmation Modal */}
       {deletingAtt && (
         <div className="modal-overlay">
@@ -1043,7 +1468,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
               </h3>
             </div>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Are you sure you want to delete attendance record for <strong>{deletingAtt.userName}</strong> ({deletingAtt.date})?
+              Are you sure you want to delete attendance record for <strong>{deletingAtt.userName}</strong>?
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button className="btn btn-secondary" onClick={() => setDeletingAtt(null)}>Cancel</button>
@@ -1066,7 +1491,7 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
               </h3>
             </div>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Are you sure you want to delete leave application for <strong>{deletingLeave.userName}</strong> ({deletingLeave.leaveType})?
+              Are you sure you want to delete leave application for <strong>{deletingLeave.userName}</strong>?
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button className="btn btn-secondary" onClick={() => setDeletingLeave(null)}>Cancel</button>
@@ -1097,6 +1522,74 @@ export default function AttendancePayroll({ data = {}, currentRole, onRefresh, d
                 Delete Salary Slip
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 5: Set Employee Basic Salary Modal */}
+      {showBasicSalaryModal && basicSalaryUser && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+              Set Basic Salary for Employee
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+              Configure fixed monthly basic salary for <strong>{basicSalaryUser.userName || basicSalaryUser.name}</strong> ({basicSalaryUser.designation || 'Staff'}).
+            </p>
+
+            <form onSubmit={handleSaveBasicSalary} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                  Select Employee Staff Member
+                </label>
+                <select
+                  className="input-field"
+                  style={{ width: '100%' }}
+                  value={basicSalaryUser.id || basicSalaryUser.userId}
+                  onChange={e => {
+                    const selected = staffUsers.find(u => u.id === e.target.value);
+                    if (selected) {
+                      setBasicSalaryUser(selected);
+                      setBasicSalaryInput((selected.baseSalary || selected.basicSalary || 30000).toString());
+                    }
+                  }}
+                >
+                  {staffUsers.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({formatUserRole(u.role)})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                  Basic Salary Amount (₹ / Month)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#64748b' }}>₹</span>
+                  <input 
+                    type="number"
+                    required
+                    min="0"
+                    step="500"
+                    className="input-field" 
+                    style={{ paddingLeft: '2.2rem' }}
+                    value={basicSalaryInput}
+                    onChange={e => setBasicSalaryInput(e.target.value)}
+                    placeholder="e.g. 35000"
+                  />
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.35rem' }}>
+                  This amount will be saved to the PostgreSQL database for {basicSalaryUser.userName || basicSalaryUser.name} and used for payroll processing.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowBasicSalaryModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ background: '#0d9488', borderColor: '#0d9488' }}>
+                  Save Basic Salary
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

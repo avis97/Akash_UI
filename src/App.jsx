@@ -54,7 +54,7 @@ function MainLayout() {
     try {
       const [
         usersRes, meetingsRes, matReqRes, attRes, leavesRes, shiftsRes,
-        salRes, locRes, geoRes, prodRes, quotRes, invRes, purRes, vchRes, amcRes, logsRes
+        salRes, locRes, geoRes, prodRes, quotRes, invRes, purRes, vchRes, amcRes, logsRes, projRes
       ] = await Promise.allSettled([
         fetch(API_URL('/api/users'), {
           headers: {
@@ -76,7 +76,8 @@ function MainLayout() {
         fetch(API_URL('/api/purchases')).then(r => r.json()),
         fetch(API_URL('/api/vouchers')).then(r => r.json()),
         fetch(API_URL('/api/amc')).then(r => r.json()),
-        fetch(API_URL('/api/activity-logs')).then(r => r.json())
+        fetch(API_URL('/api/activity-logs')).then(r => r.json()),
+        fetch(API_URL('/api/projects')).then(r => r.json())
       ]);
 
       setCrmData(prev => ({
@@ -99,7 +100,8 @@ function MainLayout() {
         vouchers: vchRes.status === 'fulfilled' && vchRes.value?.success ? vchRes.value.data : prev.vouchers,
         siteAMCs: amcRes.status === 'fulfilled' && amcRes.value?.success ? amcRes.value.data : prev.siteAMCs,
         amcs: amcRes.status === 'fulfilled' && amcRes.value?.success ? amcRes.value.data : prev.amcs,
-        activityLogs: logsRes.status === 'fulfilled' && logsRes.value?.success ? logsRes.value.data : prev.activityLogs
+        activityLogs: logsRes.status === 'fulfilled' && logsRes.value?.success ? logsRes.value.data : prev.activityLogs,
+        projects: projRes.status === 'fulfilled' && projRes.value?.success ? projRes.value.data : prev.projects
       }));
     } catch (e) {
       console.warn('API sync fallback active:', e);
@@ -256,6 +258,7 @@ function MainLayout() {
           activeLabel={getActiveLabel()}
           crmData={crmData}
           currentRole={currentRole}
+          currentUser={currentUser}
           onRefresh={fetchLiveData}
         />
       </div>

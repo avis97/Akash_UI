@@ -161,7 +161,7 @@ export default function SiteAMCTracker({ data = {}, currentRole, onRefresh }) {
       </div>
 
       {/* AMC Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.85rem' }}>
         {siteAMCs.map(amc => (
           <div key={amc.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem' }}>
             <div>
@@ -191,8 +191,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, onRefresh }) {
 
               {/* Digital Checklist Box */}
               {amc.checklists && amc.checklists.length > 0 && (
-                <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--brand-yellow)', marginBottom: '0.4rem' }}>
+                <div style={{ background: '#f8fafc', padding: '0.75rem 0.9rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#d97706', marginBottom: '0.4rem' }}>
                     AMC Compliance Checklist Tasks:
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>

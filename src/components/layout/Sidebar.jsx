@@ -93,11 +93,15 @@ export default function Sidebar({
 
   return (
     <aside className="sidebar" style={{ width: '280px', background: '#ffffff', borderRight: '1px solid #e2e8f0' }}>
-      <div className="brand-header" style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
+      <div className="brand-header" style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <img 
-          src="https://blanchedalmond-bat-253605.hostingersite.com//storage/uploads/logo/2-logo-dark.png" 
+          src="/logo.webp" 
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "https://blanchedalmond-bat-253605.hostingersite.com//storage/uploads/logo/2-logo-dark.png";
+          }}
           alt="Akash Engineering" 
-          style={{ width: '100%', maxHeight: '55px', objectFit: 'contain' }} 
+          style={{ width: 'auto', maxWidth: '100%', maxHeight: '48px', objectFit: 'contain', display: 'block' }} 
         />
       </div>
 

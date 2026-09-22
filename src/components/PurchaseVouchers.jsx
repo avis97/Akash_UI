@@ -203,7 +203,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
       
       {/* Sub-nav & Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(15, 23, 42, 0.6)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
           <button 
             className={`btn ${activeTab === 'purchases' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab('purchases')}

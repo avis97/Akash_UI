@@ -1,6 +1,7 @@
 import React from 'react';
 import Dashboard from '../Dashboard';
 import ServiceMeetings from '../ServiceMeetings';
+import ProjectManagement from '../ProjectManagement';
 import AttendancePayroll from '../AttendancePayroll';
 import LocationTracking from '../LocationTracking';
 import InventoryManager from '../InventoryManager';
@@ -10,32 +11,39 @@ import PurchaseVouchers from '../PurchaseVouchers';
 import SiteAMCTracker from '../SiteAMCTracker';
 import UserManagement from '../UserManagement';
 
-export default function MainContent({ 
-  activeTab, 
-  activeLabel, 
-  crmData, 
+export default function MainContent({
+  activeTab,
+  activeLabel,
+  crmData,
   currentRole,
-  onRefresh = () => {}
+  currentUser,
+  onRefresh = () => { }
 }) {
   return (
     <main className="content-body">
       {activeTab === 'dashboard' || activeTab.startsWith('dashboard_') ? (
-        <Dashboard data={crmData} currentRole={currentRole} activeTab={activeTab} />
+        <Dashboard data={crmData} currentRole={currentRole} currentUser={currentUser} activeTab={activeTab} />
+      ) : activeTab === 'projects' || activeTab === 'project' ? (
+        <ProjectManagement data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
       ) : activeTab === 'service_meeting' ? (
-        <ServiceMeetings 
-          meetings={crmData.serviceMeetings} 
+        <ServiceMeetings
+          meetings={crmData.serviceMeetings}
           materialRequests={crmData.materialRequests}
-          role={currentRole} 
+          role={currentRole}
+          currentUser={currentUser}
           onRefresh={onRefresh}
           users={crmData.users}
+          projects={crmData.projects}
         />
       ) : activeTab === 'material_request' ? (
-        <ServiceMeetings 
-          meetings={crmData.serviceMeetings} 
+        <ServiceMeetings
+          meetings={crmData.serviceMeetings}
           materialRequests={crmData.materialRequests}
-          role={currentRole} 
+          role={currentRole}
+          currentUser={currentUser}
           onRefresh={onRefresh}
           users={crmData.users}
+          projects={crmData.projects}
         />
       ) : activeTab === 'site_amc' || activeTab === 'site_amc_tracker' ? (
         <SiteAMCTracker data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
@@ -43,8 +51,8 @@ export default function MainContent({
         <LocationTracking data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
       ) : activeTab === 'products_inventory' || activeTab === 'products_stock' || activeTab === 'products' ? (
         <InventoryManager data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
-      ) : activeTab === 'hrm_sys_employee_setup' || activeTab === 'hrm_employee' ? (
-        <EmployeeSetup employees={crmData.employees} />
+      ) : activeTab === 'hrm_sys_employee_setup' || activeTab === 'hrm_employee' || activeTab === 'employee' ? (
+        <UserManagement data={crmData} currentRole={currentRole} onRefresh={onRefresh} initialTab="employees" />
       ) : activeTab === 'hrm_attendance' ? (
         <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="attendance" />
       ) : activeTab === 'hrm_payroll' ? (
@@ -54,9 +62,9 @@ export default function MainContent({
       ) : activeTab === 'hrm_shift' ? (
         <AttendancePayroll data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="shifts" />
       ) : activeTab === 'acc_billing' || activeTab === 'billing' ? (
-        <BillingQuotations data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+        <BillingQuotations data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'acc_invoices' ? (
-        <BillingQuotations data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="invoices" />
+        <BillingQuotations data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="invoices" />
       ) : activeTab === 'acc_purchases' || activeTab === 'purchases' ? (
         <PurchaseVouchers data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
       ) : activeTab === 'acc_vouchers' || activeTab === 'vouchers' ? (

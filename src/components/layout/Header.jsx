@@ -43,12 +43,12 @@ const compressImage = (file, maxDim = 150, quality = 0.8) => {
   });
 };
 
-export default function Header({ 
-  activeLabel, 
-  currentRole, 
-  currentUser, 
+export default function Header({
+  activeLabel,
+  currentRole,
+  currentUser,
   onLogout,
-  onUserUpdate 
+  onUserUpdate
 }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -128,54 +128,89 @@ export default function Header({
 
   return (
     <header className="top-bar">
-      <div className="page-heading">
-        {activeLabel}
+      <div className="page-heading" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <span style={{
+          width: '10px',
+          height: '10px',
+          borderRadius: '50%',
+          background: '#22c55e',
+          boxShadow: '0 0 10px rgba(34, 197, 94, 0.8)',
+          display: 'inline-block'
+        }}></span>
+        <span style={{ fontWeight: 700, fontSize: '1.35rem', color: 'var(--text-primary, #0f172a)' }}>{activeLabel}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
 
         {/* User Profile Badge (Clickable for editing profile) */}
-        <div 
+        <div
           onClick={handleOpenModal}
           title="Click to Edit Profile (Name, Password, Avatar Image)"
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.65rem', 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
             cursor: 'pointer',
-            padding: '0.35rem 0.75rem',
-            borderRadius: 'var(--radius-md)',
+            padding: '0.35rem 0.85rem',
+            borderRadius: '9999px',
             transition: 'all 0.2s',
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.15)'
+            background: 'rgba(34, 197, 94, 0.08)',
+            border: '1px solid rgba(34, 197, 94, 0.25)'
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.16)';
+            e.currentTarget.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.08)';
+            e.currentTarget.style.borderColor = 'rgba(34, 197, 94, 0.25)';
+          }}
         >
           <div style={{ position: 'relative', width: 36, height: 36 }}>
-            <img 
-              src={currentUser?.avatarUrl || PRESET_AVATARS[0]} 
-              alt="Profile" 
-              style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid var(--brand-primary)', objectFit: 'cover' }} 
+            <img
+              src={currentUser?.avatarUrl || PRESET_AVATARS[0]}
+              alt="Profile"
+              style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid #22c55e', objectFit: 'cover' }}
             />
-            <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--brand-primary)', borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#22c55e', borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
               <Camera size={10} />
             </div>
           </div>
           <div style={{ lineHeight: 1.2 }}>
-            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main, #ffffff)' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary, #0f172a)' }}>
               {currentUser?.name || currentUser?.email || 'User'}
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--brand-primary)', fontWeight: 600 }}>
-              {currentRole ? currentRole.replace('_', ' ') : 'USER'}
+            <div style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700 }}>
+              {currentRole === 'SUPERADMIN' ? '🛡️ Superadmin' : (currentRole === 'CLIENT' || currentRole === 'USER') ? '🤝 Client' : '💼 Employee'}
             </div>
           </div>
         </div>
 
         {/* Edit Profile Button */}
-        <button 
-          className="btn btn-secondary" 
-          style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+        <button
+          className="btn"
+          style={{
+            padding: '0.45rem 0.85rem',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: 'rgba(34, 197, 94, 0.1)',
+            color: '#15803d',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = '#22c55e';
+            e.currentTarget.style.color = '#ffffff';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.1)';
+            e.currentTarget.style.color = '#15803d';
+          }}
           onClick={handleOpenModal}
           title="Edit My Personal Profile"
         >
@@ -183,9 +218,32 @@ export default function Header({
         </button>
 
         {/* Logout Button */}
-        <button 
-          className="btn btn-outline" 
-          style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+        <button
+          className="btn"
+          style={{
+            padding: '0.45rem 0.85rem',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: '#f8fafc',
+            color: '#64748b',
+            border: '1px solid #cbd5e1',
+            borderRadius: 'var(--radius-md)',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = '#ef4444';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.borderColor = '#ef4444';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = '#f8fafc';
+            e.currentTarget.style.color = '#64748b';
+            e.currentTarget.style.borderColor = '#cbd5e1';
+          }}
           onClick={onLogout}
         >
           <LogOut size={15} /> Logout
@@ -195,17 +253,17 @@ export default function Header({
 
       {/* EDIT PROFILE MODAL */}
       {showProfileModal && (
-        <div 
-          className="modal-overlay" 
+        <div
+          className="modal-overlay"
           onClick={() => setShowProfileModal(false)}
-          style={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0, 
-            background: 'rgba(15, 23, 42, 0.75)', 
-            backdropFilter: 'blur(8px)', 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -213,18 +271,18 @@ export default function Header({
             padding: '1.5rem'
           }}
         >
-          <div 
-            className="modal-content" 
+          <div
+            className="modal-content"
             onClick={e => e.stopPropagation()}
-            style={{ 
-              background: '#ffffff', 
-              color: '#0f172a', 
-              borderRadius: '16px', 
-              width: '100%', 
-              maxWidth: '520px', 
-              maxHeight: 'calc(100vh - 3rem)', 
-              overflowY: 'auto', 
-              padding: '1.5rem 1.75rem', 
+            style={{
+              background: '#ffffff',
+              color: '#0f172a',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '520px',
+              maxHeight: 'calc(100vh - 3rem)',
+              overflowY: 'auto',
+              padding: '1.5rem 1.75rem',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
               border: '1px solid #cbd5e1',
               margin: 'auto'
@@ -232,10 +290,10 @@ export default function Header({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem' }}>
               <h3 style={{ fontFamily: 'var(--font-heading, sans-serif)', fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <User size={22} style={{ color: '#2563eb' }} />
+                <User size={22} style={{ color: '#22c55e' }} />
                 Edit Personal Profile
               </h3>
-              <button 
+              <button
                 onClick={() => setShowProfileModal(false)}
                 style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer' }}
               >
@@ -244,59 +302,59 @@ export default function Header({
             </div>
 
             {msg.text && (
-              <div style={{ 
-                padding: '0.75rem 1rem', 
-                borderRadius: '8px', 
+              <div style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
                 marginBottom: '1.25rem',
                 fontSize: '0.85rem',
                 fontWeight: 600,
-                background: msg.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                border: `1px solid ${msg.type === 'success' ? '#10b981' : '#ef4444'}`,
-                color: msg.type === 'success' ? '#065f46' : '#991b1b'
+                background: msg.type === 'success' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                border: `1px solid ${msg.type === 'success' ? '#22c55e' : '#ef4444'}`,
+                color: msg.type === 'success' ? '#15803d' : '#991b1b'
               }}>
                 {msg.text}
               </div>
             )}
 
             <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
+
               {/* Profile Image Section */}
               <div style={{ background: '#f8fafc', padding: '1.15rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.75rem' }}>
                   Upload Profile Picture from Device
                 </label>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1rem' }}>
-                  <img 
-                    src={formData.avatarUrl || PRESET_AVATARS[0]} 
-                    alt="Current Avatar" 
-                    style={{ width: 72, height: 72, borderRadius: '50%', border: '3px solid #2563eb', objectFit: 'cover', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.15)' }} 
+                  <img
+                    src={formData.avatarUrl || PRESET_AVATARS[0]}
+                    alt="Current Avatar"
+                    style={{ width: 72, height: 72, borderRadius: '50%', border: '3px solid #22c55e', objectFit: 'cover', boxShadow: '0 4px 6px -1px rgba(34, 197, 94, 0.25)' }}
                   />
-                  
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      id="header-avatar-upload" 
-                      style={{ display: 'none' }} 
-                      onChange={handleFileUpload} 
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="header-avatar-upload"
+                      style={{ display: 'none' }}
+                      onChange={handleFileUpload}
                     />
-                    <label 
-                      htmlFor="header-avatar-upload" 
-                      style={{ 
-                        background: '#2563eb', 
-                        color: '#ffffff', 
-                        padding: '0.6rem 1.1rem', 
-                        borderRadius: '8px', 
-                        fontSize: '0.85rem', 
-                        fontWeight: 600, 
-                        cursor: 'pointer', 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
+                    <label
+                      htmlFor="header-avatar-upload"
+                      style={{
+                        background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                        color: '#ffffff',
+                        padding: '0.6rem 1.1rem',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.5rem',
-                        boxShadow: '0 2px 6px rgba(37,99,235,0.3)',
-                        transition: 'background 0.2s'
+                        boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
+                        transition: 'opacity 0.2s'
                       }}
                     >
                       <Upload size={16} /> Choose Image File from Device
@@ -312,18 +370,18 @@ export default function Header({
                   </span>
                   <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
                     {PRESET_AVATARS.map((url, idx) => (
-                      <img 
+                      <img
                         key={idx}
                         src={url}
                         alt={`Preset ${idx + 1}`}
                         onClick={() => setFormData({ ...formData, avatarUrl: url })}
-                        style={{ 
-                          width: 38, 
-                          height: 38, 
-                          borderRadius: '50%', 
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: '50%',
                           cursor: 'pointer',
                           objectFit: 'cover',
-                          border: formData.avatarUrl === url ? '3px solid #eab308' : '2px solid #cbd5e1',
+                          border: formData.avatarUrl === url ? '3px solid #22c55e' : '2px solid #cbd5e1',
                           transform: formData.avatarUrl === url ? 'scale(1.1)' : 'scale(1)',
                           transition: 'all 0.15s'
                         }}
@@ -339,7 +397,7 @@ export default function Header({
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
                   Full Name
                 </label>
-                <input 
+                <input
                   className="input-field"
                   required
                   value={formData.name}
@@ -354,7 +412,7 @@ export default function Header({
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
                   New Password <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>(Leave blank if keeping current password)</span>
                 </label>
-                <input 
+                <input
                   type="password"
                   className="input-field"
                   value={formData.password}
@@ -369,7 +427,7 @@ export default function Header({
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
                   Phone Number
                 </label>
-                <input 
+                <input
                   className="input-field"
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
@@ -380,17 +438,17 @@ export default function Header({
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowProfileModal(false)}
                   style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '0.6rem 1.25rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={saving}
-                  style={{ background: '#2563eb', color: '#ffffff', border: 'none', padding: '0.6rem 1.35rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 2px 4px rgba(37,99,235,0.3)' }}
+                  style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#ffffff', border: 'none', padding: '0.6rem 1.35rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
                 >
                   {saving ? 'Saving Changes...' : 'Save Profile Changes'}
                 </button>
