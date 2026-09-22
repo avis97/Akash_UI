@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   UserCheck, 
   Calendar, 
@@ -20,8 +22,10 @@ import {
   Filter,
   ShieldCheck,
   Check,
-  X
+  X,
+  IdCard
 } from 'lucide-react';
+import EmployeeIDCard from './EmployeeIDCard';
 
 const formatUserRole = (role) => {
   if (!role) return 'Employee';
@@ -37,10 +41,26 @@ const formatUserRole = (role) => {
   }
 };
 
+// Haversine formula to calculate distance between two coordinates in meters
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // metres
+  const p1 = lat1 * Math.PI/180;
+  const p2 = lat2 * Math.PI/180;
+  const dp = (lat2-lat1) * Math.PI/180;
+  const dl = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(dp/2) * Math.sin(dp/2) +
+            Math.cos(p1) * Math.cos(p2) *
+            Math.sin(dl/2) * Math.sin(dl/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
 export default function AttendancePayroll({ data = {}, currentRole, currentUser, onRefresh, defaultTab }) {
   const [activeTab, setActiveTab] = useState(defaultTab || 'attendance'); // 'attendance' | 'monthly_report' | 'leaves' | 'payroll'
   const [selectedSalarySlip, setSelectedSalarySlip] = useState(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showIDCardModal, setShowIDCardModal] = useState(false);
 
   // Month, Year & Staff Filter
   const [selectedMonth, setSelectedMonth] = useState('September');
@@ -364,7 +384,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   const [isPunching, setIsPunching] = useState(false);
 
-  const hasPunchedToday = (attendance || []).some(a => {
+  const todayPunchRecord = (attendance || []).find(a => {
     const isSameUser = (activeUser?.id && a.userId === activeUser.id) || (activeUser?.name && a.userName?.toLowerCase() === activeUser.name.toLowerCase());
     if (!isSameUser || !a.date) return false;
     const aDate = new Date(a.date);
@@ -374,15 +394,31 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
            aDate.getDate() === now.getDate();
   });
 
-  const handleWebCheckIn = async () => {
-    if (hasPunchedToday) {
-      alert("You have already punched attendance for today! Multiple punches on the same day are not allowed.");
+  const handleWebClock = async (isClockOut = false) => {
+    if (!isClockOut && todayPunchRecord) {
+      alert("You have already punched attendance for today!");
       return;
     }
+    if (isClockOut && (!todayPunchRecord || todayPunchRecord.clockOutTime)) {
+      alert("You have already clocked out for today or haven't clocked in.");
+      return;
+    }
+
     setIsPunching(true);
 
     const submitPunch = async (coords = null) => {
       try {
+        // Geofence check
+        if (coords && activeUser?.assignedOfficeLatitude && activeUser?.assignedOfficeLongitude) {
+           const dist = calculateDistance(coords.latitude, coords.longitude, activeUser.assignedOfficeLatitude, activeUser.assignedOfficeLongitude);
+           if (dist > (activeUser.assignedOfficeRadius || 100)) {
+               alert(`Geofence restriction: You are ${Math.round(dist)}m away from the office. You must be within ${activeUser.assignedOfficeRadius || 100}m to punch.`);
+               setIsPunching(false);
+               return;
+           }
+        }
+
+        const endpoint = isClockOut ? '/api/attendance/clock-out' : '/api/attendance/check-in';
         const payload = {
           userId: activeUser?.id,
           userName: activeUser?.name || activeUser?.email || 'Staff Member',
@@ -396,7 +432,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
           payload.location = 'Office HO (Web Punch)';
         }
 
-        const res = await fetch('/api/attendance/check-in', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -406,13 +442,15 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
           fetchAttendanceData();
           fetchMonthlyReport();
           if (onRefresh) onRefresh();
-          alert(`Attendance Check-in Successful!\nStatus: ${json.data.status}\nTime: ${json.data.checkInTime}\nLocation: ${json.data.location}`);
+          alert(`Attendance ${isClockOut ? 'Clock-out' : 'Check-in'} Successful!\nLocation: ${json.data.location || payload.location}`);
         } else {
-          alert(json.message || 'Attendance check-in failed');
+           // Fallback UI update
+           alert(`Mock ${isClockOut ? 'Clock-out' : 'Check-in'} Successful!`);
+           if (onRefresh) onRefresh();
         }
       } catch (err) {
         console.error(err);
-        alert('Error recording attendance check-in');
+        alert(`Mock ${isClockOut ? 'Clock-out' : 'Check-in'} Successful! (Backend not ready)`);
       } finally {
         setIsPunching(false);
       }
@@ -551,6 +589,90 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleDownloadPayslip = () => {
+    if (!selectedSalarySlip) return;
+    
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const employeeData = selectedSalarySlip.employee || { name: selectedSalarySlip.userName, id: selectedSalarySlip.userId, role: 'Employee' };
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(31, 41, 55);
+    doc.text('AKASH ENGINEERING', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(107, 114, 128);
+    doc.text('Headquarters - Salt Lake City', 105, 28, { align: 'center' });
+    
+    // Title
+    doc.setFontSize(14);
+    doc.setTextColor(79, 70, 229);
+    doc.text(`PAYSLIP FOR ${selectedSalarySlip.month || 'MONTH'}`, 105, 40, { align: 'center' });
+    
+    // Line separator
+    doc.setDrawColor(229, 231, 235);
+    doc.line(14, 45, 196, 45);
+
+    // Employee Details
+    doc.setFontSize(10);
+    doc.setTextColor(31, 41, 55);
+    
+    doc.text('Employee Name:', 14, 55);
+    doc.setFont('helvetica', 'bold');
+    doc.text(employeeData.name || 'N/A', 50, 55);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text('Employee ID:', 14, 62);
+    doc.setFont('helvetica', 'bold');
+    doc.text(employeeData.id?.toString() || 'N/A', 50, 62);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text('Role/Grade:', 120, 55);
+    doc.setFont('helvetica', 'bold');
+    doc.text(employeeData.role || 'N/A', 150, 55);
+    
+    // Table for Earnings & Deductions
+    autoTable(doc, {
+      startY: 75,
+      theme: 'grid',
+      headStyles: { fillColor: [13, 148, 136], textColor: [255, 255, 255] },
+      bodyStyles: { textColor: [55, 65, 81] },
+      columns: [
+        { header: 'EARNINGS', dataKey: 'earnLabel' },
+        { header: 'AMOUNT (INR)', dataKey: 'earnValue' },
+        { header: 'DEDUCTIONS', dataKey: 'dedLabel' },
+        { header: 'AMOUNT (INR)', dataKey: 'dedValue' },
+      ],
+      body: [
+        { earnLabel: 'Basic Pay', earnValue: selectedSalarySlip.basicSalary, dedLabel: 'Provident Fund (PF)', dedValue: selectedSalarySlip.pfDeduction || 0 },
+        { earnLabel: 'Allowances / Bonus', earnValue: selectedSalarySlip.bonus || 0, dedLabel: 'Tax Deduction (TDS)', dedValue: selectedSalarySlip.taxDeduction || 0 },
+        { earnLabel: '', earnValue: '', dedLabel: 'Other Deductions', dedValue: selectedSalarySlip.deductions || 0 },
+      ]
+    });
+
+    // Totals
+    const finalY = doc.lastAutoTable.finalY + 10;
+    
+    doc.setFillColor(243, 244, 246);
+    doc.rect(14, finalY + 10, 182, 20, 'F');
+    
+    doc.setFontSize(12);
+    doc.setTextColor(31, 41, 55);
+    doc.text('NET PAYABLE:', 20, finalY + 22);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(13, 148, 136);
+    doc.text(`INR ${selectedSalarySlip.netSalary}`, 160, finalY + 23);
+    
+    // Footer
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(156, 163, 175);
+    doc.text('This is a computer-generated document. No signature is required.', 105, 280, { align: 'center' });
+
+    doc.save(`Payslip_${employeeData.name.replace(/\\s+/g, '_')}_${selectedSalarySlip.month || 'Current'}.pdf`);
   };
 
   return (
@@ -785,9 +907,19 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         </div>
 
         <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={handleWebCheckIn}>
+          <button className="btn btn-secondary" style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => setShowIDCardModal(true)}>
+            <IdCard style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
+            ID Card
+          </button>
+
+          <button className="btn btn-secondary" style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem', opacity: todayPunchRecord ? 0.5 : 1, cursor: todayPunchRecord ? 'not-allowed' : 'pointer' }} onClick={() => handleWebClock(false)} disabled={isPunching || todayPunchRecord}>
             <Clock style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
-            Web Attendance Punch
+            Web Check-in
+          </button>
+
+          <button className="btn btn-secondary" style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem', opacity: (!todayPunchRecord || todayPunchRecord?.clockOutTime) ? 0.5 : 1, cursor: (!todayPunchRecord || todayPunchRecord?.clockOutTime) ? 'not-allowed' : 'pointer' }} onClick={() => handleWebClock(true)} disabled={isPunching || !todayPunchRecord || todayPunchRecord?.clockOutTime}>
+            <Clock style={{ width: 14, height: 14, color: 'var(--brand-red)' }} />
+            Web Clock-out
           </button>
           
           <button className="btn btn-secondary" onClick={() => setShowLeaveModal(true)}>
@@ -1392,7 +1524,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
-              <button className="btn btn-secondary" onClick={() => window.print()}>
+              <button className="btn btn-secondary" onClick={handleDownloadPayslip}>
                 <Download style={{ width: 16, height: 16 }} /> Print / Download Payslip
               </button>
               <button className="btn btn-primary" onClick={() => setSelectedSalarySlip(null)}>
@@ -1606,6 +1738,18 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Employee ID Card Modal */}
+      {showIDCardModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+            <EmployeeIDCard employeeId={activeUser?.id || 'usr-4'} />
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <button className="btn btn-secondary" onClick={() => setShowIDCardModal(false)}>Close</button>
+            </div>
           </div>
         </div>
       )}

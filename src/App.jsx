@@ -204,7 +204,8 @@ function MainLayout() {
     }
   };
 
-  const navItems = allNavItems.filter(item => !item.roles || item.roles.includes(currentRole));
+  const normalizedRole = (currentRole || '').toUpperCase();
+  const navItems = allNavItems.filter(item => !item.roles || item.roles.includes(normalizedRole));
 
   const navigateTo = (url, id) => {
     navigate(url);

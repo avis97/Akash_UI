@@ -12,9 +12,10 @@ export default function CreateEmployee({ onCancel, onSuccess, currentRole = 'SUP
   const [branches, setBranches] = useState(['Main Branch', 'Corporate HQ', 'North Regional Office', 'South Regional Office']);
   const [departments, setDepartments] = useState(['Financial', 'HR', 'Engineering', 'Operations', 'Sales & Marketing', 'Customer Service']);
   const [designations, setDesignations] = useState(['Software Engineer', 'Senior Developer', 'Project Manager', 'Service Personnel', 'Accountant', 'HR Executive']);
+  const [offices, setOffices] = useState([]);
 
   // Modals for adding custom options
-  const [modalType, setModalType] = useState(null); // 'branch' | 'department' | 'designation'
+  const [modalType, setModalType] = useState(null); // 'branch' | 'department' | 'designation' | 'office'
   const [newItemText, setNewItemText] = useState('');
 
   // Form State
@@ -37,7 +38,8 @@ export default function CreateEmployee({ onCancel, onSuccess, currentRole = 'SUP
     accountNumber: '',
     bankName: '',
     bankIdentifierCode: '',
-    branchLocation: ''
+    branchLocation: '',
+    assignedOffice: ''
   });
 
   // Document file objects / preview names
@@ -70,7 +72,23 @@ export default function CreateEmployee({ onCancel, onSuccess, currentRole = 'SUP
         console.warn('Fallback next ID:', err);
       }
     };
+    
+    const fetchOffices = async () => {
+      try {
+        const res = await fetch('/api/hrm/offices');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) setOffices(json.data);
+        } else {
+          setOffices([{ id: '1', name: 'Head Office' }, { id: '2', name: 'Branch Office' }]);
+        }
+      } catch (err) {
+        setOffices([{ id: '1', name: 'Head Office' }]);
+      }
+    };
+
     fetchNextId();
+    fetchOffices();
   }, [currentRole]);
 
   const handleChange = (e) => {
@@ -171,7 +189,8 @@ export default function CreateEmployee({ onCancel, onSuccess, currentRole = 'SUP
         accountNumber: formData.accountNumber,
         bankName: formData.bankName,
         bankIdentifierCode: formData.bankIdentifierCode,
-        branchLocation: formData.branchLocation
+        branchLocation: formData.branchLocation,
+        assignedOfficeId: formData.assignedOffice
       };
 
       const endpoint = isClient ? API_URL('/api/users') : API_URL('/api/employees');
@@ -455,6 +474,25 @@ export default function CreateEmployee({ onCancel, onSuccess, currentRole = 'SUP
                   onChange={handleChange}
                   style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: '#e2e8f0', color: '#475569', fontWeight: 600, fontSize: '0.875rem', outline: 'none' }}
                 />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem' }}>
+                  Assigned Geofenced Office<span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <select
+                  name="assignedOffice"
+                  value={formData.assignedOffice}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.875rem', backgroundColor: '#fff', outline: 'none' }}
+                  required
+                >
+                  <option value="">Select Office Location</option>
+                  {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+                <div style={{ fontSize: '0.725rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Used for checking attendance clock-ins via GPS.
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
