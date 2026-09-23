@@ -22,6 +22,41 @@ import {
   Check,
   X
 } from 'lucide-react';
+import { parseCoordinates, reverseGeocode } from '../utils/locationUtils';
+
+const LocationDisplay = ({ location }) => {
+  const [address, setAddress] = useState(location || 'Office HO (Web Punch)');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const coords = parseCoordinates(location);
+    if (coords) {
+      setLoading(true);
+      reverseGeocode(coords.lat, coords.lng)
+        .then(resolved => {
+          if (isMounted && resolved) {
+            setAddress(resolved);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+    } else {
+      setAddress(location || 'Office HO (Web Punch)');
+    }
+    return () => { isMounted = false; };
+  }, [location]);
+
+  return (
+    <span title={location || ''} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', wordBreak: 'break-word' }}>
+      📍 {address}
+      {loading && <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>(resolving...)</span>}
+    </span>
+  );
+};
+
 
 const formatUserRole = (role) => {
   if (!role) return 'Employee';
@@ -383,17 +418,28 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
     const submitPunch = async (coords = null) => {
       try {
+        let locationName = 'Office HO (Web Punch)';
+        if (coords) {
+          locationName = `GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`;
+          try {
+            const resolvedAddr = await reverseGeocode(coords.latitude, coords.longitude);
+            if (resolvedAddr) {
+              locationName = resolvedAddr;
+            }
+          } catch (geoErr) {
+            console.warn('Reverse geocoding error during check-in:', geoErr);
+          }
+        }
+
         const payload = {
           userId: activeUser?.id,
           userName: activeUser?.name || activeUser?.email || 'Staff Member',
-          method: 'WEB'
+          method: 'WEB',
+          location: locationName
         };
         if (coords) {
           payload.latitude = coords.latitude;
           payload.longitude = coords.longitude;
-          payload.location = `GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`;
-        } else {
-          payload.location = 'Office HO (Web Punch)';
         }
 
         const res = await fetch('/api/attendance/check-in', {
@@ -857,7 +903,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <td>{typeof att.date === 'string' ? att.date.slice(0, 10) : new Date(att.date).toISOString().slice(0, 10)}</td>
                   <td>{att.checkInTime}</td>
                   <td>{att.checkOutTime || 'Present In Field'}</td>
-                  <td>📍 {att.location}</td>
+                  <td><LocationDisplay location={att.location} /></td>
                   <td>
                     <span style={{
                       padding: '0.2rem 0.5rem',

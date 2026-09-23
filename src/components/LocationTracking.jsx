@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PageHeader from './common/PageHeader';
 import { MapPin, Navigation, History, Bell, Plus, Phone, Search, CheckCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { parseCoordinates, reverseGeocode } from '../utils/locationUtils';
+
+const LocationText = ({ location, batteryLevel }) => {
+  const [addr, setAddr] = useState(location);
+
+  useEffect(() => {
+    let active = true;
+    const coords = parseCoordinates(location);
+    if (coords) {
+      reverseGeocode(coords.lat, coords.lng).then(res => {
+        if (active && res) setAddr(res);
+      });
+    } else {
+      setAddr(location);
+    }
+    return () => { active = false; };
+  }, [location]);
+
+  return (
+    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+      📍 {addr} {batteryLevel !== undefined ? `(Battery: ${batteryLevel}%)` : ''}
+    </div>
+  );
+};
 
 const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = () => {} }) => {
   const [locations, setLocations] = useState(data.locations || []);
@@ -363,9 +387,7 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
                             📱 {phone}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                          📍 {loc.address} (Battery: {loc.batteryLevel}%)
-                        </div>
+                        <LocationText location={loc.address} batteryLevel={loc.batteryLevel} />
                       </div>
                       <button 
                         className="btn btn-secondary" 
