@@ -66,9 +66,12 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
   // Sync prop updates if parent passes new data
   useEffect(() => {
+    if (initialMeetings && initialMeetings.length > 0) setMeetings(initialMeetings);
+    if (initialRequests && initialRequests.length > 0) setMaterialRequests(initialRequests);
+    if (initialUsers && initialUsers.length > 0) setUsers(initialUsers);
     if (initialProjects && initialProjects.length > 0) setProjects(initialProjects);
     if (initialProducts && initialProducts.length > 0) setProducts(initialProducts);
-  }, [initialProjects, initialProducts]);
+  }, [initialMeetings, initialRequests, initialUsers, initialProjects, initialProducts]);
 
   // Deletion modals
   const [deletingMeeting, setDeletingMeeting] = useState(null);
@@ -413,7 +416,11 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
       });
       const json = await res.json();
       if (json.success) {
+        if (json.data) {
+          setMaterialRequests(prev => [json.data, ...prev.filter(r => r.id !== json.data.id)]);
+        }
         setShowMaterialModal(false);
+        setActiveTab('materials');
         setNewMatReq({
           subject: '',
           requestedForUserId: '',
@@ -430,8 +437,10 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
           justification: '',
           expectedUsage: ''
         });
-        fetchMeetingsData();
+        await fetchMeetingsData();
         if (onRefresh) onRefresh();
+      } else {
+        alert(json.message || 'Failed to submit material request');
       }
     } catch (err) {
       console.error(err);
@@ -449,9 +458,14 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
       });
       const json = await res.json();
       if (json.success) {
+        if (json.data) {
+          setMaterialRequests(prev => prev.map(r => r.id === editingMatReq.id ? json.data : r));
+        }
         setEditingMatReq(null);
-        fetchMeetingsData();
+        await fetchMeetingsData();
         if (onRefresh) onRefresh();
+      } else {
+        alert(json.message || 'Failed to update material request');
       }
     } catch (err) {
       console.error(err);
@@ -466,9 +480,12 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
       });
       const json = await res.json();
       if (json.success) {
+        setMaterialRequests(prev => prev.filter(r => r.id !== deletingMaterialReq.id));
         setDeletingMaterialReq(null);
-        fetchMeetingsData();
+        await fetchMeetingsData();
         if (onRefresh) onRefresh();
+      } else {
+        alert(json.message || 'Failed to delete material request');
       }
     } catch (err) {
       console.error(err);
@@ -487,7 +504,10 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
       });
       const json = await res.json();
       if (json.success) {
-        fetchMeetingsData();
+        if (json.data) {
+          setMaterialRequests(prev => prev.map(r => r.id === reqId ? json.data : r));
+        }
+        await fetchMeetingsData();
         if (onRefresh) onRefresh();
       } else {
         alert(json.message || 'Error processing approval');

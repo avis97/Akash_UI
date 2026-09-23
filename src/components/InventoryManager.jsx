@@ -345,7 +345,11 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
       });
       const json = await res.json();
       if (json.success) {
+        if (json.data) {
+          setMaterialRequests(prev => [json.data, ...prev.filter(r => r.id !== json.data.id)]);
+        }
         setShowMaterialModal(false);
+        setActiveTab('requests');
         setNewMatReq({
           subject: '',
           requestedForUserId: '',
@@ -363,7 +367,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
           justification: '',
           expectedUsage: ''
         });
-        fetchMaterialRequests();
+        await fetchMaterialRequests();
         if (onRefresh) onRefresh();
       } else {
         alert(json.message || 'Failed to submit material request');
@@ -384,8 +388,11 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
       });
       const json = await res.json();
       if (json.success) {
+        if (json.data) {
+          setMaterialRequests(prev => prev.map(r => r.id === editingMatReq.id ? json.data : r));
+        }
         setEditingMatReq(null);
-        fetchMaterialRequests();
+        await fetchMaterialRequests();
         if (onRefresh) onRefresh();
       } else {
         alert(json.message || 'Failed to update material request');
@@ -403,9 +410,12 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
       });
       const json = await res.json();
       if (json.success) {
+        setMaterialRequests(prev => prev.filter(r => r.id !== deletingMaterialReq.id));
         setDeletingMaterialReq(null);
-        fetchMaterialRequests();
+        await fetchMaterialRequests();
         if (onRefresh) onRefresh();
+      } else {
+        alert(json.message || 'Failed to delete material request');
       }
     } catch (err) {
       console.error(err);
@@ -424,7 +434,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
       });
       const json = await res.json();
       if (json.success) {
-        fetchMaterialRequests();
+        if (json.data) {
+          setMaterialRequests(prev => prev.map(r => r.id === matId ? json.data : r));
+        }
+        await fetchMaterialRequests();
         if (onRefresh) onRefresh();
       } else {
         alert(json.message || 'Approval action failed');

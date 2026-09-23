@@ -848,7 +848,6 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 style={{ borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
                 onClick={() => handleOpenBasicSalaryModal(selectedUserObj || staffUsers[0])}
               >
-                <DollarSign style={{ width: 16, height: 16, color: '#0d9488' }} />
                 Set Basic Salary
               </button>
 
