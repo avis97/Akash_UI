@@ -4,6 +4,7 @@ import Login from './components/Login';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import MainContent from './components/layout/MainContent';
+import ToastContainer from './components/common/ToastNotification';
 import { allNavItems } from './config/navigationConfig';
 import { API_URL } from './config/api';
 
@@ -269,6 +270,7 @@ function MainLayout() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ToastContainer />
       <MainLayout />
     </BrowserRouter>
   );

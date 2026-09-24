@@ -87,7 +87,23 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
     }));
   };
 
-  // Filter meetings assigned to currently logged-in employee/user
+  // Filter meetings for Client or Employee
+  const isClient = role === 'CLIENT' || currentUser?.role === 'CLIENT';
+  const isEmployee = role === 'EMPLOYEE' || role === 'SERVICE_PERSONNEL' || role === 'FACILITY_MANAGER' || currentUser?.role === 'EMPLOYEE';
+
+  const clientMeetings = meetings.filter(m => {
+    if (!currentUser) return false;
+    const clientName = currentUser.name?.toLowerCase().trim();
+    const clientId = currentUser.id;
+    const clientEmail = currentUser.email?.toLowerCase().trim();
+
+    return Boolean(
+      (clientId && m.clientId === clientId) ||
+      (clientName && m.clientName?.toLowerCase().trim() === clientName) ||
+      (clientEmail && m.clientEmail?.toLowerCase().trim() === clientEmail)
+    );
+  });
+
   const myMeetings = meetings.filter(m => {
     if (!currentUser) return false;
     return m.assignedToId === currentUser.id ||
@@ -95,7 +111,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
            (m.assignedTo?.email && currentUser.email && m.assignedTo.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim());
   });
 
-  const displayedMeetings = (meetingFilter === 'my' && (currentUser || role === 'EMPLOYEE')) ? myMeetings : meetings;
+  const displayedMeetings = isClient ? clientMeetings : ((meetingFilter === 'my' || isEmployee) ? myMeetings : meetings);
 
   // Derived Client and Employee Lists for selection
   const registeredClients = users.filter(u => u.role === 'CLIENT' || u.role === 'USER');

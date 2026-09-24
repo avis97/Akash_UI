@@ -24,7 +24,7 @@ export default function MainContent({
       {activeTab === 'dashboard' || activeTab.startsWith('dashboard_') ? (
         <Dashboard data={crmData} currentRole={currentRole} currentUser={currentUser} activeTab={activeTab} />
       ) : activeTab === 'projects' || activeTab === 'project' ? (
-        <ProjectManagement data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+        <ProjectManagement data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'service_meeting' ? (
         <ServiceMeetings
           meetings={crmData.serviceMeetings}
@@ -46,13 +46,13 @@ export default function MainContent({
           projects={crmData.projects}
         />
       ) : activeTab === 'site_amc' || activeTab === 'site_amc_tracker' ? (
-        <SiteAMCTracker data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+        <SiteAMCTracker data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'location_tracking' ? (
-        <LocationTracking data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+        <LocationTracking data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'products_inventory' || activeTab === 'products_stock' || activeTab === 'products' ? (
-        <InventoryManager data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+        <InventoryManager data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'hrm_sys_employee_setup' || activeTab === 'hrm_employee' || activeTab === 'employee' ? (
-        <UserManagement data={crmData} currentRole={currentRole} onRefresh={onRefresh} initialTab="employees" />
+        <UserManagement data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} initialTab="employees" />
       ) : activeTab === 'hrm_attendance' ? (
         <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="attendance" />
       ) : activeTab === 'hrm_payroll' ? (
@@ -66,11 +66,11 @@ export default function MainContent({
       ) : activeTab === 'acc_invoices' ? (
         <BillingQuotations data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="invoices" />
       ) : activeTab === 'acc_purchases' || activeTab === 'purchases' ? (
-        <PurchaseVouchers data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+        <PurchaseVouchers data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'acc_vouchers' || activeTab === 'vouchers' ? (
-        <PurchaseVouchers data={crmData} currentRole={currentRole} onRefresh={onRefresh} defaultTab="vouchers" />
+        <PurchaseVouchers data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="vouchers" />
       ) : activeTab === 'user_accounts' || activeTab === 'user_activity_logs' || activeTab === 'user_management' ? (
-        <UserManagement data={crmData} currentRole={currentRole} onRefresh={onRefresh} />
+        <UserManagement data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : (
         <div className="glass-card" style={{ padding: '2.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>

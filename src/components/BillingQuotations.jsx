@@ -131,6 +131,38 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
   const registeredClients = users.filter(u => u.role === 'CLIENT' || u.role === 'USER');
   const availableEmployees = users.filter(u => u.role === 'EMPLOYEE' || u.role === 'SERVICE_PERSONNEL' || u.role === 'FACILITY_MANAGER');
 
+  const isClient = currentRole === 'CLIENT' || currentUser?.role === 'CLIENT';
+
+  const displayedInvoices = invoices.filter(inv => {
+    if (isClient && currentUser) {
+      const clientName = currentUser.name?.toLowerCase().trim();
+      const clientId = currentUser.id;
+      const clientEmail = currentUser.email?.toLowerCase().trim();
+
+      const matchesId = clientId && inv.clientId === clientId;
+      const matchesName = clientName && inv.clientName?.toLowerCase().trim() === clientName;
+      const matchesEmail = clientEmail && inv.clientEmail?.toLowerCase().trim() === clientEmail;
+
+      return Boolean(matchesId || matchesName || matchesEmail);
+    }
+    return true;
+  });
+
+  const displayedQuotations = quotations.filter(q => {
+    if (isClient && currentUser) {
+      const clientName = currentUser.name?.toLowerCase().trim();
+      const clientId = currentUser.id;
+      const clientEmail = currentUser.email?.toLowerCase().trim();
+
+      const matchesId = clientId && q.clientId === clientId;
+      const matchesName = clientName && q.clientName?.toLowerCase().trim() === clientName;
+      const matchesEmail = clientEmail && q.clientEmail?.toLowerCase().trim() === clientEmail;
+
+      return Boolean(matchesId || matchesName || matchesEmail);
+    }
+    return true;
+  });
+
   // Handle client selection when creating quotation
   const handleClientSelect = (clientId) => {
     if (!clientId) {
@@ -1004,7 +1036,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </tr>
             </thead>
             <tbody>
-              {invoices.map(inv => (
+              {displayedInvoices.map(inv => (
                 <tr key={inv.id}>
                   <td>
                     <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)' }}>
@@ -1104,7 +1136,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </tr>
             </thead>
             <tbody>
-              {quotations.map(q => (
+              {displayedQuotations.map(q => (
                 <tr key={q.id}>
                   <td>
                     <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)' }}>

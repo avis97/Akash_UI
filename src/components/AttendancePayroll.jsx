@@ -20,9 +20,16 @@ import {
   Filter,
   ShieldCheck,
   Check,
-  X
+  X,
+  LogIn,
+  LogOut,
+  MapPin,
+  Grid,
+  List,
+  Eye
 } from 'lucide-react';
 import { parseCoordinates, reverseGeocode } from '../utils/locationUtils';
+import { toast } from './common/ToastNotification';
 
 const LocationDisplay = ({ location }) => {
   const [address, setAddress] = useState(location || 'Office HO (Web Punch)');
@@ -93,14 +100,49 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const [editingSal, setEditingSal] = useState(null);
   const [deletingSal, setDeletingSal] = useState(null);
 
-  // Set Basic Salary Modal State
+  // Set Salary & Payroll Breakdown Modal State
   const [showBasicSalaryModal, setShowBasicSalaryModal] = useState(false);
   const [basicSalaryUser, setBasicSalaryUser] = useState(null);
-  const [basicSalaryInput, setBasicSalaryInput] = useState('30000');
+  const [salaryInputs, setSalaryInputs] = useState({
+    basicSalary: '30000',
+    others1: '0',
+    others2: '0',
+    others3: '0',
+    others4: '0',
+    epfShare: '3600',
+    esiShare: '225',
+    pTax: '110'
+  });
 
   const handleOpenBasicSalaryModal = (user) => {
     setBasicSalaryUser(user);
-    setBasicSalaryInput((user.baseSalary || user.basicSalary || 30000).toString());
+    const basic = user.basicSalary || user.baseSalary || 0;
+    const o1 = user.others1 || 0;
+    const o2 = user.others2 || 0;
+    const o3 = user.others3 || 0;
+    const o4 = user.others4 || 0;
+    const gross = basic + o1 + o2 + o3 + o4;
+
+    const defaultEpf = user.epfShare !== undefined && user.epfShare !== null && user.epfShare > 0 
+      ? user.epfShare 
+      : Math.round(basic * 0.12);
+
+    const defaultEsi = user.esiShare !== undefined && user.esiShare !== null && user.esiShare > 0 
+      ? user.esiShare 
+      : Math.round(gross * 0.0075);
+
+    const defaultPtax = user.pTax !== undefined && user.pTax !== null ? user.pTax : 110;
+
+    setSalaryInputs({
+      basicSalary: basic.toString(),
+      others1: o1.toString(),
+      others2: o2.toString(),
+      others3: o3.toString(),
+      others4: o4.toString(),
+      epfShare: defaultEpf.toString(),
+      esiShare: defaultEsi.toString(),
+      pTax: defaultPtax.toString()
+    });
     setShowBasicSalaryModal(true);
   };
 
@@ -115,7 +157,16 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
           'Content-Type': 'application/json',
           ...(localStorage.getItem('token') ? { 'Authorization': `Bearer ${localStorage.getItem('token')}` } : {})
         },
-        body: JSON.stringify({ basicSalary: Number(basicSalaryInput) })
+        body: JSON.stringify({
+          basicSalary: Number(salaryInputs.basicSalary) || 0,
+          others1: Number(salaryInputs.others1) || 0,
+          others2: Number(salaryInputs.others2) || 0,
+          others3: Number(salaryInputs.others3) || 0,
+          others4: Number(salaryInputs.others4) || 0,
+          epfShare: Number(salaryInputs.epfShare) || 0,
+          esiShare: Number(salaryInputs.esiShare) || 0,
+          pTax: Number(salaryInputs.pTax) || 0
+        })
       });
       const json = await res.json();
       if (json.success) {
@@ -123,13 +174,13 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         fetchAttendanceData();
         fetchMonthlyReport();
         if (onRefresh) onRefresh();
-        alert(`Basic salary updated for ${basicSalaryUser.userName || basicSalaryUser.name} to ₹${Number(basicSalaryInput).toLocaleString()}`);
+        toast.success(`Salary details successfully updated for ${basicSalaryUser.userName || basicSalaryUser.name}`);
       } else {
-        alert(json.message || 'Failed to update basic salary');
+        toast.error(json.message || 'Failed to update salary details');
       }
     } catch (err) {
       console.error(err);
-      alert('Error updating basic salary');
+      toast.error('Error updating salary details');
     }
   };
 
@@ -277,6 +328,13 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     month: selectedMonth,
     year: selectedYear,
     baseSalary: '45000',
+    others1: '0',
+    others2: '0',
+    others3: '0',
+    others4: '0',
+    epfShare: '5400',
+    esiShare: '338',
+    pTax: '110',
     overtimeHours: '0',
     allowances: '2500',
     deductions: '0'
@@ -301,14 +359,37 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     }
 
     const userAtt = attendance.filter(a => a.userId === userId || a.userName === selectedUser.name);
-    const lateCount = userAtt.filter(a => a.status === 'LATE').length;
-    const baseSal = selectedUser.salary || selectedUser.baseSalary || 45000;
+    const lateCount = userAtt.filter(a => a.status === 'LATE' || a.status === 'Late').length;
+    const basic = selectedUser.basicSalary || selectedUser.baseSalary || selectedUser.salary || 45000;
+    const o1 = selectedUser.others1 || 0;
+    const o2 = selectedUser.others2 || 0;
+    const o3 = selectedUser.others3 || 0;
+    const o4 = selectedUser.others4 || 0;
+    const gross = basic + o1 + o2 + o3 + o4;
+
+    const defaultEpf = selectedUser.epfShare !== undefined && selectedUser.epfShare !== null && selectedUser.epfShare > 0 
+      ? selectedUser.epfShare 
+      : Math.round(basic * 0.12);
+
+    const defaultEsi = selectedUser.esiShare !== undefined && selectedUser.esiShare !== null && selectedUser.esiShare > 0 
+      ? selectedUser.esiShare 
+      : Math.round(gross * 0.0075);
+
+    const defaultPtax = selectedUser.pTax !== undefined && selectedUser.pTax !== null ? selectedUser.pTax : 110;
     const autoDeductions = lateCount * 250;
 
     setNewSalary(prev => ({
       ...prev,
       userId,
-      baseSalary: baseSal.toString(),
+      baseSalary: basic.toString(),
+      others1: o1.toString(),
+      others2: o2.toString(),
+      others3: o3.toString(),
+      others4: o4.toString(),
+      epfShare: defaultEpf.toString(),
+      esiShare: defaultEsi.toString(),
+      pTax: defaultPtax.toString(),
+      allowances: (o1 + o2 + o3 + o4).toString(),
       deductions: autoDeductions.toString()
     }));
   };
@@ -324,13 +405,16 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       });
       const json = await res.json();
       if (json.success) {
-        alert(json.message);
+        toast.success(json.message || 'Batch salary generation completed');
         fetchAttendanceData();
         fetchMonthlyReport();
         if (onRefresh) onRefresh();
+      } else {
+        toast.error(json.message || 'Failed to generate batch salaries');
       }
     } catch (err) {
       console.error(err);
+      toast.error('Error processing batch salary generation');
     } finally {
       setIsGeneratingBatch(false);
     }
@@ -345,6 +429,16 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newSalary,
+          baseSalary: Number(newSalary.baseSalary) || 0,
+          basicSalary: Number(newSalary.baseSalary) || 0,
+          others1: Number(newSalary.others1) || 0,
+          others2: Number(newSalary.others2) || 0,
+          others3: Number(newSalary.others3) || 0,
+          others4: Number(newSalary.others4) || 0,
+          epfShare: Number(newSalary.epfShare) || 0,
+          esiShare: Number(newSalary.esiShare) || 0,
+          pTax: Number(newSalary.pTax) || 0,
+          allowances: ((Number(newSalary.others1)||0) + (Number(newSalary.others2)||0) + (Number(newSalary.others3)||0) + (Number(newSalary.others4)||0)) || Number(newSalary.allowances) || 0,
           userName: selectedUser ? selectedUser.name : 'Staff Member'
         })
       });
@@ -354,9 +448,13 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         fetchAttendanceData();
         fetchMonthlyReport();
         if (onRefresh) onRefresh();
+        toast.success(json.message || `Salary details updated & payslip generated successfully!`);
+      } else {
+        toast.error(json.message || 'Failed to generate salary slip');
       }
     } catch (err) {
       console.error(err);
+      toast.error('Error generating salary slip');
     }
   };
 
@@ -399,6 +497,9 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   const [isPunching, setIsPunching] = useState(false);
 
+  const [attendanceViewMode, setAttendanceViewMode] = useState('calendar'); // 'calendar' | 'list'
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
+
   const hasPunchedToday = (attendance || []).some(a => {
     const isSameUser = (activeUser?.id && a.userId === activeUser.id) || (activeUser?.name && a.userName?.toLowerCase() === activeUser.name.toLowerCase());
     if (!isSameUser || !a.date) return false;
@@ -406,19 +507,27 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     const now = new Date();
     return aDate.getFullYear() === now.getFullYear() &&
            aDate.getMonth() === now.getMonth() &&
-           aDate.getDate() === now.getDate();
+           aDate.getDate() === now.getDate() &&
+           Boolean(a.checkInTime);
+  });
+
+  const hasPunchedOutToday = (attendance || []).some(a => {
+    const isSameUser = (activeUser?.id && a.userId === activeUser.id) || (activeUser?.name && a.userName?.toLowerCase() === activeUser.name.toLowerCase());
+    if (!isSameUser || !a.date) return false;
+    const aDate = new Date(a.date);
+    const now = new Date();
+    return aDate.getFullYear() === now.getFullYear() &&
+           aDate.getMonth() === now.getMonth() &&
+           aDate.getDate() === now.getDate() &&
+           Boolean(a.checkOutTime);
   });
 
   const handleWebCheckIn = async () => {
-    if (hasPunchedToday) {
-      alert("You have already punched attendance for today! Multiple punches on the same day are not allowed.");
-      return;
-    }
     setIsPunching(true);
 
     const submitPunch = async (coords = null) => {
       try {
-        let locationName = 'Office HO (Web Punch)';
+        let locationName = 'Office HO (Web Check-In)';
         if (coords) {
           locationName = `GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`;
           try {
@@ -452,13 +561,17 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
           fetchAttendanceData();
           fetchMonthlyReport();
           if (onRefresh) onRefresh();
-          alert(`Attendance Check-in Successful!\nStatus: ${json.data.status}\nTime: ${json.data.checkInTime}\nLocation: ${json.data.location}`);
+          if (json.alreadyPunched) {
+            toast.info(json.message || `Check-in already recorded today at ${json.data?.checkInTime}`, 'Attendance Record Exist');
+          } else {
+            toast.success(`Check-In Successful!\nStatus: ${json.data.status}\nTime: ${json.data.checkInTime}\nLocation: ${json.data.location}`, 'Check-In Recorded');
+          }
         } else {
-          alert(json.message || 'Attendance check-in failed');
+          toast.error(json.message || 'Attendance check-in failed');
         }
       } catch (err) {
         console.error(err);
-        alert('Error recording attendance check-in');
+        toast.error('Error recording attendance check-in');
       } finally {
         setIsPunching(false);
       }
@@ -482,6 +595,137 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       submitPunch(null);
     }
   };
+
+  const handleWebCheckOut = async () => {
+    setIsPunching(true);
+
+    const submitPunchOut = async (coords = null) => {
+      try {
+        let locationName = 'Office HO (Web Check-Out)';
+        if (coords) {
+          locationName = `GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`;
+          try {
+            const resolvedAddr = await reverseGeocode(coords.latitude, coords.longitude);
+            if (resolvedAddr) {
+              locationName = resolvedAddr;
+            }
+          } catch (geoErr) {
+            console.warn('Reverse geocoding error during check-out:', geoErr);
+          }
+        }
+
+        const payload = {
+          userId: activeUser?.id,
+          userName: activeUser?.name || activeUser?.email || 'Staff Member',
+          method: 'WEB',
+          location: locationName
+        };
+        if (coords) {
+          payload.latitude = coords.latitude;
+          payload.longitude = coords.longitude;
+        }
+
+        const res = await fetch('/api/attendance/check-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          fetchAttendanceData();
+          fetchMonthlyReport();
+          if (onRefresh) onRefresh();
+          toast.success(`Check-Out Recorded Successfully!\nTime: ${json.data?.checkOutTime || 'Out'}\nLocation: ${json.data?.location || locationName}`, 'Check-Out Recorded');
+        } else {
+          toast.error(json.message || 'Attendance check-out failed');
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error('Error recording attendance check-out');
+      } finally {
+        setIsPunching(false);
+      }
+    };
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          submitPunchOut({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.warn('Geolocation unavailable or denied:', error.message);
+          submitPunchOut(null);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    } else {
+      submitPunchOut(null);
+    }
+  };
+
+  // Month Calendar Days Generator for selected employee & month
+  const calendarDays = useMemo(() => {
+    const monthMap = {
+      'January': 0, 'February': 1, 'March': 2, 'April': 3,
+      'May': 4, 'June': 5, 'July': 6, 'August': 7,
+      'September': 8, 'October': 9, 'November': 10, 'December': 11
+    };
+    const mIdx = monthMap[selectedMonth] !== undefined ? monthMap[selectedMonth] : 8;
+    const yr = Number(selectedYear) || 2026;
+    const totalDaysInMonth = new Date(yr, mIdx + 1, 0).getDate();
+
+    const days = [];
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    for (let dayNum = 1; dayNum <= totalDaysInMonth; dayNum++) {
+      const dateObj = new Date(yr, mIdx, dayNum);
+      const dateStr = `${yr}-${String(mIdx + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      const dayOfWeek = dateObj.getDay(); // 0 = Sun, 6 = Sat
+      const isSunday = dayOfWeek === 0;
+
+      // Find attendance log for this date and selected staff
+      const attRecord = (displayedAttendance || []).find(a => {
+        if (!a.date) return false;
+        const d = typeof a.date === 'string' ? a.date.slice(0, 10) : new Date(a.date).toISOString().slice(0, 10);
+        return d === dateStr;
+      });
+
+      // Find leave record for this date
+      const leaveRecord = (displayedLeaves || []).find(l => {
+        if (l.status !== 'APPROVED') return false;
+        const s = typeof l.startDate === 'string' ? l.startDate.slice(0, 10) : new Date(l.startDate).toISOString().slice(0, 10);
+        const e = typeof l.endDate === 'string' ? l.endDate.slice(0, 10) : new Date(l.endDate).toISOString().slice(0, 10);
+        return dateStr >= s && dateStr <= e;
+      });
+
+      let status = 'UPCOMING';
+      if (attRecord) {
+        status = attRecord.status || 'PRESENT';
+      } else if (leaveRecord) {
+        status = 'LEAVE';
+      } else if (isSunday) {
+        status = 'WEEKEND';
+      } else if (dateStr < todayStr) {
+        status = 'ABSENT';
+      }
+
+      days.push({
+        dayNum,
+        dateObj,
+        dateStr,
+        dayOfWeek,
+        dayName: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek],
+        attRecord,
+        leaveRecord,
+        status
+      });
+    }
+
+    return days;
+  }, [selectedMonth, selectedYear, displayedAttendance, displayedLeaves]);
 
   const handleEditAttendance = async (e) => {
     e.preventDefault();
@@ -831,9 +1075,46 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         </div>
 
         <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" style={{ padding: '0.28rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={handleWebCheckIn}>
-            <Clock style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
-            Web Attendance Punch
+          <button 
+            className="btn btn-primary" 
+            style={{ 
+              padding: '0.35rem 0.75rem', 
+              fontSize: '0.8rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.35rem', 
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+              border: 'none',
+              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+              cursor: isPunching ? 'not-allowed' : 'pointer'
+            }} 
+            onClick={handleWebCheckIn}
+            disabled={isPunching}
+            title="Record morning attendance check-in"
+          >
+            <LogIn style={{ width: 15, height: 15 }} />
+            {isPunching ? 'Punching...' : 'Web Punch In'}
+          </button>
+
+          <button 
+            className="btn btn-primary" 
+            style={{ 
+              padding: '0.35rem 0.75rem', 
+              fontSize: '0.8rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.35rem', 
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+              border: 'none',
+              boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)',
+              cursor: isPunching ? 'not-allowed' : 'pointer'
+            }} 
+            onClick={handleWebCheckOut}
+            disabled={isPunching}
+            title="Record evening attendance check-out"
+          >
+            <LogOut style={{ width: 15, height: 15 }} />
+            {isPunching ? 'Punching...' : 'Web Punch Out'}
           </button>
           
           <button className="btn btn-secondary" onClick={() => setShowLeaveModal(true)}>
@@ -870,90 +1151,224 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         </div>
       </div>
 
-      {/* TAB 1: Daily Attendance Register */}
+      {/* TAB 1: Daily Attendance Register / Calendar View */}
       {activeTab === 'attendance' && (
         <div className="glass-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
-              {isEmployee ? 'My Daily Punch & Attendance Logs' : 'All Staff Daily Attendance Register'}
-            </h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Source: Mobile GPS / Biometric Hardware / Web Check-in
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>
+                {isEmployee ? 'My Attendance Calendar & Punch Logs' : 'All Staff Attendance Calendar & Daily Register'}
+              </h3>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                Viewing: {selectedStaffId !== 'ALL' ? (selectedUserObj?.name || 'Selected Employee') : 'All Staff Members'} ({selectedMonth} {selectedYear})
+              </span>
+            </div>
+
+            {/* View Mode Toggle: Calendar vs Table List */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+              <button
+                type="button"
+                className={`btn ${attendanceViewMode === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                onClick={() => setAttendanceViewMode('calendar')}
+              >
+                <Grid size={14} />
+                Month Calendar View
+              </button>
+              <button
+                type="button"
+                className={`btn ${attendanceViewMode === 'list' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                onClick={() => setAttendanceViewMode('list')}
+              >
+                <List size={14} />
+                Register Table View ({displayedAttendance.length})
+              </button>
+            </div>
           </div>
 
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Date</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Location / Site</th>
-                <th>Punch Method</th>
-                <th>Status</th>
-                {!isEmployee && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {displayedAttendance.map(att => (
-                <tr key={att.id}>
-                  <td><strong>{(users || []).find(u => u.id === att.userId)?.name || (att.userName && att.userName !== 'Staff Member' ? att.userName : 'Staff Member')}</strong></td>
-                  <td>{typeof att.date === 'string' ? att.date.slice(0, 10) : new Date(att.date).toISOString().slice(0, 10)}</td>
-                  <td>{att.checkInTime}</td>
-                  <td>{att.checkOutTime || 'Present In Field'}</td>
-                  <td><LocationDisplay location={att.location} /></td>
-                  <td>
-                    <span style={{
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      background: 'rgba(255,255,255,0.06)',
-                      fontWeight: 600
-                    }}>
-                      {att.method}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${att.status === 'LATE' ? 'badge-pending' : 'badge-present'}`}>
-                      {att.status === 'LATE' ? '⏰ LATE ENTRY' : `✓ ${att.status}`}
-                    </span>
-                  </td>
-                  {!isEmployee && (
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                        <button 
-                          className="btn btn-secondary"
-                          style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
-                          title="Edit Attendance Record"
-                          onClick={() => {
-                            setEditingAtt(att);
-                            setEditAttData({
-                              checkInTime: att.checkInTime || '09:30 AM',
-                              checkOutTime: att.checkOutTime || '06:30 PM',
-                              status: att.status || 'PRESENT',
-                              location: att.location || '',
-                              method: att.method || 'WEB'
-                            });
-                          }}
-                        >
-                          <Edit2 size={14} color="#2563eb" />
-                        </button>
-                        <button 
-                          className="btn btn-secondary"
-                          style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                          title="Delete Attendance Record"
-                          onClick={() => setDeletingAtt(att)}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+          {/* Month Calendar Grid View */}
+          {attendanceViewMode === 'calendar' ? (
+            <div>
+              {/* Status Legend Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap', fontSize: '0.78rem', background: '#f8fafc', padding: '0.5rem 0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontWeight: 600, color: '#475569' }}>Legend:</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#166534', fontWeight: 600 }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e' }}></span> Present</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#92400e', fontWeight: 600 }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }}></span> Late Entry</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#1e40af', fontWeight: 600 }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#3b82f6' }}></span> Leave</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#991b1b', fontWeight: 600 }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }}></span> Absent</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#64748b', fontWeight: 600 }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#cbd5e1' }}></span> Weekend Off</span>
+              </div>
+
+              {/* Days Grid (7 Columns) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))',
+                gap: '0.75rem'
+              }}>
+                {calendarDays.map(day => {
+                  let cardBg = '#ffffff';
+                  let borderCol = '#e2e8f0';
+                  let badgeClass = 'badge-present';
+                  let badgeText = '✓ PRESENT';
+
+                  if (day.status === 'PRESENT') {
+                    cardBg = 'rgba(34, 197, 94, 0.04)';
+                    borderCol = 'rgba(34, 197, 94, 0.3)';
+                    badgeClass = 'badge-present';
+                    badgeText = '✓ PRESENT';
+                  } else if (day.status === 'LATE') {
+                    cardBg = 'rgba(245, 158, 11, 0.05)';
+                    borderCol = 'rgba(245, 158, 11, 0.4)';
+                    badgeClass = 'badge-pending';
+                    badgeText = '⏰ LATE';
+                  } else if (day.status === 'LEAVE') {
+                    cardBg = 'rgba(59, 130, 246, 0.05)';
+                    borderCol = 'rgba(59, 130, 246, 0.3)';
+                    badgeClass = 'badge-info';
+                    badgeText = '🏖️ LEAVE';
+                  } else if (day.status === 'ABSENT') {
+                    cardBg = 'rgba(239, 68, 68, 0.04)';
+                    borderCol = 'rgba(239, 68, 68, 0.25)';
+                    badgeClass = 'badge-danger';
+                    badgeText = '❌ ABSENT';
+                  } else if (day.status === 'WEEKEND') {
+                    cardBg = '#f8fafc';
+                    borderCol = '#e2e8f0';
+                    badgeText = 'WEEKEND';
+                  } else {
+                    cardBg = '#ffffff';
+                    borderCol = '#e2e8f0';
+                    badgeText = 'UPCOMING';
+                  }
+
+                  return (
+                    <div 
+                      key={day.dateStr}
+                      onClick={() => setSelectedCalendarDay(day)}
+                      style={{
+                        background: cardBg,
+                        border: `1.5px solid ${borderCol}`,
+                        borderRadius: '10px',
+                        padding: '0.65rem 0.75rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justify: 'space-between',
+                        minHeight: 105
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
+                            {day.dayNum} <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748b' }}>{day.dayName}</span>
+                          </span>
+                          <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700 }} className={badgeClass}>
+                            {badgeText}
+                          </span>
+                        </div>
+
+                        {day.attRecord ? (
+                          <div style={{ fontSize: '0.73rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <div style={{ color: '#166534', fontWeight: 600 }}>In: {day.attRecord.checkInTime || '--'}</div>
+                            <div style={{ color: '#9a3412', fontWeight: 600 }}>Out: {day.attRecord.checkOutTime || 'Active'}</div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '0.2rem' }}>
+                            {day.status === 'WEEKEND' ? 'Sunday Off' : day.status === 'LEAVE' ? 'Leave Approved' : day.status === 'ABSENT' ? 'No punch logged' : 'No logs yet'}
+                          </div>
+                        )}
                       </div>
-                    </td>
-                  )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem', paddingTop: '0.35rem', borderTop: '1px dashed rgba(0,0,0,0.08)' }}>
+                        <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <MapPin size={10} /> {day.attRecord?.location ? 'GPS Location' : 'Details'}
+                        </span>
+                        <Eye size={12} color="#3b82f6" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Date</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Location / Site</th>
+                  <th>Punch Method</th>
+                  <th>Status</th>
+                  {!isEmployee && <th>Actions</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {displayedAttendance.map(att => (
+                  <tr key={att.id}>
+                    <td><strong>{(users || []).find(u => u.id === att.userId)?.name || (att.userName && att.userName !== 'Staff Member' ? att.userName : 'Staff Member')}</strong></td>
+                    <td>{typeof att.date === 'string' ? att.date.slice(0, 10) : new Date(att.date).toISOString().slice(0, 10)}</td>
+                    <td>{att.checkInTime}</td>
+                    <td>{att.checkOutTime || 'Present In Field'}</td>
+                    <td><LocationDisplay location={att.location} /></td>
+                    <td>
+                      <span style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        background: 'rgba(255,255,255,0.06)',
+                        fontWeight: 600
+                      }}>
+                        {att.method}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${att.status === 'LATE' ? 'badge-pending' : 'badge-present'}`}>
+                        {att.status === 'LATE' ? '⏰ LATE ENTRY' : `✓ ${att.status}`}
+                      </span>
+                    </td>
+                    {!isEmployee && (
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
+                            title="Edit Attendance Record"
+                            onClick={() => {
+                              setEditingAtt(att);
+                              setEditAttData({
+                                checkInTime: att.checkInTime || '09:30 AM',
+                                checkOutTime: att.checkOutTime || '06:30 PM',
+                                status: att.status || 'PRESENT',
+                                location: att.location || '',
+                                method: att.method || 'WEB'
+                              });
+                            }}
+                          >
+                            <Edit2 size={14} color="#2563eb" />
+                          </button>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                            title="Delete Attendance Record"
+                            onClick={() => setDeletingAtt(att)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -974,82 +1389,100 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             </button>
           </div>
 
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Employee Name</th>
-                <th>Role / Dept</th>
-                <th>Working Days</th>
-                <th>Present Days</th>
-                <th>Late Entries</th>
-                <th>Absent Days</th>
-                <th>Leaves</th>
-                <th>Base Salary</th>
-                <th>Salary Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMonthlyReport.map(item => (
-                <tr key={item.userId}>
-                  <td>
-                    <strong>{item.userName}</strong>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.email}</div>
-                  </td>
-                  <td>
-                    <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                      {item.designation}
-                    </span>
-                  </td>
-                  <td>{item.totalWorkingDays} Days</td>
-                  <td><strong style={{ color: '#10b981' }}>{item.presentDays} Days</strong></td>
-                  <td>
-                    <span style={{ color: item.lateEntries > 0 ? '#f59e0b' : '#64748b', fontWeight: item.lateEntries > 0 ? 700 : 400 }}>
-                      {item.lateEntries} Times
-                    </span>
-                  </td>
-                  <td>{item.absentDays} Days</td>
-                  <td>{item.approvedLeaves} Days</td>
-                  <td>₹{item.baseSalary ? item.baseSalary.toLocaleString() : 45000}</td>
-                  <td>
-                    <span className={`badge ${item.salaryStatus === 'PROCESSED' ? 'badge-approved' : 'badge-pending'}`}>
-                      {item.salaryStatus}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                      <button 
-                        className="btn btn-secondary" 
-                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
-                        onClick={() => handleOpenBasicSalaryModal(item)}
-                        title="Set or Edit Employee Basic Salary"
-                      >
-                        <Edit2 size={13} /> Set Basic Sal
-                      </button>
-                      <button 
-                        className="btn btn-secondary" 
-                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
-                        onClick={() => {
-                          setNewSalary({
-                            userId: item.userId,
-                            month: selectedMonth,
-                            year: selectedYear,
-                            baseSalary: (item.baseSalary || 30000).toString(),
-                            overtimeHours: '0',
-                            allowances: '2500',
-                            deductions: (item.lateEntries * 250).toString()
-                          });
-                          setShowSalaryModal(true);
-                        }}
-                      >
-                        <DollarSign size={13} /> Process Salary
-                      </button>
-                    </div>
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="custom-table" style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
+                  <th>SL NO</th>
+                  <th>NAME OF EMPLOYEES</th>
+                  <th>BASIC SALARY</th>
+                  <th>OTHERS 1</th>
+                  <th>OTHERS 2</th>
+                  <th>OTHERS 3</th>
+                  <th>OTHERS 4</th>
+                  <th style={{ background: '#fef3c7', color: '#92400e' }}>TOTAL (GROSS)</th>
+                  <th style={{ background: '#fee2e2', color: '#991b1b' }}>EPF SHARE 12%</th>
+                  <th style={{ background: '#fee2e2', color: '#991b1b' }}>ESI SHARE 0.75%</th>
+                  <th style={{ background: '#fee2e2', color: '#991b1b' }}>P TAX</th>
+                  <th style={{ background: '#d1fae5', color: '#065f46', fontWeight: 800 }}>NET TAKE HOME SALARY</th>
+                  <th>STATUS</th>
+                  <th>ACTION</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredMonthlyReport.map((item, idx) => {
+                  const basic = item.baseSalary || 0;
+                  const o1 = item.others1 || 0;
+                  const o2 = item.others2 || 0;
+                  const o3 = item.others3 || 0;
+                  const o4 = item.others4 || 0;
+                  const totalAllow = item.allowances || (o1 + o2 + o3 + o4);
+                  const gross = item.grossSalary || (basic + totalAllow);
+                  const epf = item.epfShare || Math.round(basic * 0.12);
+                  const esi = item.esiShare || Math.round(gross * 0.0075);
+                  const pt = item.pTax !== undefined && item.pTax !== null ? item.pTax : 110;
+                  const net = item.netSalary || (gross - epf - esi - pt);
+
+                  return (
+                    <tr key={item.userId}>
+                      <td><strong>{idx + 1}</strong></td>
+                      <td>
+                        <strong>{item.userName}</strong>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{item.designation || 'Staff Member'}</div>
+                      </td>
+                      <td>₹{basic.toLocaleString()}</td>
+                      <td>₹{o1.toLocaleString()}</td>
+                      <td>₹{o2.toLocaleString()}</td>
+                      <td>₹{o3.toLocaleString()}</td>
+                      <td>₹{o4.toLocaleString()}</td>
+                      <td style={{ fontWeight: 700, color: '#d97706', background: 'rgba(251, 191, 36, 0.08)' }}>₹{gross.toLocaleString()}</td>
+                      <td style={{ color: '#dc2626' }}>₹{epf.toLocaleString()}</td>
+                      <td style={{ color: '#dc2626' }}>₹{esi.toLocaleString()}</td>
+                      <td style={{ color: '#dc2626' }}>₹{pt.toLocaleString()}</td>
+                      <td style={{ fontWeight: 800, color: '#059669', background: 'rgba(16, 185, 129, 0.1)', fontSize: '0.92rem' }}>
+                        ₹{net.toLocaleString()}
+                      </td>
+                      <td>
+                        <span className={`badge ${item.salaryStatus === 'PROCESSED' ? 'badge-approved' : 'badge-pending'}`}>
+                          {item.salaryStatus}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
+                            onClick={() => handleOpenBasicSalaryModal(item)}
+                            title="Set or Edit Full Salary Breakdown"
+                          >
+                            <Edit2 size={13} /> Edit Salary Fields
+                          </button>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              setNewSalary({
+                                userId: item.userId,
+                                month: selectedMonth,
+                                year: selectedYear,
+                                baseSalary: basic.toString(),
+                                overtimeHours: '0',
+                                allowances: totalAllow.toString(),
+                                deductions: (epf + esi + pt).toString()
+                              });
+                              setShowSalaryModal(true);
+                            }}
+                          >
+                            <DollarSign size={13} /> Process Slip
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -1281,17 +1714,18 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       {/* Modal 2: Process Salary Slip Modal */}
       {showSalaryModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content" style={{ maxWidth: 640 }}>
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
               Generate Employee Salary Slip
             </h3>
-            <form onSubmit={handleGenerateSalary} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleGenerateSalary} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Employee</label>
                 <select 
                   className="select-field"
                   value={newSalary.userId}
                   onChange={e => handleSelectSalaryUser(e.target.value)}
+                  required
                 >
                   <option value="">Select Employee</option>
                   {staffUsers.map(u => (
@@ -1299,7 +1733,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   ))}
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Month</label>
                   <input 
@@ -1318,14 +1753,25 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Base Salary (₹)</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Base Salary (₹)</label>
                   <input 
                     type="number"
                     className="input-field" 
                     value={newSalary.baseSalary}
-                    onChange={e => setNewSalary({ ...newSalary, baseSalary: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const num = Number(val) || 0;
+                      const g = num + (Number(newSalary.others1)||0) + (Number(newSalary.others2)||0) + (Number(newSalary.others3)||0) + (Number(newSalary.others4)||0);
+                      setNewSalary(prev => ({
+                        ...prev,
+                        baseSalary: val,
+                        epfShare: Math.round(num * 0.12).toString(),
+                        esiShare: Math.round(g * 0.0075).toString()
+                      }));
+                    }}
                   />
                 </div>
                 <div>
@@ -1338,26 +1784,93 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Allowances (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newSalary.allowances}
-                    onChange={e => setNewSalary({ ...newSalary, allowances: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Late & Other Deductions (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newSalary.deductions}
-                    onChange={e => setNewSalary({ ...newSalary, deductions: e.target.value })}
-                  />
+
+              {/* Allowances Breakdown */}
+              <div style={{ background: 'rgba(0,0,0,0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-teal)', marginBottom: '0.5rem' }}>ALLOWANCES BREAKDOWN (₹)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 1 / HRA (₹)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newSalary.others1} 
+                      onChange={e => setNewSalary({ ...newSalary, others1: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 2 / Special (₹)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newSalary.others2} 
+                      onChange={e => setNewSalary({ ...newSalary, others2: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 3 / Conveyance (₹)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newSalary.others3} 
+                      onChange={e => setNewSalary({ ...newSalary, others3: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 4 / Medical (₹)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newSalary.others4} 
+                      onChange={e => setNewSalary({ ...newSalary, others4: e.target.value })} 
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Statutory Deductions Breakdown */}
+              <div style={{ background: 'rgba(239, 68, 68, 0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#ef4444', marginBottom: '0.5rem' }}>STATUTORY & OTHER DEDUCTIONS (₹)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>EPF Share 12% (₹)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newSalary.epfShare} 
+                      onChange={e => setNewSalary({ ...newSalary, epfShare: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ESI Share 0.75% (₹)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newSalary.esiShare} 
+                      onChange={e => setNewSalary({ ...newSalary, esiShare: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>P-Tax (₹)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newSalary.pTax} 
+                      onChange={e => setNewSalary({ ...newSalary, pTax: e.target.value })} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Late & Other Deductions (₹)</label>
+                    <input 
+                      type="number"
+                      className="input-field" 
+                      value={newSalary.deductions}
+                      onChange={e => setNewSalary({ ...newSalary, deductions: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowSalaryModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Generate & Save Payslip</button>
@@ -1370,16 +1883,16 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       {/* Modal 3: Digital Salary Slip Preview */}
       {selectedSalarySlip && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ border: '2px solid var(--brand-gold)', maxWidth: 650 }}>
+          <div className="modal-content" style={{ border: '2px solid var(--brand-gold)', maxWidth: 680 }}>
             <div style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--brand-yellow)' }}>
-                VS DIGITECH TECHNOLOGY
+              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#1e293b' }}>
+                AKASH ENGINEERING - SALARY DETAILS - FOR V S DIGITECH TECHNOLOGY
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                115/1 Purba Sinthee Bye Lane, Dumdum Junction, Kolkata 700030
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                KADARAT, NARENDRAPUR, KOLKATA 700150 | Mobile: 9831053297, 9062773542
               </div>
-              <div style={{ marginTop: '0.5rem', fontWeight: 700, fontSize: '1rem' }}>
-                PAYSLIP FOR THE MONTH OF {selectedSalarySlip.month ? selectedSalarySlip.month.toUpperCase() : ''} {selectedSalarySlip.year}
+              <div style={{ marginTop: '0.5rem', fontWeight: 700, fontSize: '1rem', color: '#d97706' }}>
+                OFFICIAL PAYSLIP - {selectedSalarySlip.month ? selectedSalarySlip.month.toUpperCase() : ''} {selectedSalarySlip.year}
               </div>
             </div>
 
@@ -1393,46 +1906,64 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             {/* Salary Breakdown Table */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
               <div>
-                <h4 style={{ color: 'var(--brand-green)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-                  EARNINGS
+                <h4 style={{ color: 'var(--brand-green)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
+                  EARNINGS & ALLOWANCES
                 </h4>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
                   <span>Basic Pay:</span>
-                  <strong>₹{selectedSalarySlip.baseSalary?.toLocaleString()}</strong>
+                  <strong>₹{(selectedSalarySlip.baseSalary || 0).toLocaleString()}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Overtime Pay ({selectedSalarySlip.overtimeHours}h):</span>
-                  <strong>₹{selectedSalarySlip.overtimePay?.toLocaleString()}</strong>
+                  <span>Others Allowance 1:</span>
+                  <strong>₹{(selectedSalarySlip.others1 || 0).toLocaleString()}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Allowances:</span>
-                  <strong>₹{selectedSalarySlip.allowances?.toLocaleString()}</strong>
+                  <span>Others Allowance 2:</span>
+                  <strong>₹{(selectedSalarySlip.others2 || 0).toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Others Allowance 3:</span>
+                  <strong>₹{(selectedSalarySlip.others3 || 0).toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                  <span>Others Allowance 4:</span>
+                  <strong>₹{(selectedSalarySlip.others4 || 0).toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.4rem 0', borderTop: '1px solid #e2e8f0', color: '#b45309', fontWeight: 700 }}>
+                  <span>TOTAL GROSS SALARY:</span>
+                  <strong>₹{(selectedSalarySlip.grossSalary || ((selectedSalarySlip.baseSalary || 0) + (selectedSalarySlip.allowances || 0))).toLocaleString()}</strong>
                 </div>
               </div>
 
               <div>
-                <h4 style={{ color: 'var(--brand-red)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                <h4 style={{ color: 'var(--brand-red)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
                   DEDUCTIONS & STATUTORY
                 </h4>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Provident Fund (PF):</span>
-                  <strong>₹{selectedSalarySlip.pfDeduction?.toLocaleString()}</strong>
+                  <span>EPF Employee Share (12%):</span>
+                  <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.pfDeduction || Math.round((selectedSalarySlip.baseSalary || 0) * 0.12)).toLocaleString()}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Tax Deduction (TDS):</span>
-                  <strong>₹{selectedSalarySlip.taxDeduction?.toLocaleString()}</strong>
+                  <span>ESI Employee Share (0.75%):</span>
+                  <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.esiDeduction || Math.round((selectedSalarySlip.grossSalary || selectedSalarySlip.baseSalary || 0) * 0.0075)).toLocaleString()}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Late & Other Deductions:</span>
-                  <strong>₹{selectedSalarySlip.deductions?.toLocaleString()}</strong>
+                  <span>P TAX:</span>
+                  <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.pTaxDeduction !== undefined ? selectedSalarySlip.pTaxDeduction : 110).toLocaleString()}</strong>
                 </div>
+                {selectedSalarySlip.deductions > ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110)) && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
+                    <span>Late & Other Deductions:</span>
+                    <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.deductions - ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110))).toLocaleString()}</strong>
+                  </div>
+                )}
               </div>
             </div>
 
             <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>NET PAYABLE SALARY:</div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>NET TAKE HOME SALARY:</div>
               <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--brand-green)' }}>
-                ₹{selectedSalarySlip.netSalary?.toLocaleString()}
+                ₹{(selectedSalarySlip.netSalary || 0).toLocaleString()}
               </div>
             </div>
 
@@ -1587,15 +2118,15 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         </div>
       )}
 
-      {/* Modal 5: Set Employee Basic Salary Modal */}
+      {/* Modal 5: Set Employee Salary Breakdown Modal */}
       {showBasicSalaryModal && basicSalaryUser && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '480px' }}>
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>
-              Set Basic Salary for Employee
+          <div className="modal-content" style={{ maxWidth: '620px', width: '95%' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '0.25rem' }}>
+              Set Salary Details for Employee
             </h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-              Configure fixed monthly basic salary for <strong>{basicSalaryUser.userName || basicSalaryUser.name}</strong> ({basicSalaryUser.designation || 'Staff'}).
+              Configure monthly basic salary, allowance breakdown, and statutory deductions for <strong>{basicSalaryUser.userName || basicSalaryUser.name}</strong> ({basicSalaryUser.designation || 'Staff'}).
             </p>
 
             <form onSubmit={handleSaveBasicSalary} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -1611,7 +2142,14 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     const selected = staffUsers.find(u => u.id === e.target.value);
                     if (selected) {
                       setBasicSalaryUser(selected);
-                      setBasicSalaryInput((selected.baseSalary || selected.basicSalary || 30000).toString());
+                      setSalaryInputs({
+                        basicSalary: (selected.basicSalary || selected.baseSalary || 0).toString(),
+                        others1: (selected.others1 || 0).toString(),
+                        others2: (selected.others2 || 0).toString(),
+                        others3: (selected.others3 || 0).toString(),
+                        others4: (selected.others4 || 0).toString(),
+                        pTax: (selected.pTax !== undefined && selected.pTax !== null ? selected.pTax : 110).toString()
+                      });
                     }
                   }}
                 >
@@ -1621,36 +2159,336 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 </select>
               </div>
 
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
-                  Basic Salary Amount (₹ / Month)
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#64748b' }}>₹</span>
+              {/* Salary & Statutory Deductions Fields Inputs Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                    BASIC SALARY (₹)
+                  </label>
                   <input 
                     type="number"
                     required
                     min="0"
-                    step="500"
                     className="input-field" 
-                    style={{ paddingLeft: '2.2rem' }}
-                    value={basicSalaryInput}
-                    onChange={e => setBasicSalaryInput(e.target.value)}
-                    placeholder="e.g. 35000"
+                    value={salaryInputs.basicSalary}
+                    onChange={e => {
+                      const newBasic = e.target.value;
+                      const b = Number(newBasic) || 0;
+                      const o1 = Number(salaryInputs.others1) || 0;
+                      const o2 = Number(salaryInputs.others2) || 0;
+                      const o3 = Number(salaryInputs.others3) || 0;
+                      const o4 = Number(salaryInputs.others4) || 0;
+                      const gross = b + o1 + o2 + o3 + o4;
+                      setSalaryInputs({ 
+                        ...salaryInputs, 
+                        basicSalary: newBasic,
+                        epfShare: Math.round(b * 0.12).toString(),
+                        esiShare: Math.round(gross * 0.0075).toString()
+                      });
+                    }}
+                    placeholder="e.g. 7110"
                   />
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.35rem' }}>
-                  This amount will be saved to the PostgreSQL database for {basicSalaryUser.userName || basicSalaryUser.name} and used for payroll processing.
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                    OTHERS 1 (₹)
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    className="input-field" 
+                    value={salaryInputs.others1}
+                    onChange={e => {
+                      const newO1 = e.target.value;
+                      const b = Number(salaryInputs.basicSalary) || 0;
+                      const o1 = Number(newO1) || 0;
+                      const o2 = Number(salaryInputs.others2) || 0;
+                      const o3 = Number(salaryInputs.others3) || 0;
+                      const o4 = Number(salaryInputs.others4) || 0;
+                      const gross = b + o1 + o2 + o3 + o4;
+                      setSalaryInputs({ 
+                        ...salaryInputs, 
+                        others1: newO1,
+                        esiShare: Math.round(gross * 0.0075).toString()
+                      });
+                    }}
+                    placeholder="e.g. 4890"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                    OTHERS 2 (₹)
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    className="input-field" 
+                    value={salaryInputs.others2}
+                    onChange={e => {
+                      const newO2 = e.target.value;
+                      const b = Number(salaryInputs.basicSalary) || 0;
+                      const o1 = Number(salaryInputs.others1) || 0;
+                      const o2 = Number(newO2) || 0;
+                      const o3 = Number(salaryInputs.others3) || 0;
+                      const o4 = Number(salaryInputs.others4) || 0;
+                      const gross = b + o1 + o2 + o3 + o4;
+                      setSalaryInputs({ 
+                        ...salaryInputs, 
+                        others2: newO2,
+                        esiShare: Math.round(gross * 0.0075).toString()
+                      });
+                    }}
+                    placeholder="e.g. 2900"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                    OTHERS 3 (₹)
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    className="input-field" 
+                    value={salaryInputs.others3}
+                    onChange={e => {
+                      const newO3 = e.target.value;
+                      const b = Number(salaryInputs.basicSalary) || 0;
+                      const o1 = Number(salaryInputs.others1) || 0;
+                      const o2 = Number(salaryInputs.others2) || 0;
+                      const o3 = Number(newO3) || 0;
+                      const o4 = Number(salaryInputs.others4) || 0;
+                      const gross = b + o1 + o2 + o3 + o4;
+                      setSalaryInputs({ 
+                        ...salaryInputs, 
+                        others3: newO3,
+                        esiShare: Math.round(gross * 0.0075).toString()
+                      });
+                    }}
+                    placeholder="e.g. 913"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                    OTHERS 4 (₹)
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    className="input-field" 
+                    value={salaryInputs.others4}
+                    onChange={e => {
+                      const newO4 = e.target.value;
+                      const b = Number(salaryInputs.basicSalary) || 0;
+                      const o1 = Number(salaryInputs.others1) || 0;
+                      const o2 = Number(salaryInputs.others2) || 0;
+                      const o3 = Number(salaryInputs.others3) || 0;
+                      const o4 = Number(newO4) || 0;
+                      const gross = b + o1 + o2 + o3 + o4;
+                      setSalaryInputs({ 
+                        ...salaryInputs, 
+                        others4: newO4,
+                        esiShare: Math.round(gross * 0.0075).toString()
+                      });
+                    }}
+                    placeholder="e.g. 1300"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.25rem', display: 'block' }}>
+                    EPF EMPLOYEE SHARE 12% (₹)
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    className="input-field" 
+                    style={{ borderColor: 'rgba(220, 38, 38, 0.4)' }}
+                    value={salaryInputs.epfShare}
+                    onChange={e => setSalaryInputs({ ...salaryInputs, epfShare: e.target.value })}
+                    placeholder="e.g. 853"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.25rem', display: 'block' }}>
+                    ESI EMPLOYEE SHARE 0.75% (₹)
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    className="input-field" 
+                    style={{ borderColor: 'rgba(220, 38, 38, 0.4)' }}
+                    value={salaryInputs.esiShare}
+                    onChange={e => setSalaryInputs({ ...salaryInputs, esiShare: e.target.value })}
+                    placeholder="e.g. 90"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.25rem', display: 'block' }}>
+                    P TAX DEDUCTION (₹)
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    className="input-field" 
+                    value={salaryInputs.pTax}
+                    onChange={e => setSalaryInputs({ ...salaryInputs, pTax: e.target.value })}
+                    placeholder="e.g. 110"
+                  />
                 </div>
               </div>
+
+              {/* Live Salary Calculations Box */}
+              {(() => {
+                const b = Number(salaryInputs.basicSalary) || 0;
+                const o1 = Number(salaryInputs.others1) || 0;
+                const o2 = Number(salaryInputs.others2) || 0;
+                const o3 = Number(salaryInputs.others3) || 0;
+                const o4 = Number(salaryInputs.others4) || 0;
+                const totalAllow = o1 + o2 + o3 + o4;
+                const gross = b + totalAllow;
+                const epf = Number(salaryInputs.epfShare) || 0;
+                const esi = Number(salaryInputs.esiShare) || 0;
+                const pt = Number(salaryInputs.pTax) || 0;
+                const net = gross - epf - esi - pt;
+
+                return (
+                  <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 'var(--radius-md)', padding: '1rem', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.35rem' }}>
+                      AUTOMATIC SALARY & STATUTORY BREAKDOWN SUMMARY
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', fontSize: '0.82rem' }}>
+                      <div>Basic Pay: <strong>₹{b.toLocaleString()}</strong></div>
+                      <div>Total Allowances (Others 1-4): <strong>₹{totalAllow.toLocaleString()}</strong></div>
+                      <div style={{ color: '#b45309' }}>TOTAL (GROSS SALARY): <strong>₹{gross.toLocaleString()}</strong></div>
+                      <div style={{ color: '#b91c1c' }}>EPF Employee Share (12%): <strong>₹{epf.toLocaleString()}</strong></div>
+                      <div style={{ color: '#b91c1c' }}>ESI Employee Share (0.75%): <strong>₹{esi.toLocaleString()}</strong></div>
+                      <div style={{ color: '#b91c1c' }}>P TAX: <strong>₹{pt.toLocaleString()}</strong></div>
+                    </div>
+                    <div style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>NET TAKE HOME SALARY:</span>
+                      <span style={{ fontWeight: 800, fontSize: '1.25rem', color: '#059669' }}>₹{net.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowBasicSalaryModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" style={{ background: '#0d9488', borderColor: '#0d9488' }}>
-                  Save Basic Salary
+                  Save Salary Details
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Day Attendance Details Modal */}
+      {selectedCalendarDay && (
+        <div className="modal-overlay" onClick={() => setSelectedCalendarDay(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 540 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '1rem' }}>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                  📅 Attendance Punch Details
+                </h3>
+                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>
+                  {selectedCalendarDay.dayName}, {selectedCalendarDay.dayNum} {selectedMonth} {selectedYear} ({selectedCalendarDay.dateStr})
+                </div>
+              </div>
+              <button type="button" className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', borderRadius: '50%' }} onClick={() => setSelectedCalendarDay(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Employee & Status Summary */}
+            <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedStaffId !== 'ALL' ? (selectedUserObj?.name || 'Selected Employee') : (selectedCalendarDay.attRecord?.userName || currentUser?.name || 'Employee')}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  {selectedUserObj?.designation || 'Staff Member'}
+                </div>
+              </div>
+              <span className={`badge ${
+                selectedCalendarDay.status === 'PRESENT' ? 'badge-present' :
+                selectedCalendarDay.status === 'LATE' ? 'badge-pending' :
+                selectedCalendarDay.status === 'LEAVE' ? 'badge-info' :
+                'badge-danger'
+              }`} style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}>
+                {selectedCalendarDay.status === 'PRESENT' && '✓ PRESENT'}
+                {selectedCalendarDay.status === 'LATE' && '⏰ LATE ENTRY'}
+                {selectedCalendarDay.status === 'LEAVE' && '🏖️ APPROVED LEAVE'}
+                {selectedCalendarDay.status === 'ABSENT' && '❌ ABSENT / NOT PUNCHED'}
+                {selectedCalendarDay.status === 'WEEKEND' && 'WEEKEND OFF'}
+                {selectedCalendarDay.status === 'UPCOMING' && 'UPCOMING DATE'}
+              </span>
+            </div>
+
+            {/* Punch Details Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1rem' }}>
+              <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <LogIn size={14} /> PUNCH IN DETAILS
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                  {selectedCalendarDay.attRecord?.checkInTime || 'Not Punched'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.3rem', display: 'flex', alignItems: 'flex-start', gap: '0.25rem' }}>
+                  <MapPin size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span><LocationDisplay location={selectedCalendarDay.attRecord?.location} /></span>
+                </div>
+              </div>
+
+              <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <LogOut size={14} /> PUNCH OUT DETAILS
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                  {selectedCalendarDay.attRecord?.checkOutTime || (selectedCalendarDay.attRecord ? 'Active In Field' : 'Not Punched')}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.3rem', display: 'flex', alignItems: 'flex-start', gap: '0.25rem' }}>
+                  <MapPin size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span><LocationDisplay location={selectedCalendarDay.attRecord?.location} /></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Meta details */}
+            <div style={{ background: '#f1f5f9', padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.8rem', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>Punch Source: <strong>{selectedCalendarDay.attRecord?.method || 'WEB / GPS'}</strong></div>
+              {!isEmployee && selectedCalendarDay.attRecord && (
+                <button 
+                  className="btn btn-secondary"
+                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', color: '#2563eb', borderColor: '#2563eb' }}
+                  onClick={() => {
+                    const att = selectedCalendarDay.attRecord;
+                    setEditingAtt(att);
+                    setEditAttData({
+                      checkInTime: att.checkInTime || '09:30 AM',
+                      checkOutTime: att.checkOutTime || '06:30 PM',
+                      status: att.status || 'PRESENT',
+                      location: att.location || '',
+                      method: att.method || 'WEB'
+                    });
+                    setSelectedCalendarDay(null);
+                  }}
+                >
+                  <Edit2 size={13} /> Edit Attendance
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" onClick={() => setSelectedCalendarDay(null)}>Close</button>
+            </div>
           </div>
         </div>
       )}

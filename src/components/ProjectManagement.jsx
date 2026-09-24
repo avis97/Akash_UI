@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { API_URL } from '../config/api';
 
-const ProjectManagement = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = () => {} }) => {
+const ProjectManagement = ({ data = {}, currentRole = 'SUPERADMIN', currentUser, onRefresh = () => {} }) => {
   const [projects, setProjects] = useState(data.projects || []);
   const [users, setUsers] = useState(data.users || []);
 
@@ -229,7 +229,36 @@ const ProjectManagement = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = 
     }
   };
 
-  const filteredProjects = projects.filter(p => {
+  const isClient = currentRole === 'CLIENT' || currentUser?.role === 'CLIENT';
+  const isEmployee = currentRole === 'EMPLOYEE' || currentRole === 'SERVICE_PERSONNEL' || currentRole === 'FACILITY_MANAGER' || currentUser?.role === 'EMPLOYEE';
+
+  const userFilteredProjects = projects.filter(p => {
+    if (isClient) {
+      const clientName = currentUser?.name?.toLowerCase().trim();
+      const clientId = currentUser?.id;
+      const clientEmail = currentUser?.email?.toLowerCase().trim();
+
+      const matchesId = clientId && p.customerId === clientId;
+      const matchesName = clientName && p.customerName?.toLowerCase().trim() === clientName;
+      const matchesEmail = clientEmail && p.customerEmail?.toLowerCase().trim() === clientEmail;
+
+      return Boolean(matchesId || matchesName || matchesEmail);
+    }
+
+    if (isEmployee) {
+      const empName = currentUser?.name?.toLowerCase().trim();
+      const empId = currentUser?.id;
+
+      const matchesId = empId && p.employeeId === empId;
+      const matchesName = empName && p.employeeName?.toLowerCase().trim() === empName;
+
+      return Boolean(matchesId || matchesName);
+    }
+
+    return true; // Superadmin and Master Admin see all projects
+  });
+
+  const filteredProjects = userFilteredProjects.filter(p => {
     const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (p.tag || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (p.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||

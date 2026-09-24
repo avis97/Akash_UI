@@ -13,7 +13,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-export default function SiteAMCTracker({ data = {}, currentRole, onRefresh }) {
+export default function SiteAMCTracker({ data = {}, currentRole, currentUser, onRefresh }) {
   const [showAMCModal, setShowAMCModal] = useState(false);
   const [selectedAmcSignOff, setSelectedAmcSignOff] = useState(null);
 
@@ -23,6 +23,35 @@ export default function SiteAMCTracker({ data = {}, currentRole, onRefresh }) {
 
   const [siteAMCs, setSiteAMCs] = useState(data.siteAMCs || data.amcs || []);
   const [users, setUsers] = useState(data.users || []);
+
+  const isClient = currentRole === 'CLIENT' || currentUser?.role === 'CLIENT';
+  const isEmployee = currentRole === 'EMPLOYEE' || currentRole === 'SERVICE_PERSONNEL' || currentRole === 'FACILITY_MANAGER' || currentUser?.role === 'EMPLOYEE';
+
+  const displayedAMCs = siteAMCs.filter(amc => {
+    if (isClient && currentUser) {
+      const clientName = currentUser.name?.toLowerCase().trim();
+      const clientId = currentUser.id;
+      const clientEmail = currentUser.email?.toLowerCase().trim();
+
+      const matchesId = clientId && amc.clientId === clientId;
+      const matchesName = clientName && amc.clientName?.toLowerCase().trim() === clientName;
+      const matchesEmail = clientEmail && amc.clientEmail?.toLowerCase().trim() === clientEmail;
+
+      return Boolean(matchesId || matchesName || matchesEmail);
+    }
+
+    if (isEmployee && currentUser) {
+      const empName = currentUser.name?.toLowerCase().trim();
+      const empId = currentUser.id;
+
+      const matchesId = empId && amc.assignedEmployeeId === empId;
+      const matchesName = empName && amc.assignedEmployeeName?.toLowerCase().trim() === empName;
+
+      return Boolean(matchesId || matchesName);
+    }
+
+    return true;
+  });
 
   const fetchAmcData = useCallback(async () => {
     try {
@@ -162,7 +191,7 @@ export default function SiteAMCTracker({ data = {}, currentRole, onRefresh }) {
 
       {/* AMC Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.85rem' }}>
-        {siteAMCs.map(amc => (
+        {displayedAMCs.map(amc => (
           <div key={amc.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
