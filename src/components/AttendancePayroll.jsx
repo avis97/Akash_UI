@@ -26,7 +26,10 @@ import {
   MapPin,
   Grid,
   List,
-  Eye
+  Eye,
+  EyeOff,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { parseCoordinates, reverseGeocode } from '../utils/locationUtils';
 import { toast } from './common/ToastNotification';
@@ -200,6 +203,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     totalSalariesProcessed: 0
   });
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
+  const [showSummaryCards, setShowSummaryCards] = useState(true);
 
   // Resolve active logged-in user from props or localStorage fallback
   const activeUser = useMemo(() => {
@@ -503,23 +507,17 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const hasPunchedToday = (attendance || []).some(a => {
     const isSameUser = (activeUser?.id && a.userId === activeUser.id) || (activeUser?.name && a.userName?.toLowerCase() === activeUser.name.toLowerCase());
     if (!isSameUser || !a.date) return false;
-    const aDate = new Date(a.date);
-    const now = new Date();
-    return aDate.getFullYear() === now.getFullYear() &&
-           aDate.getMonth() === now.getMonth() &&
-           aDate.getDate() === now.getDate() &&
-           Boolean(a.checkInTime);
+    const aDateStr = typeof a.date === 'string' ? a.date.slice(0, 10) : new Date(a.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    return aDateStr === todayStr && Boolean(a.checkInTime);
   });
 
   const hasPunchedOutToday = (attendance || []).some(a => {
     const isSameUser = (activeUser?.id && a.userId === activeUser.id) || (activeUser?.name && a.userName?.toLowerCase() === activeUser.name.toLowerCase());
     if (!isSameUser || !a.date) return false;
-    const aDate = new Date(a.date);
-    const now = new Date();
-    return aDate.getFullYear() === now.getFullYear() &&
-           aDate.getMonth() === now.getMonth() &&
-           aDate.getDate() === now.getDate() &&
-           Boolean(a.checkOutTime);
+    const aDateStr = typeof a.date === 'string' ? a.date.slice(0, 10) : new Date(a.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    return aDateStr === todayStr && Boolean(a.checkOutTime);
   });
 
   const handleWebCheckIn = async () => {
@@ -678,7 +676,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     const totalDaysInMonth = new Date(yr, mIdx + 1, 0).getDate();
 
     const days = [];
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
     for (let dayNum = 1; dayNum <= totalDaysInMonth; dayNum++) {
       const dateObj = new Date(yr, mIdx, dayNum);
@@ -689,7 +687,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       // Find attendance log for this date and selected staff
       const attRecord = (displayedAttendance || []).find(a => {
         if (!a.date) return false;
-        const d = typeof a.date === 'string' ? a.date.slice(0, 10) : new Date(a.date).toISOString().slice(0, 10);
+        const d = typeof a.date === 'string' ? a.date.slice(0, 10) : new Date(a.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
         return d === dateStr;
       });
 
@@ -844,308 +842,477 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       
-      {/* Enterprise HR Header Controls */}
-      <div style={{
-        display: 'flex',
-        justify: 'space-between',
-        alignItems: 'center',
-        background: '#ffffff',
-        padding: '1rem 1.25rem',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
-        border: '1px solid var(--border-color)',
-        flexWrap: 'wrap',
-        gap: '1rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      {/* Overview Header & Metric Cards (Collapsible) */}
+      {showSummaryCards && (
+        <>
+          {/* Enterprise HR Header Controls */}
           <div style={{
-            width: 42,
-            height: 42,
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            justify: 'center',
-            color: '#fff',
-            fontWeight: 'bold'
+            background: '#ffffff',
+            padding: '0.35rem 0.65rem',
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            border: '1px solid var(--border-color)',
+            flexWrap: 'wrap',
+            gap: '0.4rem'
           }}>
-            <ShieldCheck size={24} />
-          </div>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#1e293b' }}>
-              {isEmployee ? 'My Attendance & Salary Portal' : 'HR Portal & Payroll Management'}
-            </h2>
-            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-              {isEmployee ? `Logged in as ${currentUser?.name || 'Employee'}` : 'Superadmin HR Overview & Payroll Generation System'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div style={{
+                width: 26,
+                height: 26,
+                borderRadius: '6px',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'center',
+                color: '#fff',
+                fontWeight: 'bold',
+                flexShrink: 0
+              }}>
+                <ShieldCheck size={15} />
+              </div>
+              <div>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '0.92rem', fontWeight: 800, margin: 0, color: '#1e293b' }}>
+                  {isEmployee ? 'My Attendance & Salary Portal' : 'HR Portal & Payroll Management'}
+                </h2>
+                <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                  {isEmployee ? `Logged in as ${currentUser?.name || 'Employee'}` : 'Superadmin HR Overview & Payroll Generation System'}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Month, Year & Staff Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {!isEmployee && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
-              <Users size={15} color="#64748b" />
-              <select 
-                value={selectedStaffId} 
-                onChange={e => setSelectedStaffId(e.target.value)}
-                style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', outline: 'none', maxWidth: 210 }}
+            {/* Month, Year & Staff Filters + Toggle Summary */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+              {!isEmployee && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#f8fafc', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                  <Users size={12} color="#64748b" />
+                  <select 
+                    value={selectedStaffId} 
+                    onChange={e => setSelectedStaffId(e.target.value)}
+                    style={{ border: 'none', background: 'transparent', fontSize: '0.74rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', outline: 'none', maxWidth: 145 }}
+                  >
+                    <option value="ALL">👤 All Staff</option>
+                    {staffUsers.map(u => (
+                      <option key={u.id} value={u.id}>👤 {u.name} ({formatUserRole(u.role)})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#f8fafc', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                <Calendar size={12} color="#64748b" />
+                <select 
+                  value={selectedMonth} 
+                  onChange={e => setSelectedMonth(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', fontSize: '0.74rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
+                >
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <select 
+                  value={selectedYear} 
+                  onChange={e => setSelectedYear(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', fontSize: '0.74rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
+                >
+                  {['2025', '2026', '2027'].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <Search size={12} color="#94a3b8" style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)' }} />
+                <input 
+                  type="text"
+                  placeholder="Search staff..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    padding: '0.18rem 0.4rem 0.18rem 1.45rem',
+                    fontSize: '0.74rem',
+                    borderRadius: '6px',
+                    border: '1px solid #e2e8f0',
+                    background: '#f8fafc',
+                    outline: 'none',
+                    width: 110
+                  }}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowSummaryCards(false)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.18rem 0.45rem',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: '#475569',
+                  background: '#f1f5f9',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                title="Hide top header and stats to show only table view"
               >
-                <option value="ALL">👤 All Staff</option>
-                {staffUsers.map(u => (
-                  <option key={u.id} value={u.id}>👤 {u.name} ({formatUserRole(u.role)})</option>
-                ))}
-              </select>
+                <EyeOff size={12} color="#64748b" />
+                Hide Stats
+              </button>
             </div>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
-            <Calendar size={15} color="#64748b" />
-            <select 
-              value={selectedMonth} 
-              onChange={e => setSelectedMonth(e.target.value)}
-              style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
-            >
-              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <select 
-              value={selectedYear} 
-              onChange={e => setSelectedYear(e.target.value)}
-              style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
-            >
-              {['2025', '2026', '2027'].map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
           </div>
 
-          <div style={{ position: 'relative' }}>
-            <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-            <input 
-              type="text"
-              placeholder="Search staff..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                padding: '0.35rem 0.65rem 0.35rem 2rem',
-                fontSize: '0.82rem',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid #e2e8f0',
-                background: '#f8fafc',
-                outline: 'none',
-                width: 150
-              }}
-            />
-          </div>
-        </div>
-      </div>
+          {/* Overview Metric Ribbon Bar (Ultra-Compact Single Row) */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
+            gap: '0.4rem'
+          }}>
+            {isEmployee ? (
+              <>
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <UserCheck size={12} color="#10b981" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>Present Days</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#10b981' }}>{employeePresentDays} Days</div>
+                  </div>
+                </div>
 
-      {/* Overview Metric Cards */}
-      {isEmployee ? (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', 
-          gap: '1rem'
-        }}>
-          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Present Days</div>
-            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>{employeePresentDays} Days</div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Out of 22 Working Days</div>
-          </div>
-          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Late Entries</div>
-            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.2rem' }}>{employeeLateDays} Times</div>
-            <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.25rem' }}>Late after 09:30 AM (₹250/late)</div>
-          </div>
-          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Approved Leaves</div>
-            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#3b82f6', marginTop: '0.2rem' }}>{employeeLeavesCount} Days</div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Casual & Privilege Leaves</div>
-          </div>
-          <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Salary Status</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', marginTop: '0.3rem' }}>
-              {displayedSalaryRecords.length > 0 ? displayedSalaryRecords[0].status : 'PROCESSED'}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Payslip available in Payroll tab</div>
-          </div>
-        </div>
-      ) : (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', 
-          gap: '1rem'
-        }}>
-          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
-                {selectedStaffId !== 'ALL' ? (selectedUserObj?.name || 'Selected Employee') : 'Total Staff'}
-              </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem' }}>
-                {selectedStaffId !== 'ALL' ? (selectedUserObj?.designation || 'Staff') : `${monthlyStats.totalEmployees ?? users.length} Staff`}
-              </div>
-            </div>
-            <Users size={32} color="#3b82f6" style={{ opacity: 0.8 }} />
-          </div>
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Clock size={12} color="#f59e0b" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>Late Entries</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f59e0b' }}>{employeeLateDays} Times</div>
+                  </div>
+                </div>
 
-          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
-                Present Days ({selectedMonth})
-              </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>
-                {selectedStaffId !== 'ALL'
-                  ? displayedAttendance.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length
-                  : (monthlyStats.totalPresentDays ?? 0)} Days
-              </div>
-            </div>
-            <UserCheck size={32} color="#10b981" style={{ opacity: 0.8 }} />
-          </div>
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Calendar size={12} color="#3b82f6" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>Approved Leaves</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#3b82f6' }}>{employeeLeavesCount} Days</div>
+                  </div>
+                </div>
 
-          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Late Entries Count</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.2rem' }}>
-                {selectedStaffId !== 'ALL'
-                  ? displayedAttendance.filter(a => a.status === 'LATE').length
-                  : (monthlyStats.totalLateEntries ?? 0)} Times
-              </div>
-            </div>
-            <Clock size={32} color="#f59e0b" style={{ opacity: 0.8 }} />
-          </div>
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <DollarSign size={12} color="#10b981" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>Salary Status</div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#10b981' }}>
+                      {displayedSalaryRecords.length > 0 ? displayedSalaryRecords[0].status : 'PROCESSED'}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Users size={12} color="#3b82f6" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>
+                      {selectedStaffId !== 'ALL' ? (selectedUserObj?.name || 'Selected') : 'Total Staff'}
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>
+                      {selectedStaffId !== 'ALL' ? (selectedUserObj?.designation || 'Staff') : `${monthlyStats.totalEmployees ?? users.length} Staff`}
+                    </div>
+                  </div>
+                </div>
 
-          <div style={{ background: '#ffffff', padding: '1.1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Salaries Generated</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#6366f1', marginTop: '0.2rem' }}>
-                {selectedStaffId !== 'ALL'
-                  ? displayedSalaryRecords.length
-                  : (monthlyStats.totalSalariesProcessed ?? 0)} Slips
-              </div>
-            </div>
-            <DollarSign size={32} color="#6366f1" style={{ opacity: 0.8 }} />
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <UserCheck size={12} color="#10b981" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>
+                      Present ({selectedMonth.slice(0, 3)})
+                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#10b981' }}>
+                      {selectedStaffId !== 'ALL'
+                        ? displayedAttendance.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length
+                        : (monthlyStats.totalPresentDays ?? 0)} Days
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Clock size={12} color="#f59e0b" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>Late Entries</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f59e0b' }}>
+                      {selectedStaffId !== 'ALL'
+                        ? displayedAttendance.filter(a => a.status === 'LATE').length
+                        : (monthlyStats.totalLateEntries ?? 0)} Times
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '4px', background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <DollarSign size={12} color="#6366f1" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.1 }}>Salaries Done</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#6366f1' }}>
+                      {selectedStaffId !== 'ALL'
+                        ? displayedSalaryRecords.length
+                        : (monthlyStats.totalSalariesProcessed ?? 0)} Slips
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        </div>
+        </>
       )}
 
-      {/* Navigation Tabs Bar & Primary Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', background: '#ffffff', padding: '0.45rem 0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.18rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-          <button 
-            className={`btn ${activeTab === 'attendance' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-            onClick={() => setActiveTab('attendance')}
-          >
-            <UserCheck style={{ width: 14, height: 14 }} />
-            Daily Punch Log ({displayedAttendance.length})
-          </button>
-
-          {!isEmployee && (
+      {/* Navigation Tabs Bar & Contextual Action Toolbar (Ultra-Compact High Density) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '2px', background: '#f1f5f9', padding: '2px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
             <button 
-              className={`btn ${activeTab === 'monthly_report' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-              onClick={() => setActiveTab('monthly_report')}
+              className={`btn ${activeTab === 'attendance' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
+              onClick={() => setActiveTab('attendance')}
             >
-              <BarChart3 style={{ width: 14, height: 14 }} />
-              HR Monthly Report ({monthlyReport.length})
+              <UserCheck style={{ width: 12, height: 12 }} />
+              Daily Punch Log ({displayedAttendance.length})
             </button>
-          )}
 
-          <button 
-            className={`btn ${activeTab === 'leaves' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-            onClick={() => setActiveTab('leaves')}
-          >
-            <Calendar style={{ width: 14, height: 14 }} />
-            Leave Requests ({displayedLeaves.length})
-          </button>
-          
-          <button 
-            className={`btn ${activeTab === 'payroll' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-            onClick={() => setActiveTab('payroll')}
-          >
-            <DollarSign style={{ width: 14, height: 14 }} />
-            Salary Slips & Payroll ({displayedSalaryRecords.length})
-          </button>
+            {!isEmployee && (
+              <button 
+                className={`btn ${activeTab === 'monthly_report' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
+                onClick={() => setActiveTab('monthly_report')}
+              >
+                <BarChart3 style={{ width: 12, height: 12 }} />
+                HR Monthly Report ({monthlyReport.length})
+              </button>
+            )}
+
+            <button 
+              className={`btn ${activeTab === 'leaves' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
+              onClick={() => setActiveTab('leaves')}
+            >
+              <Calendar style={{ width: 12, height: 12 }} />
+              Leave Requests ({displayedLeaves.length})
+            </button>
+            
+            <button 
+              className={`btn ${activeTab === 'payroll' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
+              onClick={() => setActiveTab('payroll')}
+            >
+              <DollarSign style={{ width: 12, height: 12 }} />
+              Salary Slips & Payroll ({displayedSalaryRecords.length})
+            </button>
+          </div>
+
+          {!showSummaryCards && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setShowSummaryCards(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  padding: '0.18rem 0.45rem',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: '#2563eb',
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+                title="Show top header title & summary metrics ribbon"
+              >
+                <Eye size={12} color="#2563eb" />
+                Show Overview
+              </button>
+
+              {!isEmployee && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: '#f8fafc', padding: '0.15rem 0.35rem', borderRadius: '5px', border: '1px solid #cbd5e1' }}>
+                  <Users size={12} color="#64748b" />
+                  <select 
+                    value={selectedStaffId} 
+                    onChange={e => setSelectedStaffId(e.target.value)}
+                    style={{ border: 'none', background: 'transparent', fontSize: '0.72rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', outline: 'none', maxWidth: 120 }}
+                  >
+                    <option value="ALL">All Staff</option>
+                    {staffUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: '#f8fafc', padding: '0.15rem 0.35rem', borderRadius: '5px', border: '1px solid #cbd5e1' }}>
+                <Calendar size={12} color="#64748b" />
+                <select 
+                  value={selectedMonth} 
+                  onChange={e => setSelectedMonth(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', fontSize: '0.72rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
+                >
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                    <option key={m} value={m}>{m.slice(0, 3)}</option>
+                  ))}
+                </select>
+                <select 
+                  value={selectedYear} 
+                  onChange={e => setSelectedYear(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', fontSize: '0.72rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
+                >
+                  {['2025', '2026', '2027'].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <Search size={12} color="#94a3b8" style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)' }} />
+                <input 
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    padding: '0.15rem 0.35rem 0.15rem 1.35rem',
+                    fontSize: '0.72rem',
+                    borderRadius: '5px',
+                    border: '1px solid #cbd5e1',
+                    background: '#f8fafc',
+                    outline: 'none',
+                    width: 95
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+        {/* Tab-Contextual & Always-Visible Action Buttons Bar */}
+        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* ALWAYS VISIBLE: Punch In & Punch Out Buttons */}
           <button 
             className="btn btn-primary" 
             style={{ 
-              padding: '0.35rem 0.75rem', 
-              fontSize: '0.8rem', 
+              padding: '0.2rem 0.5rem', 
+              fontSize: '0.74rem', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.35rem', 
+              gap: '0.2rem', 
               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
               border: 'none',
-              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+              boxShadow: '0 1px 4px rgba(16, 185, 129, 0.25)',
+              borderRadius: '5px',
               cursor: isPunching ? 'not-allowed' : 'pointer'
             }} 
             onClick={handleWebCheckIn}
             disabled={isPunching}
             title="Record morning attendance check-in"
           >
-            <LogIn style={{ width: 15, height: 15 }} />
-            {isPunching ? 'Punching...' : 'Web Punch In'}
+            <LogIn style={{ width: 12, height: 12 }} />
+            {isPunching ? 'Punching...' : 'Punch In'}
           </button>
 
           <button 
             className="btn btn-primary" 
             style={{ 
-              padding: '0.35rem 0.75rem', 
-              fontSize: '0.8rem', 
+              padding: '0.2rem 0.5rem', 
+              fontSize: '0.74rem', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.35rem', 
+              gap: '0.2rem', 
               background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
               border: 'none',
-              boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)',
+              boxShadow: '0 1px 4px rgba(245, 158, 11, 0.25)',
+              borderRadius: '5px',
               cursor: isPunching ? 'not-allowed' : 'pointer'
             }} 
             onClick={handleWebCheckOut}
             disabled={isPunching}
             title="Record evening attendance check-out"
           >
-            <LogOut style={{ width: 15, height: 15 }} />
-            {isPunching ? 'Punching...' : 'Web Punch Out'}
-          </button>
-          
-          <button className="btn btn-secondary" onClick={() => setShowLeaveModal(true)}>
-            <Plus style={{ width: 16, height: 16 }} />
-            Apply Leave
+            <LogOut style={{ width: 12, height: 12 }} />
+            {isPunching ? 'Punching...' : 'Punch Out'}
           </button>
 
-          {!isEmployee && (
+          {/* TAB 2: Leaves Specific Actions */}
+          {activeTab === 'leaves' && (
+            <button 
+              className="btn btn-primary" 
+              style={{ padding: '0.2rem 0.5rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }}
+              onClick={() => setShowLeaveModal(true)}
+            >
+              <Plus style={{ width: 12, height: 12 }} />
+              Apply Leave
+            </button>
+          )}
+
+          {/* TAB 3: Payroll Specific Actions */}
+          {activeTab === 'payroll' && (
             <>
-              <button 
-                className="btn btn-secondary" 
-                style={{ borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
-                onClick={() => handleOpenBasicSalaryModal(selectedUserObj || staffUsers[0])}
-              >
-                Set Basic Salary
-              </button>
+              {!isEmployee && (
+                <>
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ padding: '0.2rem 0.45rem', fontSize: '0.74rem', borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)', borderRadius: '5px' }}
+                    onClick={() => handleOpenBasicSalaryModal(selectedUserObj || staffUsers[0])}
+                  >
+                    Set Basic Salary
+                  </button>
 
-              <button 
-                className="btn btn-secondary" 
-                style={{ borderColor: '#6366f1', color: '#6366f1', background: 'rgba(99, 102, 241, 0.05)' }} 
-                onClick={handleBatchGenerateSalaries}
-                disabled={isGeneratingBatch}
-              >
-                <Zap style={{ width: 16, height: 16, color: '#6366f1' }} />
-                {isGeneratingBatch ? 'Generating Payroll...' : `Batch Generate ${selectedMonth} Salary`}
-              </button>
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ padding: '0.2rem 0.45rem', fontSize: '0.74rem', borderColor: '#6366f1', color: '#6366f1', background: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }} 
+                    onClick={handleBatchGenerateSalaries}
+                    disabled={isGeneratingBatch}
+                  >
+                    <Zap style={{ width: 12, height: 12, color: '#6366f1' }} />
+                    {isGeneratingBatch ? 'Generating Payroll...' : `Batch Generate ${selectedMonth.slice(0, 3)} Salary`}
+                  </button>
 
-              <button className="btn btn-primary" onClick={() => setShowSalaryModal(true)}>
-                <DollarSign style={{ width: 16, height: 16 }} />
-                Process Salary Slip
-              </button>
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }} 
+                    onClick={() => setShowSalaryModal(true)}
+                  >
+                    <DollarSign style={{ width: 12, height: 12 }} />
+                    Process Salary Slip
+                  </button>
+                </>
+              )}
+              {isEmployee && (
+                <button 
+                  className="btn btn-primary" 
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }}
+                  onClick={() => setShowLeaveModal(true)}
+                >
+                  <Plus style={{ width: 12, height: 12 }} />
+                  Apply Leave
+                </button>
+              )}
             </>
           )}
         </div>
