@@ -101,24 +101,70 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
   // New Product Form State
   const [newProd, setNewProd] = useState({
     name: '',
-    category: 'Networking Equipment',
-    brand: '',
-    stockQuantity: 10,
-    unit: 'Pcs',
-    minStockAlert: 5,
-    unitPrice: 5000
+    sku: 'AE - 0313',
+    salePrice: '',
+    purchasePrice: '',
+    tax: '18% GST',
+    brand: 'KARTAR',
+    category: 'AMPERE METER',
+    unit: 'Pics',
+    productImage: '',
+    type: 'Product',
+    stockQuantity: '',
+    description: ''
   });
 
   // Edit Product Form State
   const [editProd, setEditProd] = useState({
     name: '',
-    category: 'Networking Equipment',
-    brand: '',
-    stockQuantity: 10,
-    unit: 'Pcs',
-    minStockAlert: 5,
-    unitPrice: 5000
+    sku: '',
+    salePrice: '',
+    purchasePrice: '',
+    tax: '18% GST',
+    brand: 'KARTAR',
+    category: 'AMPERE METER',
+    unit: 'Pics',
+    productImage: '',
+    type: 'Product',
+    stockQuantity: '',
+    description: ''
   });
+
+  const handleGenerateAIProduct = () => {
+    if (newProd.type === 'Service') {
+      const aiServices = [
+        { name: 'Annual AMC Onsite Inspection & Service', sku: 'AE - 0313', salePrice: 15000, purchasePrice: 8000, tax: '18% GST', brand: 'KARTAR', category: 'AMPERE METER', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Comprehensive annual on-site maintenance, testing, and diagnostic service.' },
+        { name: 'CCTV Camera System Installation Service', sku: 'AE - 0452', salePrice: 12000, purchasePrice: 6500, tax: '18% GST', brand: 'HIKVISION', category: 'Security & Surveillance', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Professional mounting, wiring, and network configuration for IP security cameras.' },
+        { name: 'Enterprise Network Audit & Cabling Service', sku: 'AE - 0891', salePrice: 25000, purchasePrice: 15000, tax: '18% GST', brand: 'CISCO', category: 'Networking Equipment', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Complete structural network audit, rack alignment, and fiber optic testing.' }
+      ];
+      const picked = aiServices[Math.floor(Math.random() * aiServices.length)];
+      setNewProd({ ...picked, productImage: '' });
+    } else {
+      const aiProducts = [
+        { name: 'Digital Ampere Meter 50A', sku: 'AE - 0313', salePrice: 4500, purchasePrice: 3100, tax: '18% GST', brand: 'KARTAR', category: 'AMPERE METER', unit: 'Pics', type: 'Product', stockQuantity: 20, description: 'Digital Ampere Meter with high accuracy LED display and current transformer.' },
+        { name: 'Cisco 48-Port Core Switch', sku: 'AE - 0452', salePrice: 55000, purchasePrice: 42000, tax: '18% GST', brand: 'CISCO', category: 'Networking Equipment', unit: 'Pcs', type: 'Product', stockQuantity: 12, description: 'Gigabit Managed Core Switch for enterprise campus deployment.' },
+        { name: 'Hikvision 4K IP Dome Camera', sku: 'AE - 0891', salePrice: 8500, purchasePrice: 6200, tax: '18% GST', brand: 'HIKVISION', category: 'Security & Surveillance', unit: 'Pcs', type: 'Product', stockQuantity: 35, description: '4K Ultra-HD Weatherproof IP Camera with IR night vision and POE.' },
+        { name: 'Armored Cat6 Fiber Cable 100m', sku: 'AE - 1104', salePrice: 12500, purchasePrice: 9000, tax: '18% GST', brand: 'D-LINK', category: 'Cables & Wiring', unit: 'Meters', type: 'Product', stockQuantity: 50, description: 'Outdoor heavy-duty armored Cat6 Ethernet cable coil.' }
+      ];
+      const picked = aiProducts[Math.floor(Math.random() * aiProducts.length)];
+      setNewProd({ ...picked, productImage: '' });
+    }
+  };
+
+  const handleProductImageUpload = (e, isEdit = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditProd(prev => ({ ...prev, productImage: reader.result }));
+        } else {
+          setNewProd(prev => ({ ...prev, productImage: reader.result }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Stock Tx Form State
   const [stockTx, setStockTx] = useState({
@@ -187,22 +233,32 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
       const res = await fetch('/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProd)
+        body: JSON.stringify({
+          ...newProd,
+          unitPrice: newProd.salePrice || newProd.unitPrice || 0
+        })
       });
       const json = await res.json();
       if (json.success) {
         setShowAddProdModal(false);
         setNewProd({
           name: '',
-          category: 'Networking Equipment',
-          brand: '',
-          stockQuantity: 10,
-          unit: 'Pcs',
-          minStockAlert: 5,
-          unitPrice: 5000
+          sku: 'AE - ' + Math.floor(1000 + Math.random() * 9000),
+          salePrice: '',
+          purchasePrice: '',
+          tax: '18% GST',
+          brand: 'KARTAR',
+          category: 'AMPERE METER',
+          unit: 'Pics',
+          productImage: '',
+          type: 'Product',
+          stockQuantity: '',
+          description: ''
         });
         fetchInventory();
         if (onRefresh) onRefresh();
+      } else {
+        alert(json.message || 'Error creating product');
       }
     } catch (err) {
       console.error(err);
@@ -1455,89 +1511,301 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
       {/* Modal 1: Add New Product */}
       {showAddProdModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '580px', padding: '1.5rem' }}>
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem', color: '#0f172a' }}>
-              Add Product Line Item to Central Inventory
-            </h3>
-            <form onSubmit={handleAddProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Product Name</label>
-                <input 
-                  className="input-field" 
-                  required
-                  value={newProd.name}
-                  onChange={e => setNewProd({ ...newProd, name: e.target.value })}
-                  placeholder="e.g. Cisco 48-Port Core Switch"
-                  style={{ width: '100%', marginTop: '4px' }}
-                />
+        <div className="modal-overlay" onClick={() => setShowAddProdModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: 'calc(100vh - 2.5rem)', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #e2e8f0', margin: 'auto' }}>
+            
+            {/* Header with AI Generate button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
+              <h3 style={{ fontFamily: 'var(--font-heading, sans-serif)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                Create New Product & Service
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={handleGenerateAIProduct}
+                  style={{
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.45rem 0.85rem',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
+                  }}
+                  title="Auto-fill with AI sample product data"
+                >
+                  🤖 Generate with AI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddProdModal(false)}
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer' }}
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            </div>
+
+            <form onSubmit={handleAddProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              
+              {/* Row 1: Name & SKU */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Category</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Name<span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input 
+                    className="input-field" 
+                    required
+                    placeholder="Enter Name"
+                    value={newProd.name}
+                    onChange={e => setNewProd({ ...newProd, name: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    SKU<span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input 
+                    className="input-field" 
+                    required
+                    placeholder="AE - 0313"
+                    value={newProd.sku}
+                    onChange={e => setNewProd({ ...newProd, sku: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Sale Price & Purchase Price */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Sale Price
+                  </label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    placeholder="Enter Sale Price"
+                    value={newProd.salePrice}
+                    onChange={e => setNewProd({ ...newProd, salePrice: e.target.value, unitPrice: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Purchase Price
+                  </label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    placeholder="Enter Purchase Price"
+                    value={newProd.purchasePrice}
+                    onChange={e => setNewProd({ ...newProd, purchasePrice: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Tax & Brand */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Tax
+                  </label>
+                  <input 
+                    className="input-field" 
+                    placeholder="Select / Enter Tax (e.g. 18% GST)"
+                    value={newProd.tax}
+                    onChange={e => setNewProd({ ...newProd, tax: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Create tax here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create tax</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Brand
+                  </label>
+                  <select 
+                    className="select-field"
+                    value={newProd.brand}
+                    onChange={e => setNewProd({ ...newProd, brand: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  >
+                    <option value="KARTAR">KARTAR</option>
+                    <option value="CISCO">CISCO</option>
+                    <option value="HIKVISION">HIKVISION</option>
+                    <option value="D-LINK">D-LINK</option>
+                    <option value="SCHNEIDER">SCHNEIDER</option>
+                    <option value="General">General OEM</option>
+                  </select>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Create Brand here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create Brand</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: Category & Unit */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Category
+                  </label>
                   <select 
                     className="select-field"
                     value={newProd.category}
                     onChange={e => setNewProd({ ...newProd, category: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
                   >
+                    <option value="AMPERE METER">AMPERE METER</option>
                     <option value="Networking Equipment">Networking Equipment</option>
                     <option value="Security & Surveillance">Security & Surveillance</option>
                     <option value="Cables & Wiring">Cables & Wiring</option>
                     <option value="Power Systems">Power Systems</option>
                     <option value="Access Control">Access Control</option>
                   </select>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Create category here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create Category</span>
+                  </div>
                 </div>
+
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Brand / OEM</label>
-                  <input 
-                    className="input-field" 
-                    required
-                    value={newProd.brand}
-                    onChange={e => setNewProd({ ...newProd, brand: e.target.value })}
-                    placeholder="e.g. Hikvision / D-Link"
-                    style={{ width: '100%', marginTop: '4px' }}
-                  />
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Unit
+                  </label>
+                  <select 
+                    className="select-field"
+                    value={newProd.unit}
+                    onChange={e => setNewProd({ ...newProd, unit: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  >
+                    <option value="Pics">Pics</option>
+                    <option value="Pcs">Pcs</option>
+                    <option value="Meters">Meters</option>
+                    <option value="Sets">Sets</option>
+                    <option value="Boxes">Boxes</option>
+                  </select>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Create unit here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create unit</span>
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+
+              {/* Row 5: Product Image & Type (Product / Service Radio buttons) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem', alignItems: 'start' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Initial Qty</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Product Image
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
+                    <input 
+                      type="file" 
+                      id="create-product-image-file" 
+                      style={{ display: 'none' }}
+                      accept="image/*"
+                      onChange={e => handleProductImageUpload(e, false)}
+                    />
+                    <label 
+                      htmlFor="create-product-image-file"
+                      style={{ background: '#f1f5f9', color: '#334155', padding: '0.6rem 1rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', borderRight: '1px solid #cbd5e1', whiteSpace: 'nowrap' }}
+                    >
+                      Choose File
+                    </label>
+                    <span style={{ fontSize: '0.82rem', color: '#64748b', padding: '0.6rem 0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {newProd.productImage ? 'Image Selected ✓' : 'No file chosen'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Type
+                  </label>
+                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', paddingTop: '0.4rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.9rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="productType" 
+                        value="Product" 
+                        checked={newProd.type === 'Product'}
+                        onChange={e => setNewProd({ ...newProd, type: e.target.value })}
+                        style={{ accentColor: '#22c55e', width: 18, height: 18 }}
+                      />
+                      Product
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.9rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="productType" 
+                        value="Service" 
+                        checked={newProd.type === 'Service'}
+                        onChange={e => setNewProd({ ...newProd, type: e.target.value })}
+                        style={{ accentColor: '#22c55e', width: 18, height: 18 }}
+                      />
+                      Service
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 6: Quantity (only shown for physical Products) */}
+              {newProd.type !== 'Service' && (
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                    Quantity
+                  </label>
                   <input 
                     type="number"
                     className="input-field" 
-                    required
+                    placeholder="Enter Quantity"
                     value={newProd.stockQuantity}
                     onChange={e => setNewProd({ ...newProd, stockQuantity: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
                   />
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Unit Price (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    required
-                    value={newProd.unitPrice}
-                    onChange={e => setNewProd({ ...newProd, unitPrice: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Min Alert Level</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={newProd.minStockAlert}
-                    onChange={e => setNewProd({ ...newProd, minStockAlert: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
-                  />
-                </div>
+              )}
+
+              {/* Row 7: Description */}
+              <div>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
+                  Description
+                </label>
+                <textarea 
+                  className="input-field" 
+                  rows={3}
+                  placeholder="Enter Description"
+                  value={newProd.description}
+                  onChange={e => setNewProd({ ...newProd, description: e.target.value })}
+                  style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.9rem', resize: 'vertical' }}
+                />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddProdModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save to Inventory</button>
+
+              {/* Footer Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.85rem', marginTop: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddProdModal(false)}
+                  style={{ background: '#64748b', color: '#ffffff', border: 'none', padding: '0.65rem 1.4rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '0.65rem 1.6rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
+                >
+                  Create
+                </button>
               </div>
+
             </form>
           </div>
         </div>
@@ -1545,86 +1813,123 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
       {/* Modal 1B: Edit Product */}
       {editingProduct && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '580px', padding: '1.5rem' }}>
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem', color: '#0f172a' }}>
-              Edit Product ({editingProduct.code})
-            </h3>
-            <form onSubmit={handleEditProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Product Name</label>
-                <input 
-                  className="input-field" 
-                  required
-                  value={editProd.name}
-                  onChange={e => setEditProd({ ...editProd, name: e.target.value })}
-                  style={{ width: '100%', marginTop: '4px' }}
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="modal-overlay" onClick={() => setEditingProduct(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: 'calc(100vh - 2.5rem)', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #e2e8f0', margin: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                Edit Product ({editingProduct.code})
+              </h3>
+              <button onClick={() => setEditingProduct(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleEditProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Category</label>
-                  <select 
-                    className="select-field"
-                    value={editProd.category}
-                    onChange={e => setEditProd({ ...editProd, category: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
-                  >
-                    <option value="Networking Equipment">Networking Equipment</option>
-                    <option value="Security & Surveillance">Security & Surveillance</option>
-                    <option value="Cables & Wiring">Cables & Wiring</option>
-                    <option value="Power Systems">Power Systems</option>
-                    <option value="Access Control">Access Control</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Brand / OEM</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Name*</label>
                   <input 
                     className="input-field" 
                     required
+                    value={editProd.name}
+                    onChange={e => setEditProd({ ...editProd, name: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>SKU*</label>
+                  <input 
+                    className="input-field" 
+                    required
+                    value={editProd.sku || editProd.code || ''}
+                    onChange={e => setEditProd({ ...editProd, sku: e.target.value, code: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Sale Price</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    value={editProd.salePrice !== undefined ? editProd.salePrice : editProd.unitPrice}
+                    onChange={e => setEditProd({ ...editProd, salePrice: e.target.value, unitPrice: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Purchase Price</label>
+                  <input 
+                    type="number"
+                    className="input-field" 
+                    value={editProd.purchasePrice || 0}
+                    onChange={e => setEditProd({ ...editProd, purchasePrice: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Brand</label>
+                  <input 
+                    className="input-field" 
                     value={editProd.brand}
                     onChange={e => setEditProd({ ...editProd, brand: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Category</label>
+                  <input 
+                    className="input-field" 
+                    value={editProd.category}
+                    onChange={e => setEditProd({ ...editProd, category: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
                   />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: editProd.type === 'Service' ? '1fr' : '1fr 1fr', gap: '1.15rem' }}>
+                {editProd.type !== 'Service' && (
+                  <div>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Stock Quantity</label>
+                    <input 
+                      type="number"
+                      className="input-field" 
+                      required
+                      value={editProd.stockQuantity}
+                      onChange={e => setEditProd({ ...editProd, stockQuantity: e.target.value })}
+                      style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
+                    />
+                  </div>
+                )}
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Stock Quantity</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Unit</label>
                   <input 
-                    type="number"
                     className="input-field" 
-                    required
-                    value={editProd.stockQuantity}
-                    onChange={e => setEditProd({ ...editProd, stockQuantity: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Unit Price (₹)</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    required
-                    value={editProd.unitPrice}
-                    onChange={e => setEditProd({ ...editProd, unitPrice: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Min Alert Level</label>
-                  <input 
-                    type="number"
-                    className="input-field" 
-                    value={editProd.minStockAlert}
-                    onChange={e => setEditProd({ ...editProd, minStockAlert: e.target.value })}
-                    style={{ width: '100%', marginTop: '4px' }}
+                    value={editProd.unit}
+                    onChange={e => setEditProd({ ...editProd, unit: e.target.value })}
+                    style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
                   />
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingProduct(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Product Changes</button>
+
+              <div>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Description</label>
+                <textarea 
+                  className="input-field" 
+                  rows={2}
+                  value={editProd.description || ''}
+                  onChange={e => setEditProd({ ...editProd, description: e.target.value })}
+                  style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.9rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.85rem', marginTop: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                <button type="button" onClick={() => setEditingProduct(null)} style={{ background: '#64748b', color: '#ffffff', border: 'none', padding: '0.65rem 1.4rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: '#2563eb', color: '#ffffff', border: 'none', padding: '0.65rem 1.6rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}>Save Product Changes</button>
               </div>
             </form>
           </div>

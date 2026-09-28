@@ -37,30 +37,40 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  const usersCount = users.length;
-  const invoicesCount = invoices.length;
-  const purchasesCount = purchases.length;
-  const vouchersCount = vouchers.length;
+  // Real filtered customers count (CLIENT & USER roles only - excluding Admins & Staff)
+  const clientUsers = (users || []).filter(u => 
+    u.role === 'CLIENT' || u.role === 'USER' || u.role === 'Client' || u.role === 'User'
+  );
+  const totalCustomersCount = clientUsers.length;
 
-  const totalInvoiceVal = invoices.reduce((acc, i) => acc + (i.totalAmount || 0), 0);
-  const totalPurchaseVal = purchases.reduce((acc, p) => acc + (p.totalAmount || 0), 0);
+  // Real vendor count from purchases
+  const uniqueVendors = new Set((purchases || []).map(p => p.vendorName).filter(Boolean));
+  const totalVendorsCount = uniqueVendors.size;
 
-  const erp = data.erp || {
+  const invoicesCount = (invoices || []).length;
+  const vouchersCount = (vouchers || []).length;
+
+  const totalInvoiceVal = (invoices || []).reduce((acc, i) => acc + (Number(i.totalAmount) || Number(i.grandTotal) || Number(i.amount) || 0), 0);
+  const totalPurchaseVal = (purchases || []).reduce((acc, p) => acc + (Number(p.totalAmount) || Number(p.grandTotal) || Number(p.amount) || 0), 0);
+  const totalVoucherVal = (vouchers || []).reduce((acc, v) => acc + (Number(v.amount) || 0), 0);
+  const totalExpenseVal = totalPurchaseVal + totalVoucherVal;
+
+  const erp = {
     summary: {
-      totalCustomers: usersCount || 0,
-      totalVendors: purchasesCount || 0,
-      totalInvoices: invoicesCount || 0,
-      totalBills: vouchersCount || 0
+      totalCustomers: totalCustomersCount,
+      totalVendors: totalVendorsCount,
+      totalInvoices: invoicesCount,
+      totalBills: vouchersCount
     },
     accountBalances: [
-      { bank: 'State Bank of India (DB Main)', balance: `₹${(totalInvoiceVal * 0.7).toLocaleString('en-IN')}` },
-      { bank: 'HDFC Bank (Operating Acc)', balance: `₹${(totalInvoiceVal * 0.3).toLocaleString('en-IN')}` }
+      { bank: 'State Bank of India (DB Main)', balance: `₹${Math.round(totalInvoiceVal * 0.7).toLocaleString('en-IN')}` },
+      { bank: 'HDFC Bank (Operating Acc)', balance: `₹${Math.round(totalInvoiceVal * 0.3).toLocaleString('en-IN')}` }
     ],
     incomeVsExpense: {
       incomeToday: `₹${Math.round(totalInvoiceVal / 30).toLocaleString('en-IN')}`,
-      expenseToday: `₹${Math.round(totalPurchaseVal / 30).toLocaleString('en-IN')}`,
+      expenseToday: `₹${Math.round(totalExpenseVal / 30).toLocaleString('en-IN')}`,
       incomeThisMonth: `₹${totalInvoiceVal.toLocaleString('en-IN')}`,
-      expenseThisMonth: `₹${totalPurchaseVal.toLocaleString('en-IN')}`
+      expenseThisMonth: `₹${totalExpenseVal.toLocaleString('en-IN')}`
     },
     cashflowChart: [
       { name: 'Week 1', income: Math.round(totalInvoiceVal * 0.2) },
@@ -69,11 +79,11 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
       { name: 'Week 4', income: Math.round(totalInvoiceVal * 0.25) }
     ],
     incomeExpenseChart: [
-      { name: 'Mon', income: 15000, expense: 4000 },
-      { name: 'Tue', income: 28000, expense: 12000 },
-      { name: 'Wed', income: 45000, expense: 18000 },
-      { name: 'Thu', income: 32000, expense: 9000 },
-      { name: 'Fri', income: 58000, expense: 22000 }
+      { name: 'Mon', income: Math.round(totalInvoiceVal * 0.15), expense: Math.round(totalExpenseVal * 0.1) },
+      { name: 'Tue', income: Math.round(totalInvoiceVal * 0.25), expense: Math.round(totalExpenseVal * 0.2) },
+      { name: 'Wed', income: Math.round(totalInvoiceVal * 0.3), expense: Math.round(totalExpenseVal * 0.3) },
+      { name: 'Thu', income: Math.round(totalInvoiceVal * 0.15), expense: Math.round(totalExpenseVal * 0.25) },
+      { name: 'Fri', income: Math.round(totalInvoiceVal * 0.15), expense: Math.round(totalExpenseVal * 0.15) }
     ]
   };
 
