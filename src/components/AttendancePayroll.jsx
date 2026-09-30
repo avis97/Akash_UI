@@ -29,7 +29,8 @@ import {
   Eye,
   EyeOff,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Settings
 } from 'lucide-react';
 import { parseCoordinates, reverseGeocode } from '../utils/locationUtils';
 import { toast } from './common/ToastNotification';
@@ -92,6 +93,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const [selectedYear, setSelectedYear] = useState('2026');
   const [selectedStaffId, setSelectedStaffId] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Local Leave Tab Filters
+  const [leaveEmployeeFilter, setLeaveEmployeeFilter] = useState('ALL');
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState('ALL');
 
   // Edit / Delete states
   const [editingAtt, setEditingAtt] = useState(null);
@@ -218,34 +223,72 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   const isEmployee = currentRole === 'EMPLOYEE' || (activeUser && activeUser.role === 'EMPLOYEE');
 
-  // Filter staffUsers to exclude CLIENT and USER role users
-  const staffUsers = (users || []).filter(u => u.role !== 'CLIENT' && u.role !== 'USER');
+  // Filter staffUsers to exclude CLIENT role users
+  const staffUsers = (users || []).filter(u => u.role !== 'CLIENT');
 
   // Scoped lists based on role and selected employee
-  const selectedUserObj = staffUsers.find(u => u.id === selectedStaffId);
+  const selectedUserObj = staffUsers.find(u => u.id === selectedStaffId || u.name?.toLowerCase() === selectedStaffId?.toLowerCase());
+  const selectedStaffName = selectedUserObj ? selectedUserObj.name : (selectedStaffId !== 'ALL' ? selectedStaffId : null);
+
+  const isDateInSelectedMonthYear = (dateInput) => {
+    if (!selectedMonth || selectedMonth === 'ALL' || !selectedYear) return true;
+    if (!dateInput) return true;
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return true;
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const localMonth = monthNames[d.getMonth()];
+    const utcMonth = monthNames[d.getUTCMonth()];
+    const localYear = String(d.getFullYear());
+    const utcYear = String(d.getUTCFullYear());
+
+    const matchesMonth = localMonth.toLowerCase() === selectedMonth.toLowerCase() || utcMonth.toLowerCase() === selectedMonth.toLowerCase();
+    const matchesYear = localYear === String(selectedYear) || utcYear === String(selectedYear);
+    return matchesMonth && matchesYear;
+  };
 
   const displayedAttendance = isEmployee
-    ? attendance.filter(a => !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? attendance.filter(a => {
+      const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch && isDateInSelectedMonthYear(a.date);
+    })
     : attendance.filter(a => {
       const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStaff = selectedStaffId === 'ALL' || a.userId === selectedStaffId || (selectedUserObj && a.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
-      return matchesSearch && matchesStaff;
+      const matchesStaff = selectedStaffId === 'ALL' || a.userId === selectedStaffId || (selectedUserObj && a.userName?.toLowerCase().includes(selectedUserObj.name?.toLowerCase())) || (selectedStaffName && a.userName?.toLowerCase().includes(selectedStaffName.toLowerCase()));
+      return matchesSearch && matchesStaff && isDateInSelectedMonthYear(a.date);
     });
 
   const displayedLeaves = isEmployee
-    ? leaves.filter(l => !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? leaves.filter(l => {
+      const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesMonthYear = selectedMonth === 'ALL' || l.status === 'PENDING' || isDateInSelectedMonthYear(l.startDate || l.createdAt);
+      return matchesSearch && matchesMonthYear;
+    })
     : leaves.filter(l => {
       const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && l.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
-      return matchesSearch && matchesStaff;
+      const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && l.userName?.toLowerCase().includes(selectedUserObj.name?.toLowerCase())) || (selectedStaffName && l.userName?.toLowerCase().includes(selectedStaffName.toLowerCase()));
+      const matchesMonthYear = selectedMonth === 'ALL' || l.status === 'PENDING' || isDateInSelectedMonthYear(l.startDate || l.createdAt);
+      return matchesSearch && matchesStaff && matchesMonthYear;
     });
 
+  const tabLeaves = displayedLeaves.filter(l => {
+    const matchesEmp = leaveEmployeeFilter === 'ALL' || l.userId === leaveEmployeeFilter || (l.userName && leaveEmployeeFilter && l.userName.toLowerCase().includes(leaveEmployeeFilter.toLowerCase()));
+    const matchesStatus = leaveStatusFilter === 'ALL' || l.status === leaveStatusFilter;
+    return matchesEmp && matchesStatus;
+  });
+
   const displayedSalaryRecords = isEmployee
-    ? salaryRecords.filter(s => !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? salaryRecords.filter(s => {
+      const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesMonth = !selectedMonth || selectedMonth === 'ALL' || s.month?.toLowerCase() === selectedMonth.toLowerCase();
+      const matchesYear = !selectedYear || String(s.year) === String(selectedYear);
+      return matchesSearch && matchesMonth && matchesYear;
+    })
     : salaryRecords.filter(s => {
       const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStaff = selectedStaffId === 'ALL' || s.userId === selectedStaffId || (selectedUserObj && s.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
-      return matchesSearch && matchesStaff;
+      const matchesStaff = selectedStaffId === 'ALL' || s.userId === selectedStaffId || (selectedUserObj && s.userName?.toLowerCase().includes(selectedUserObj.name?.toLowerCase())) || (selectedStaffName && s.userName?.toLowerCase().includes(selectedStaffName.toLowerCase()));
+      const matchesMonth = !selectedMonth || selectedMonth === 'ALL' || s.month?.toLowerCase() === selectedMonth.toLowerCase();
+      const matchesYear = !selectedYear || String(s.year) === String(selectedYear);
+      return matchesSearch && matchesStaff && matchesMonth && matchesYear;
     });
 
   const filteredMonthlyReport = monthlyReport.filter(r => {
@@ -261,13 +304,19 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   const fetchAttendanceData = useCallback(async () => {
     try {
-      const queryParam = (isEmployee && (activeUser?.id || activeUser?.name))
-        ? `?userId=${encodeURIComponent(activeUser?.id || '')}&userName=${encodeURIComponent(activeUser?.name || '')}`
-        : '';
+      const params = new URLSearchParams();
+      if (isEmployee && (activeUser?.id || activeUser?.name)) {
+        if (activeUser?.id) params.append('userId', activeUser.id);
+        if (activeUser?.name) params.append('userName', activeUser.name);
+      }
+      if (selectedMonth) params.append('month', selectedMonth);
+      if (selectedYear) params.append('year', String(selectedYear));
+
+      const queryString = params.toString() ? `?${params.toString()}` : '';
       const [attRes, lveRes, payRes, usrRes] = await Promise.allSettled([
-        fetch(`/api/attendance${queryParam}`).then(r => r.json()),
-        fetch(`/api/leaves${queryParam}`).then(r => r.json()),
-        fetch(`/api/payroll${queryParam}`).then(r => r.json()),
+        fetch(`/api/attendance${queryString}`).then(r => r.json()),
+        fetch('/api/leaves').then(r => r.json()),
+        fetch(`/api/payroll${queryString}`).then(r => r.json()),
         fetch('/api/users').then(r => r.json())
       ]);
 
@@ -278,7 +327,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     } catch (err) {
       console.error('Error fetching attendance data:', err);
     }
-  }, [isEmployee, activeUser?.id, activeUser?.name]);
+  }, [isEmployee, activeUser?.id, activeUser?.name, selectedMonth, selectedYear]);
 
   const fetchMonthlyReport = useCallback(async () => {
     if (isEmployee) return;
@@ -325,124 +374,300 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     method: 'WEB'
   });
 
+  // Super Admin Payroll Configuration State
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [payrollConfig, setPayrollConfig] = useState({
+    annualLeaveQuota: 14,
+    epfPercent: 12,
+    esiPercent: 0.75,
+    bonusPercent: 8.33,
+    workDaysInMonth: 30,
+    workHoursInDay: 8,
+    pTaxTier1Amount: 0,
+    pTaxTier2Amount: 110,
+    pTaxTier3Amount: 130,
+    pTaxTier4Amount: 200
+  });
+
+  const fetchPayrollConfig = async () => {
+    try {
+      const res = await fetch('/api/payroll/config');
+      const json = await res.json();
+      if (json.success && json.data) {
+        setPayrollConfig(json.data);
+      }
+    } catch (err) {
+      console.error('Error fetching payroll config:', err);
+    }
+  };
+
+  const handleSavePayrollConfig = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/payroll/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payrollConfig)
+      });
+      const json = await res.json();
+      if (json.success) {
+        setShowConfigModal(false);
+        toast.success('Payroll settings saved successfully!');
+      } else {
+        toast.error(json.message || 'Failed to save settings');
+      }
+    } catch (err) {
+      toast.error('Error saving payroll configuration');
+    }
+  };
+
   // Salary Slip POST state
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [newSalary, setNewSalary] = useState({
     userId: '',
     month: selectedMonth,
     year: selectedYear,
-    baseSalary: '45000',
+    baseSalary: '30000',
     others1: '0',
     others2: '0',
     others3: '0',
     others4: '0',
-    epfShare: '5400',
-    esiShare: '338',
-    pTax: '110',
+    overtimeDays: '0',
     overtimeHours: '0',
-    allowances: '2500',
-    deductions: '0'
+    absentDays: '0',
+    prevLeaveBalance: '14',
+    prevLoanDue: '0',
+    furtherLoanTaken: '0',
+    advanceDeductedMode: 'custom', // 'full' | '1000' | '2000' | 'custom'
+    advanceDeducted: '0',
+    epfShare: '',
+    esiShare: '',
+    pTax: '',
+    bonusEnabled: false
   });
 
   // Edit Salary Form state
   const [editSalData, setEditSalData] = useState({
     month: selectedMonth,
     year: selectedYear,
-    baseSalary: 45000,
+    baseSalary: 30000,
     overtimeHours: 0,
-    allowances: 2500,
+    allowances: 0,
     deductions: 0,
     status: 'PROCESSED'
   });
 
-  const handleSelectSalaryUser = (userId) => {
+  // Real-time payroll preview calculation hook following AKASH ENGINEERING rules (a to v)
+  const calcPayrollPreview = useMemo(() => {
+    const basic = Number(newSalary.baseSalary) || 0;
+    const o1 = Number(newSalary.others1) || 0;
+    const o2 = Number(newSalary.others2) || 0;
+    const o3 = Number(newSalary.others3) || 0;
+    const o4 = Number(newSalary.others4) || 0;
+    const grossBase = basic + o1 + o2 + o3 + o4;
+
+    const workDays = payrollConfig.workDaysInMonth || 30;
+    const workHours = payrollConfig.workHoursInDay || 8;
+
+    // Rule (a): Daily rate = (basic + 4 others) / 30
+    const dailyRate = grossBase / workDays;
+
+    // Rule (b): Hourly OT rate = (basic + 4 others) / 30 / 8, rounded to step of 5 (30, 35, 40...)
+    let rawHourlyOtRate = dailyRate / workHours;
+    let hourlyOtRate = rawHourlyOtRate > 0 ? Math.round(rawHourlyOtRate / 5) * 5 : 0;
+
+    const otHrs = Number(newSalary.overtimeHours) || 0;
+    const otPay = otHrs * hourlyOtRate;
+
+    const otDays = Number(newSalary.overtimeDays) || 0;
+    const absDays = Number(newSalary.absentDays) || 0;
+    const presentDays = Math.max(0, 30 - absDays);
+
+    // Rule (c): Offset Overtime Days & Absent Days against each other
+    let netOtDays = 0;
+    let netAbsDays = 0;
+    if (otDays >= absDays) {
+      netOtDays = otDays - absDays;
+      netAbsDays = 0;
+    } else {
+      netAbsDays = absDays - otDays;
+      netOtDays = 0;
+    }
+    const otDaysPay = netOtDays * dailyRate;
+
+    // Rule (d), (e), (p), (q), (r): Leave tracking
+    const prevLeave = Number(newSalary.prevLeaveBalance !== undefined && newSalary.prevLeaveBalance !== '' ? newSalary.prevLeaveBalance : (payrollConfig.annualLeaveQuota || 14));
+    const currMonthLeaveAbsent = netAbsDays;
+
+    let leaveDeducted = 0;
+    let currLeave = 0;
+    if (currMonthLeaveAbsent > prevLeave) {
+      leaveDeducted = currMonthLeaveAbsent - prevLeave;
+      currLeave = 0;
+    } else {
+      leaveDeducted = 0;
+      currLeave = prevLeave - currMonthLeaveAbsent;
+    }
+    const absentDeductionPay = leaveDeducted * dailyRate;
+    const paidDays = Math.max(0, 30 - leaveDeducted);
+    const presentDayBaseSalary = Math.round(paidDays * dailyRate);
+    const totalOtAmount = Math.round(otDaysPay + otPay);
+
+    // Rule (f), (g), (h), (i): Loan & Advance tracking
+    const prevLoan = Number(newSalary.prevLoanDue) || 0;
+    const furtherLoan = Number(newSalary.furtherLoanTaken) || 0;
+    const totalLoan = prevLoan + furtherLoan;
+
+    let advDeducted = 0;
+    if (newSalary.advanceDeductedMode === 'full') {
+      advDeducted = totalLoan;
+    } else if (newSalary.advanceDeductedMode === '1000') {
+      advDeducted = Math.min(1000, totalLoan);
+    } else if (newSalary.advanceDeductedMode === '2000') {
+      advDeducted = Math.min(2000, totalLoan);
+    } else {
+      advDeducted = Number(newSalary.advanceDeducted) || 0;
+    }
+    const remLoan = Math.max(0, totalLoan - advDeducted);
+
+    // Rule (j): EPF = basic * 12%
+    const epf = newSalary.epfShare !== '' && newSalary.epfShare !== null && newSalary.epfShare !== undefined
+      ? Number(newSalary.epfShare)
+      : Math.round(basic * (payrollConfig.epfPercent || 12) / 100);
+
+    // Rule (k): ESI = grossBase * 0.75%
+    const esi = newSalary.esiShare !== '' && newSalary.esiShare !== null && newSalary.esiShare !== undefined
+      ? Number(newSalary.esiShare)
+      : Math.round(grossBase * (payrollConfig.esiPercent || 0.75) / 100);
+
+    // Rule (l): Professional Tax
+    let ptax = 0;
+    if (newSalary.pTax !== '' && newSalary.pTax !== null && newSalary.pTax !== undefined) {
+      ptax = Number(newSalary.pTax);
+    } else {
+      if (grossBase > 25000) ptax = payrollConfig.pTaxTier4Amount || 200;
+      else if (grossBase > 15000) ptax = payrollConfig.pTaxTier3Amount || 130;
+      else if (grossBase > 10000) ptax = payrollConfig.pTaxTier2Amount || 110;
+      else ptax = payrollConfig.pTaxTier1Amount || 0;
+    }
+
+    // Rule (t): Bonus @ 8.33% on basic
+    const bonus = newSalary.bonusEnabled ? Math.round(basic * (payrollConfig.bonusPercent || 8.33) / 100) : 0;
+
+    const totalGross = grossBase + otDaysPay + otPay + bonus;
+    const totalDeductions = absentDeductionPay + advDeducted + epf + esi + ptax;
+    const netSalary = Math.round(totalGross - totalDeductions);
+
+    return {
+      grossBase,
+      dailyRate,
+      hourlyOtRate,
+      otPay,
+      netOtDays,
+      netAbsDays,
+      otDaysPay,
+      presentDays,
+      paidDays,
+      presentDayBaseSalary,
+      totalOtAmount,
+      prevLeave,
+      currMonthLeaveAbsent,
+      leaveDeducted,
+      currLeave,
+      absentDeductionPay,
+      prevLoan,
+      furtherLoan,
+      totalLoan,
+      advDeducted,
+      remLoan,
+      epf,
+      esi,
+      ptax,
+      bonus,
+      totalGross,
+      totalDeductions,
+      netSalary
+    };
+  }, [newSalary, payrollConfig]);
+
+  const handleSelectSalaryUser = async (userId, targetMonth = newSalary?.month || selectedMonth, targetYear = newSalary?.year || selectedYear) => {
+    if (!userId) {
+      setNewSalary(prev => ({ ...prev, userId: '', month: targetMonth, year: targetYear }));
+      return;
+    }
     const selectedUser = (users || []).find(u => u.id === userId);
     if (!selectedUser) {
-      setNewSalary(prev => ({ ...prev, userId }));
+      setNewSalary(prev => ({ ...prev, userId, month: targetMonth, year: targetYear }));
       return;
     }
 
-    const userAtt = attendance.filter(a => a.userId === userId || a.userName === selectedUser.name);
-    const lateCount = userAtt.filter(a => a.status === 'LATE' || a.status === 'Late').length;
-    const basic = selectedUser.basicSalary || selectedUser.baseSalary || selectedUser.salary || 45000;
+    const basic = selectedUser.basicSalary || selectedUser.baseSalary || selectedUser.salary || 30000;
     const o1 = selectedUser.others1 || 0;
     const o2 = selectedUser.others2 || 0;
     const o3 = selectedUser.others3 || 0;
     const o4 = selectedUser.others4 || 0;
     const gross = basic + o1 + o2 + o3 + o4;
 
-    const defaultEpf = selectedUser.epfShare !== undefined && selectedUser.epfShare !== null && selectedUser.epfShare > 0
-      ? selectedUser.epfShare
-      : Math.round(basic * 0.12);
+    let prevLeaveBalance = '14';
+    let prevLoanDue = '0';
+    let autoOtHours = '0';
+    let autoOtDays = '0';
+    let autoAbsentDays = '0';
 
-    const defaultEsi = selectedUser.esiShare !== undefined && selectedUser.esiShare !== null && selectedUser.esiShare > 0
-      ? selectedUser.esiShare
-      : Math.round(gross * 0.0075);
-
-    const defaultPtax = selectedUser.pTax !== undefined && selectedUser.pTax !== null ? selectedUser.pTax : 110;
-    const autoDeductions = lateCount * 250;
+    try {
+      const res = await fetch(`/api/payroll/previous-month-data?userId=${userId}&month=${encodeURIComponent(targetMonth)}&year=${encodeURIComponent(targetYear)}`);
+      const json = await res.json();
+      if (json.success) {
+        prevLeaveBalance = (json.prevLeaveBalance !== undefined ? json.prevLeaveBalance : 14).toString();
+        prevLoanDue = (json.prevLoanDue !== undefined ? json.prevLoanDue : 0).toString();
+        if (json.autoOtHours !== undefined) autoOtHours = json.autoOtHours.toString();
+        if (json.autoOtDays !== undefined) autoOtDays = json.autoOtDays.toString();
+        if (json.autoAbsentDays !== undefined) autoAbsentDays = json.autoAbsentDays.toString();
+      }
+    } catch (e) {
+      console.error(e);
+    }
 
     setNewSalary(prev => ({
       ...prev,
       userId,
+      month: targetMonth,
+      year: targetYear,
       baseSalary: basic.toString(),
       others1: o1.toString(),
       others2: o2.toString(),
       others3: o3.toString(),
       others4: o4.toString(),
-      epfShare: defaultEpf.toString(),
-      esiShare: defaultEsi.toString(),
-      pTax: defaultPtax.toString(),
-      allowances: (o1 + o2 + o3 + o4).toString(),
-      deductions: autoDeductions.toString()
+      overtimeDays: autoOtDays,
+      overtimeHours: autoOtHours,
+      absentDays: autoAbsentDays,
+      prevLeaveBalance,
+      prevLoanDue,
+      furtherLoanTaken: '0',
+      advanceDeductedMode: 'custom',
+      advanceDeducted: '0',
+      epfShare: (selectedUser.epfShare !== undefined && selectedUser.epfShare !== null && selectedUser.epfShare > 0 ? selectedUser.epfShare : Math.round(basic * 0.12)).toString(),
+      esiShare: (selectedUser.esiShare !== undefined && selectedUser.esiShare !== null && selectedUser.esiShare > 0 ? selectedUser.esiShare : Math.round(gross * 0.0075)).toString(),
+      pTax: (selectedUser.pTax !== undefined && selectedUser.pTax !== null ? selectedUser.pTax : '').toString(),
+      bonusEnabled: false
     }));
-  };
-
-  const handleBatchGenerateSalaries = async () => {
-    if (!window.confirm(`Generate & process digital salary slips for ALL employees for ${selectedMonth} ${selectedYear}?`)) return;
-    setIsGeneratingBatch(true);
-    try {
-      const res = await fetch('/api/payroll/generate-batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month: selectedMonth, year: selectedYear })
-      });
-      const json = await res.json();
-      if (json.success) {
-        toast.success(json.message || 'Batch salary generation completed');
-        fetchAttendanceData();
-        fetchMonthlyReport();
-        if (onRefresh) onRefresh();
-      } else {
-        toast.error(json.message || 'Failed to generate batch salaries');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Error processing batch salary generation');
-    } finally {
-      setIsGeneratingBatch(false);
-    }
   };
 
   const handleGenerateSalary = async (e) => {
     e.preventDefault();
+    if (!newSalary.userId) {
+      toast.error('Please select an employee first');
+      return;
+    }
     try {
       const selectedUser = (users || []).find(u => u.id === newSalary.userId);
-      const res = await fetch('/api/payroll/calculate', {
+      const res = await fetch('/api/payroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newSalary,
-          baseSalary: Number(newSalary.baseSalary) || 0,
-          basicSalary: Number(newSalary.baseSalary) || 0,
-          others1: Number(newSalary.others1) || 0,
-          others2: Number(newSalary.others2) || 0,
-          others3: Number(newSalary.others3) || 0,
-          others4: Number(newSalary.others4) || 0,
-          epfShare: Number(newSalary.epfShare) || 0,
-          esiShare: Number(newSalary.esiShare) || 0,
-          pTax: Number(newSalary.pTax) || 0,
-          allowances: ((Number(newSalary.others1) || 0) + (Number(newSalary.others2) || 0) + (Number(newSalary.others3) || 0) + (Number(newSalary.others4) || 0)) || Number(newSalary.allowances) || 0,
+          month: selectedMonth,
+          year: Number(selectedYear),
           userName: selectedUser ? selectedUser.name : 'Staff Member'
         })
       });
@@ -910,6 +1135,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   onChange={e => setSelectedMonth(e.target.value)}
                   style={{ border: 'none', background: 'transparent', fontSize: '0.74rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
                 >
+                  <option value="ALL">📅 All Months</option>
                   {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
@@ -1096,17 +1322,6 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <UserCheck style={{ width: 12, height: 12 }} />
               Daily Punch Log ({displayedAttendance.length})
             </button>
-
-            {!isEmployee && (
-              <button
-                className={`btn ${activeTab === 'monthly_report' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
-                onClick={() => setActiveTab('monthly_report')}
-              >
-                <BarChart3 style={{ width: 12, height: 12 }} />
-                HR Monthly Report ({monthlyReport.length})
-              </button>
-            )}
 
             <button
               className={`btn ${activeTab === 'leaves' ? 'btn-primary' : 'btn-secondary'}`}
@@ -1529,209 +1744,236 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         </div>
       )}
 
-      {/* TAB 2: HR Monthly Report & Overview (Superadmin Only) */}
-      {!isEmployee && activeTab === 'monthly_report' && (
-        <div className="glass-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <div>
-              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
-                HR Monthly Attendance & Payroll Summary Report ({selectedMonth} {selectedYear})
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                Aggregates working days, present days, late entry counts, and salary status per employee.
-              </p>
-            </div>
-            <button className="btn btn-primary" onClick={handleBatchGenerateSalaries} disabled={isGeneratingBatch}>
-              <Zap size={15} /> {isGeneratingBatch ? 'Processing...' : `Generate All Staff Salary Slips`}
-            </button>
-          </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="custom-table" style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-                  <th>SL NO</th>
-                  <th>NAME OF EMPLOYEES</th>
-                  <th>BASIC SALARY</th>
-                  <th>OTHERS 1</th>
-                  <th>OTHERS 2</th>
-                  <th>OTHERS 3</th>
-                  <th>OTHERS 4</th>
-                  <th style={{ background: '#fef3c7', color: '#92400e' }}>TOTAL (GROSS)</th>
-                  <th style={{ background: '#fee2e2', color: '#991b1b' }}>EPF SHARE 12%</th>
-                  <th style={{ background: '#fee2e2', color: '#991b1b' }}>ESI SHARE 0.75%</th>
-                  <th style={{ background: '#fee2e2', color: '#991b1b' }}>P TAX</th>
-                  <th style={{ background: '#d1fae5', color: '#065f46', fontWeight: 800 }}>NET TAKE HOME SALARY</th>
-                  <th>STATUS</th>
-                  <th>ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMonthlyReport.map((item, idx) => {
-                  const basic = item.baseSalary || 0;
-                  const o1 = item.others1 || 0;
-                  const o2 = item.others2 || 0;
-                  const o3 = item.others3 || 0;
-                  const o4 = item.others4 || 0;
-                  const totalAllow = item.allowances || (o1 + o2 + o3 + o4);
-                  const gross = item.grossSalary || (basic + totalAllow);
-                  const epf = item.epfShare || Math.round(basic * 0.12);
-                  const esi = item.esiShare || Math.round(gross * 0.0075);
-                  const pt = item.pTax !== undefined && item.pTax !== null ? item.pTax : 110;
-                  const net = item.netSalary || (gross - epf - esi - pt);
-
-                  return (
-                    <tr key={item.userId}>
-                      <td><strong>{idx + 1}</strong></td>
-                      <td>
-                        <strong>{item.userName}</strong>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{item.designation || 'Staff Member'}</div>
-                      </td>
-                      <td>₹{basic.toLocaleString()}</td>
-                      <td>₹{o1.toLocaleString()}</td>
-                      <td>₹{o2.toLocaleString()}</td>
-                      <td>₹{o3.toLocaleString()}</td>
-                      <td>₹{o4.toLocaleString()}</td>
-                      <td style={{ fontWeight: 700, color: '#d97706', background: 'rgba(251, 191, 36, 0.08)' }}>₹{gross.toLocaleString()}</td>
-                      <td style={{ color: '#dc2626' }}>₹{epf.toLocaleString()}</td>
-                      <td style={{ color: '#dc2626' }}>₹{esi.toLocaleString()}</td>
-                      <td style={{ color: '#dc2626' }}>₹{pt.toLocaleString()}</td>
-                      <td style={{ fontWeight: 800, color: '#059669', background: 'rgba(16, 185, 129, 0.1)', fontSize: '0.92rem' }}>
-                        ₹{net.toLocaleString()}
-                      </td>
-                      <td>
-                        <span className={`badge ${item.salaryStatus === 'PROCESSED' ? 'badge-approved' : 'badge-pending'}`}>
-                          {item.salaryStatus}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
-                            onClick={() => handleOpenBasicSalaryModal(item)}
-                            title="Set or Edit Full Salary Breakdown"
-                          >
-                            <Edit2 size={13} /> Edit Salary Fields
-                          </button>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
-                            onClick={() => {
-                              setNewSalary({
-                                userId: item.userId,
-                                month: selectedMonth,
-                                year: selectedYear,
-                                baseSalary: basic.toString(),
-                                overtimeHours: '0',
-                                allowances: totalAllow.toString(),
-                                deductions: (epf + esi + pt).toString()
-                              });
-                              setShowSalaryModal(true);
-                            }}
-                          >
-                            <DollarSign size={13} /> Process Slip
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* TAB 3: Leave Management & Approvals */}
       {activeTab === 'leaves' && (
         <div className="glass-card">
-          <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700, marginBottom: '1rem' }}>
-            {isEmployee ? 'My Leave Applications & Approval Status' : 'Employee Leave Requests & Approval Workflow'}
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>
+                {isEmployee ? 'My Leave Applications & Approval Status' : 'Employee Leave Requests & Approval Workflow'}
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0 0' }}>
+                Track leave quotas, approved leaves, and salary deduction rules.
+              </p>
+            </div>
+            <button
+              className="btn btn-primary"
+              style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              onClick={() => setShowLeaveModal(true)}
+            >
+              <Plus size={15} /> Apply Leave Request
+            </button>
+          </div>
 
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Leave Type</th>
-                <th>Duration</th>
-                <th>Reason</th>
-                <th>Approval Status</th>
-                <th>Approved By</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedLeaves.map(l => (
-                <tr key={l.id}>
-                  <td><strong>{l.userName}</strong></td>
-                  <td><span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>{l.leaveType}</span></td>
-                  <td>{typeof l.startDate === 'string' ? l.startDate.slice(0, 10) : new Date(l.startDate).toISOString().slice(0, 10)} to {typeof l.endDate === 'string' ? l.endDate.slice(0, 10) : new Date(l.endDate).toISOString().slice(0, 10)}</td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{l.reason}</td>
-                  <td>
-                    <span className={`badge ${l.status === 'APPROVED' ? 'badge-approved' : 'badge-pending'}`}>
-                      {l.status}
-                    </span>
-                  </td>
-                  <td>{l.approvedBy || '—'}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      {l.status === 'PENDING' && !isEmployee && (
-                        <button className="btn btn-primary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }} onClick={() => handleApproveLeave(l.id)}>
-                          Approve
-                        </button>
-                      )}
-                      {!isEmployee && (
-                        <>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
-                            title="Edit Leave Request"
-                            onClick={() => {
-                              setEditingLeave(l);
-                              setEditLeaveData({
-                                leaveType: l.leaveType || 'CASUAL',
-                                startDate: l.startDate ? new Date(l.startDate).toISOString().slice(0, 10) : '',
-                                endDate: l.endDate ? new Date(l.endDate).toISOString().slice(0, 10) : '',
-                                reason: l.reason || '',
-                                status: l.status || 'PENDING'
-                              });
-                            }}
-                          >
-                            <Edit2 size={14} color="#2563eb" />
-                          </button>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                            title="Delete Leave Request"
-                            onClick={() => setDeletingLeave(l)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
+          {/* Leave Quota & Remaining Balance Summary Card */}
+          <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '0.85rem', marginBottom: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            <div style={{ background: '#ffffff', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+              <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Annual Paid Leave Quota</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                {payrollConfig.annualLeaveQuota || 14} Days
+              </div>
+            </div>
+            <div style={{ background: '#ffffff', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+              <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Approved Leaves Used</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>
+                {displayedLeaves.filter(l => l.status === 'APPROVED').length} Days
+              </div>
+            </div>
+            <div style={{ background: '#f0fdf4', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+              <div style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, textTransform: 'uppercase' }}>Remaining Paid Leave Balance</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#15803d', marginTop: '2px' }}>
+                {Math.max(0, (payrollConfig.annualLeaveQuota || 14) - displayedLeaves.filter(l => l.status === 'APPROVED').length)} Days
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.76rem', color: '#166534', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <ShieldCheck size={16} />
+            <span>
+              <strong>Salary Protection Rule:</strong> Approved leave requests covered under the paid leave balance do <strong>NOT</strong> deduct salary. Salary is only deducted if absences exceed remaining paid leave.
+            </span>
+          </div>
+
+          {/* Employee & Status Filter Bar for Leave Requests */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem', background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Users size={14} color="#64748b" /> Filter Employee:
+              </div>
+              <select
+                className="select-field"
+                value={leaveEmployeeFilter}
+                onChange={e => setLeaveEmployeeFilter(e.target.value)}
+                style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem', minWidth: 170, background: '#ffffff', borderColor: '#cbd5e1' }}
+              >
+                <option value="ALL">👤 All Employees ({displayedLeaves.length})</option>
+                {staffUsers.map(u => (
+                  <option key={u.id} value={u.name}>👤 {u.name} ({formatUserRole(u.role)})</option>
+                ))}
+              </select>
+
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem', marginLeft: '0.5rem' }}>
+                Filter Status:
+              </div>
+              <select
+                className="select-field"
+                value={leaveStatusFilter}
+                onChange={e => setLeaveStatusFilter(e.target.value)}
+                style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem', minWidth: 130, background: '#ffffff', borderColor: '#cbd5e1' }}
+              >
+                <option value="ALL">📋 All Statuses</option>
+                <option value="PENDING">⏳ Pending</option>
+                <option value="APPROVED">✅ Approved</option>
+                <option value="REJECTED">❌ Rejected</option>
+              </select>
+            </div>
+
+            {(leaveEmployeeFilter !== 'ALL' || leaveStatusFilter !== 'ALL') && (
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem', color: '#64748b' }}
+                onClick={() => {
+                  setLeaveEmployeeFilter('ALL');
+                  setLeaveStatusFilter('ALL');
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+
+          {tabLeaves.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px border-dashed #cbd5e1', color: '#64748b' }}>
+              <Calendar size={36} color="#94a3b8" style={{ marginBottom: '0.5rem' }} />
+              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#334155' }}>No Leave Requests Found</div>
+              <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>
+                {leaveEmployeeFilter !== 'ALL' || leaveStatusFilter !== 'ALL'
+                  ? 'No leave requests match the selected employee or status filter.'
+                  : (selectedMonth === 'ALL'
+                    ? 'No leave requests recorded for the selected staff member.'
+                    : `No leave requests recorded for ${selectedMonth} ${selectedYear}. Select "All Months" to view all requests.`)}
+              </p>
+              <button
+                className="btn btn-secondary"
+                style={{ marginTop: '0.75rem', fontSize: '0.78rem' }}
+                onClick={() => {
+                  setLeaveEmployeeFilter('ALL');
+                  setLeaveStatusFilter('ALL');
+                  setSelectedMonth('ALL');
+                }}
+              >
+                Clear Filters & View All
+              </button>
+            </div>
+          ) : (
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Leave Type</th>
+                  <th>Duration</th>
+                  <th>Reason</th>
+                  <th>Approval Status</th>
+                  <th>Approved By</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tabLeaves.map(l => (
+                  <tr key={l.id}>
+                    <td><strong>{l.userName}</strong></td>
+                    <td><span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>{l.leaveType}</span></td>
+                    <td>{typeof l.startDate === 'string' ? l.startDate.slice(0, 10) : new Date(l.startDate).toISOString().slice(0, 10)} to {typeof l.endDate === 'string' ? l.endDate.slice(0, 10) : new Date(l.endDate).toISOString().slice(0, 10)}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{l.reason}</td>
+                    <td>
+                      <span className={`badge ${l.status === 'APPROVED' ? 'badge-approved' : 'badge-pending'}`}>
+                        {l.status}
+                      </span>
+                    </td>
+                    <td>{l.approvedBy || '—'}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                        {l.status === 'PENDING' && !isEmployee && (
+                          <button className="btn btn-primary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }} onClick={() => handleApproveLeave(l.id)}>
+                            Approve
+                          </button>
+                        )}
+                        {!isEmployee && (
+                          <>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
+                              title="Edit Leave Request"
+                              onClick={() => {
+                                setEditingLeave(l);
+                                setEditLeaveData({
+                                  leaveType: l.leaveType || 'CASUAL',
+                                  startDate: l.startDate ? new Date(l.startDate).toISOString().slice(0, 10) : '',
+                                  endDate: l.endDate ? new Date(l.endDate).toISOString().slice(0, 10) : '',
+                                  reason: l.reason || '',
+                                  status: l.status || 'PENDING'
+                                });
+                              }}
+                            >
+                              <Edit2 size={14} color="#2563eb" />
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                              title="Delete Leave Request"
+                              onClick={() => setDeletingLeave(l)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
       {/* TAB 4: Salary Management & Salary Slips */}
       {activeTab === 'payroll' && (
         <div className="glass-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
-                {isEmployee ? 'My Digital Salary Slips' : 'Payroll Integration & Digital Salary Slips'}
+                {isEmployee ? 'My Digital Salary Slips' : 'AKASH ENGINEERING – Payroll & Salary Management'}
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Calculates base salary, overtime, statutory PF, tax, and late entry deductions automatically.
+                Calculates daily rates, OT hours/days, leave balance carryover, loan recovery, statutory EPF/ESI/PTAX & annual bonus.
               </p>
             </div>
+            {!isEmployee && (
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
+                <button
+                  className="btn btn-primary"
+                  style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  onClick={() => setShowSalaryModal(true)}
+                >
+                  <Plus size={15} /> Process Salary Slip
+                </button>
+                {activeUser?.role === 'SUPERADMIN' && (
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    onClick={() => {
+                      fetchPayrollConfig();
+                      setShowConfigModal(true);
+                    }}
+                  >
+                    <Settings size={15} /> Settings (Super Admin)
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <table className="custom-table">
@@ -1739,71 +1981,111 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <tr>
                 <th>Employee</th>
                 <th>Period</th>
-                <th>Base Pay</th>
-                <th>Overtime (Hrs)</th>
-                <th>PF & Tax</th>
-                <th>Net Salary</th>
+                <th>Daily Rate & Base</th>
+                <th>Overtime (Days / Hrs)</th>
+                <th>Absents & Leaves</th>
+                <th>Deductions</th>
+                <th>Net Take Home</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {displayedSalaryRecords.map(sal => (
-                <tr key={sal.id}>
-                  <td>
-                    <strong>{sal.userName}</strong>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sal.designation}</div>
-                  </td>
-                  <td>{sal.month} {sal.year}</td>
-                  <td>₹{sal.baseSalary ? sal.baseSalary.toLocaleString() : 0}</td>
-                  <td>{sal.overtimeHours} hrs (₹{sal.overtimePay ? sal.overtimePay.toLocaleString() : 0})</td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--brand-red)' }}>
-                    -₹{((sal.pfDeduction || 0) + (sal.taxDeduction || 0)).toLocaleString()}
-                  </td>
-                  <td><strong style={{ color: 'var(--brand-green)', fontSize: '0.95rem' }}>₹{sal.netSalary ? sal.netSalary.toLocaleString() : 0}</strong></td>
-                  <td>
-                    <span className="badge badge-approved">{sal.status}</span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      <button className="btn btn-secondary" style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }} onClick={() => setSelectedSalarySlip(sal)} title="View Slip">
-                        <FileText style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
-                      </button>
-                      {!isEmployee && (
-                        <>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
-                            title="Edit Salary Record"
-                            onClick={() => {
-                              setEditingSal(sal);
-                              setEditSalData({
-                                month: sal.month || selectedMonth,
-                                year: sal.year || selectedYear,
-                                baseSalary: sal.baseSalary || 45000,
-                                overtimeHours: sal.overtimeHours || 0,
-                                allowances: sal.allowances || 0,
-                                deductions: sal.deductions || 0,
-                                status: sal.status || 'PROCESSED'
-                              });
-                            }}
-                          >
-                            <Edit2 size={14} color="#2563eb" />
-                          </button>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                            title="Delete Salary Record"
-                            onClick={() => setDeletingSal(sal)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {displayedSalaryRecords.map(sal => {
+                const b = sal.baseSalary || 0;
+                const o1 = sal.others1 || 0;
+                const o2 = sal.others2 || 0;
+                const o3 = sal.others3 || 0;
+                const o4 = sal.others4 || 0;
+                const grossBase = b + o1 + o2 + o3 + o4;
+                const dRate = sal.dailyRate || (grossBase / 30);
+                const netOtDays = sal.netOvertimeDays || 0;
+                const otHrs = sal.overtimeHours || 0;
+                const netAbsDays = sal.netAbsentDays || 0;
+                const leaveDed = sal.leaveDeducted || 0;
+                const totDed = sal.deductions || 0;
+
+                return (
+                  <tr key={sal.id}>
+                    <td>
+                      <strong>{sal.userName}</strong>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sal.designation || 'Staff'}</div>
+                    </td>
+                    <td>{sal.month} {sal.year}</td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>₹{grossBase.toLocaleString()}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>₹{dRate.toFixed(2)}/day</div>
+                    </td>
+                    <td>
+                      <div>{netOtDays > 0 ? `${netOtDays} OT Days` : '0 OT Days'}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{otHrs > 0 ? `${otHrs} OT Hrs` : '0 OT Hrs'}</div>
+                    </td>
+                    <td>
+                      <div style={{ color: netAbsDays > 0 ? '#dc2626' : 'inherit' }}>{netAbsDays} Absents</div>
+                      <div style={{ fontSize: '0.72rem', color: '#b91c1c' }}>{leaveDed > 0 ? `${leaveDed} Days Ded` : '0 Ded'}</div>
+                    </td>
+                    <td style={{ fontSize: '0.82rem', color: '#dc2626', fontWeight: 600 }}>
+                      -₹{totDed.toLocaleString()}
+                    </td>
+                    <td><strong style={{ color: '#16a34a', fontSize: '0.98rem', fontFamily: 'monospace' }}>₹{(sal.netSalary || 0).toLocaleString()}</strong></td>
+                    <td>
+                      <span className="badge badge-approved">{sal.status || 'PROCESSED'}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                        <button className="btn btn-secondary" style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }} onClick={() => setSelectedSalarySlip(sal)} title="View Payslip">
+                          <FileText style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
+                        </button>
+                        {!isEmployee && (
+                          <>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
+                              title="Edit Salary Slip"
+                              onClick={() => {
+                                handleSelectSalaryUser(sal.userId);
+                                setNewSalary({
+                                  userId: sal.userId,
+                                  month: sal.month || selectedMonth,
+                                  year: (sal.year || selectedYear).toString(),
+                                  baseSalary: (sal.baseSalary || 30000).toString(),
+                                  others1: (sal.others1 || 0).toString(),
+                                  others2: (sal.others2 || 0).toString(),
+                                  others3: (sal.others3 || 0).toString(),
+                                  others4: (sal.others4 || 0).toString(),
+                                  overtimeDays: (sal.overtimeDays || 0).toString(),
+                                  overtimeHours: (sal.overtimeHours || 0).toString(),
+                                  absentDays: (sal.absentDays || 0).toString(),
+                                  prevLeaveBalance: (sal.prevLeaveBalance !== undefined ? sal.prevLeaveBalance : 14).toString(),
+                                  prevLoanDue: (sal.prevLoanDue || 0).toString(),
+                                  furtherLoanTaken: (sal.furtherLoanTaken || 0).toString(),
+                                  advanceDeductedMode: sal.advanceDeductedMode || 'custom',
+                                  advanceDeducted: (sal.advanceDeducted || 0).toString(),
+                                  epfShare: (sal.pfDeduction || 0).toString(),
+                                  esiShare: (sal.esiDeduction || 0).toString(),
+                                  pTax: (sal.pTaxDeduction || 0).toString(),
+                                  bonusEnabled: Boolean(sal.bonusEnabled)
+                                });
+                                setShowSalaryModal(true);
+                              }}
+                            >
+                              <Edit2 size={14} color="#2563eb" />
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                              title="Delete Salary Record"
+                              onClick={() => setDeletingSal(sal)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1868,86 +2150,106 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         </div>
       )}
 
-      {/* Modal 2: Process Salary Slip Modal */}
+      {/* Modal 2: Process Salary Slip Modal (Rules a to v) */}
       {showSalaryModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 640 }}>
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Generate Employee Salary Slip
-            </h3>
-            <form onSubmit={handleGenerateSalary} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div className="modal-content" style={{ maxWidth: 780, width: '96%', maxHeight: '92vh', overflowY: 'auto', background: '#ffffff', color: '#0f172a', borderRadius: '16px', padding: '1.5rem', border: '1px solid #cbd5e1' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Employee</label>
-                <select
-                  className="select-field"
-                  value={newSalary.userId}
-                  onChange={e => handleSelectSalaryUser(e.target.value)}
-                  required
-                >
-                  <option value="">Select Employee</option>
-                  {staffUsers.map(u => (
-                    <option key={u.id} value={u.id}>{u.name} ({formatUserRole(u.role)})</option>
-                  ))}
-                </select>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                  AKASH ENGINEERING – Process Employee Salary Slip
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  VS DIGITECH TECHNOLOGY Payroll Engine & Calculation Calculator
+                </div>
               </div>
+              <button onClick={() => setShowSalaryModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                <X size={18} />
+              </button>
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <form onSubmit={handleGenerateSalary} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              
+              {/* Employee & Month Selection */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem', background: '#f8fafc', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Month</label>
-                  <input
-                    className="input-field"
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Select Staff Member *</label>
+                  <select
+                    className="select-field"
+                    style={{ width: '100%', background: '#ffffff' }}
+                    value={newSalary.userId}
+                    onChange={e => handleSelectSalaryUser(e.target.value)}
+                    required
+                  >
+                    <option value="">Choose Employee</option>
+                    {staffUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.name} ({formatUserRole(u.role)})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Month</label>
+                  <select
+                    className="select-field"
+                    style={{ width: '100%', background: '#ffffff' }}
                     value={newSalary.month}
-                    onChange={e => setNewSalary({ ...newSalary, month: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Year</label>
-                  <input
-                    type="number"
-                    className="input-field"
-                    value={newSalary.year}
-                    onChange={e => setNewSalary({ ...newSalary, year: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Base Salary (₹)</label>
-                  <input
-                    type="number"
-                    className="input-field"
-                    value={newSalary.baseSalary}
                     onChange={e => {
-                      const val = e.target.value;
-                      const num = Number(val) || 0;
-                      const g = num + (Number(newSalary.others1) || 0) + (Number(newSalary.others2) || 0) + (Number(newSalary.others3) || 0) + (Number(newSalary.others4) || 0);
-                      setNewSalary(prev => ({
-                        ...prev,
-                        baseSalary: val,
-                        epfShare: Math.round(num * 0.12).toString(),
-                        esiShare: Math.round(g * 0.0075).toString()
-                      }));
+                      const selectedM = e.target.value;
+                      if (newSalary.userId) {
+                        handleSelectSalaryUser(newSalary.userId, selectedM, newSalary.year);
+                      } else {
+                        setNewSalary(prev => ({ ...prev, month: selectedM }));
+                      }
+                    }}
+                  >
+                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Year</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    style={{ background: '#ffffff' }}
+                    value={newSalary.year}
+                    onChange={e => {
+                      const selectedY = e.target.value;
+                      if (newSalary.userId) {
+                        handleSelectSalaryUser(newSalary.userId, newSalary.month, selectedY);
+                      } else {
+                        setNewSalary(prev => ({ ...prev, year: selectedY }));
+                      }
                     }}
                   />
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overtime Hours</label>
-                  <input
-                    type="number"
-                    className="input-field"
-                    value={newSalary.overtimeHours}
-                    onChange={e => setNewSalary({ ...newSalary, overtimeHours: e.target.value })}
-                  />
-                </div>
               </div>
 
-              {/* Allowances Breakdown */}
-              <div style={{ background: 'rgba(0,0,0,0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-teal)', marginBottom: '0.5rem' }}>ALLOWANCES BREAKDOWN (₹)</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+              {/* Section 1: Basic & Allowances Breakdown (Rules a & b) */}
+              <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0369a1', textTransform: 'uppercase' }}>
+                    1. Basic Pay & 4 Other Allowances (Monthly Base)
+                  </div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, background: '#e0f2fe', color: '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+                    Daily Rate: ₹{calcPayrollPreview.dailyRate.toFixed(2)} / day
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 1 / HRA (₹)</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>BASIC PAY (₹)</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.baseSalary}
+                      onChange={e => setNewSalary({ ...newSalary, baseSalary: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>OTHERS 1 (₹)</label>
                     <input
                       type="number"
                       className="input-field"
@@ -1956,7 +2258,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 2 / Special (₹)</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>OTHERS 2 (₹)</label>
                     <input
                       type="number"
                       className="input-field"
@@ -1965,7 +2267,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 3 / Conveyance (₹)</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>OTHERS 3 (₹)</label>
                     <input
                       type="number"
                       className="input-field"
@@ -1974,7 +2276,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 4 / Medical (₹)</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>OTHERS 4 (₹)</label>
                     <input
                       type="number"
                       className="input-field"
@@ -1985,73 +2287,286 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 </div>
               </div>
 
-              {/* Statutory Deductions Breakdown */}
-              <div style={{ background: 'rgba(239, 68, 68, 0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#ef4444', marginBottom: '0.5rem' }}>STATUTORY & OTHER DEDUCTIONS (₹)</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+              {/* Section 2: Overtime & Absence Log (Rules b & c) */}
+              <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase' }}>
+                    2. Overtime & Absent Days Adjustment (Monthly Log)
+                  </div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+                    OT Hourly Rate: ₹{calcPayrollPreview.hourlyOtRate.toFixed(2)} / hr (Step Rounded)
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.65rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>EPF Share 12% (₹)</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>OVERTIME DAYS (Nos)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input-field"
+                      value={newSalary.overtimeDays}
+                      onChange={e => setNewSalary({ ...newSalary, overtimeDays: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>OVERTIME HOURS (Clock &lt;9am / &gt;8pm)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input-field"
+                      value={newSalary.overtimeHours}
+                      onChange={e => setNewSalary({ ...newSalary, overtimeHours: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>ABSENT DAYS (Nos)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input-field"
+                      value={newSalary.absentDays}
+                      onChange={e => setNewSalary({ ...newSalary, absentDays: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>PRESENT DAYS (Out of 30)</label>
+                    <input
+                      type="number"
+                      disabled
+                      readOnly
+                      className="input-field"
+                      style={{ background: '#f0fdf4', color: '#15803d', fontWeight: 800 }}
+                      value={calcPayrollPreview.presentDays}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '0.5rem', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.45rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', color: '#166534', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Present Day Base Pay: <strong>₹{calcPayrollPreview.presentDayBaseSalary.toLocaleString()}</strong> ({calcPayrollPreview.paidDays} Paid Days @ ₹{calcPayrollPreview.dailyRate.toFixed(2)}/day)</span>
+                  <span>OT Addition: <strong>+₹{calcPayrollPreview.totalOtAmount.toLocaleString()}</strong></span>
+                </div>
+              </div>
+
+              {/* Section 3: Leave Balance & Deduction Tracking (Rules d, e, p, q, r, o) */}
+              <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '0.85rem' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', marginBottom: '0.65rem' }}>
+                  3. Paid Leave Quota & Leave Deduction Tracking
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.65rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>LAST MONTH LEAVE BAL</label>
                     <input
                       type="number"
                       className="input-field"
+                      value={newSalary.prevLeaveBalance}
+                      onChange={e => setNewSalary({ ...newSalary, prevLeaveBalance: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>CURR MONTH ABSENT</label>
+                    <input
+                      type="number"
+                      disabled
+                      className="input-field"
+                      style={{ background: '#f1f5f9', color: '#0f172a' }}
+                      value={calcPayrollPreview.currMonthLeaveAbsent}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#b91c1c' }}>LEAVE DEDUCTED</label>
+                    <input
+                      type="number"
+                      disabled
+                      className="input-field"
+                      style={{ background: '#fef2f2', color: '#b91c1c', fontWeight: 800 }}
+                      value={calcPayrollPreview.leaveDeducted}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#15803d' }}>CURR MONTH REM LEAVE</label>
+                    <input
+                      type="number"
+                      disabled
+                      className="input-field"
+                      style={{ background: '#f0fdf4', color: '#15803d', fontWeight: 800 }}
+                      value={calcPayrollPreview.currLeave}
+                    />
+                  </div>
+                </div>
+
+                {calcPayrollPreview.leaveDeducted > 0 && (
+                  <div style={{ marginTop: '0.4rem', fontSize: '0.74rem', color: '#b91c1c', fontWeight: 700 }}>
+                    ⚠️ {calcPayrollPreview.leaveDeducted} Excess Absent day(s) deducted from salary: -₹{calcPayrollPreview.absentDeductionPay.toFixed(2)}
+                  </div>
+                )}
+              </div>
+
+              {/* Section 4: Loan / Advance Recovery (Rules f, g, h, i) */}
+              <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '0.85rem' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#4338ca', textTransform: 'uppercase', marginBottom: '0.65rem' }}>
+                  4. Loan & Advance Recovery
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>PREV LOAN DUE</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.prevLoanDue}
+                      onChange={e => setNewSalary({ ...newSalary, prevLoanDue: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>FURTHER LOAN</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.furtherLoanTaken}
+                      onChange={e => setNewSalary({ ...newSalary, furtherLoanTaken: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>TOTAL LOAN</label>
+                    <input
+                      type="number"
+                      disabled
+                      className="input-field"
+                      style={{ background: '#f1f5f9' }}
+                      value={calcPayrollPreview.totalLoan}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>DEDUCT MODE</label>
+                    <select
+                      className="select-field"
+                      value={newSalary.advanceDeductedMode}
+                      onChange={e => setNewSalary({ ...newSalary, advanceDeductedMode: e.target.value })}
+                    >
+                      <option value="custom">Custom</option>
+                      <option value="full">Full Deduction</option>
+                      <option value="1000">@ ₹1000.00</option>
+                      <option value="2000">@ ₹2000.00</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>ADVANCE DEDUCTED</label>
+                    <input
+                      type="number"
+                      disabled={newSalary.advanceDeductedMode !== 'custom'}
+                      className="input-field"
+                      value={newSalary.advanceDeductedMode === 'custom' ? newSalary.advanceDeducted : calcPayrollPreview.advDeducted}
+                      onChange={e => setNewSalary({ ...newSalary, advanceDeducted: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#4338ca', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Remaining Loan Carried Forward To Next Month:</span>
+                  <strong>₹{calcPayrollPreview.remLoan.toLocaleString()}</strong>
+                </div>
+              </div>
+
+              {/* Section 5: Statutory Deductions & Bonus (Rules j, k, l, t) */}
+              <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>
+                    5. Statutory Deductions & Annual Bonus Option
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#16a34a' }}>
+                    <input
+                      type="checkbox"
+                      checked={newSalary.bonusEnabled}
+                      onChange={e => setNewSalary({ ...newSalary, bonusEnabled: e.target.checked })}
+                    />
+                    Enable Annual Bonus @ 8.33% (₹{calcPayrollPreview.bonus})
+                  </label>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.65rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>EPF 12% (₹)</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      placeholder={`Default: ₹${calcPayrollPreview.epf}`}
                       value={newSalary.epfShare}
                       onChange={e => setNewSalary({ ...newSalary, epfShare: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ESI Share 0.75% (₹)</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>ESI 0.75% (₹)</label>
                     <input
                       type="number"
                       className="input-field"
+                      placeholder={`Default: ₹${calcPayrollPreview.esi}`}
                       value={newSalary.esiShare}
                       onChange={e => setNewSalary({ ...newSalary, esiShare: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>P-Tax (₹)</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>P-TAX (₹)</label>
                     <input
                       type="number"
                       className="input-field"
+                      placeholder={`Default: ₹${calcPayrollPreview.ptax}`}
                       value={newSalary.pTax}
                       onChange={e => setNewSalary({ ...newSalary, pTax: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Late & Other Deductions (₹)</label>
-                    <input
-                      type="number"
-                      className="input-field"
-                      value={newSalary.deductions}
-                      onChange={e => setNewSalary({ ...newSalary, deductions: e.target.value })}
                     />
                   </div>
                 </div>
               </div>
 
+              {/* Section 6: NET TAKE HOME SALARY (Rule n: NON-EDITABLE) */}
+              <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '1rem 1.25rem', borderRadius: '12px', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#f8fafc' }}>
+                    NET TAKE HOME SALARY (RULE N: STRICTLY NON-EDITABLE)
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                    Present Day Pay (₹{calcPayrollPreview.presentDayBaseSalary.toLocaleString()}) + OT (₹{calcPayrollPreview.totalOtAmount.toLocaleString()}) - Deductions (₹{calcPayrollPreview.totalDeductions.toLocaleString()})
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <input
+                    type="text"
+                    disabled={true}
+                    readOnly={true}
+                    value={`₹ ${calcPayrollPreview.netSalary.toLocaleString()}`}
+                    style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1.5px solid #22c55e', color: '#4ade80', fontSize: '1.4rem', fontWeight: 800, textAlign: 'right', padding: '0.4rem 0.85rem', borderRadius: '8px', width: '200px', cursor: 'not-allowed', fontFamily: 'monospace' }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowSalaryModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Generate & Save Payslip</button>
+                <button type="submit" className="btn btn-primary" style={{ background: '#16a34a', borderColor: '#16a34a', padding: '0.6rem 1.5rem', fontWeight: 700 }}>
+                  Generate & Save Payslip
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal 3: Digital Salary Slip Preview */}
+      {/* Modal 3: Digital Salary Slip Preview (Rules a to v) */}
       {selectedSalarySlip && (
         <div className="modal-overlay" onClick={() => setSelectedSalarySlip(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '18px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #cbd5e1' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '18px', width: '100%', maxWidth: '720px', maxHeight: '92vh', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #cbd5e1' }}>
             
             {/* Payslip Header Banner */}
             <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#ffffff', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.25rem', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '50%', pointerEvents: 'none' }}></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#f8fafc' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#f8fafc' }}>
                     AKASH ENGINEERING
                   </h3>
-                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>
-                    FOR V S DIGITECH TECHNOLOGY
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>
+                    VS DIGITECH TECHNOLOGY
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#cbd5e1', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span>📍 KADARAT, NARENDRAPUR, KOLKATA 700150</span>
@@ -2059,27 +2574,27 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     <span>📞 9831053297 / 9062773542</span>
                   </div>
                 </div>
-                <button onClick={() => setSelectedSalarySlip(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', cursor: 'pointer' }}>
-                  <X size={16} />
+                <button onClick={() => setSelectedSalarySlip(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', cursor: 'pointer' }}>
+                  <X size={18} />
                 </button>
               </div>
 
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '1rem', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: '#fbbf24' }}>
-                <span>📜 OFFICIAL PAYSLIP</span>
+                <span>📜 OFFICIAL SALARY SLIP</span>
                 <span>•</span>
                 <span>{selectedSalarySlip.month ? selectedSalarySlip.month.toUpperCase() : ''} {selectedSalarySlip.year}</span>
               </div>
             </div>
 
             {/* Employee Details Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', fontSize: '0.82rem', marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.85rem', fontSize: '0.82rem', marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <div>
                 <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Employee Name</span>
                 <strong style={{ color: '#0f172a', fontSize: '0.9rem' }}>{selectedSalarySlip.userName}</strong>
               </div>
               <div>
-                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Job Designation</span>
-                <strong style={{ color: '#0f172a', fontSize: '0.9rem' }}>{selectedSalarySlip.designation || 'Staff'}</strong>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Daily Calculation Rate</span>
+                <strong style={{ color: '#0369a1', fontSize: '0.88rem' }}>₹{(selectedSalarySlip.dailyRate || 0).toFixed(2)} / day</strong>
               </div>
               <div>
                 <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Payment Status</span>
@@ -2087,90 +2602,150 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <Check size={12} color="#16a34a" /> {selectedSalarySlip.status || 'PROCESSED'}
                 </span>
               </div>
-              <div>
-                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Generated Date</span>
-                <strong style={{ color: '#334155' }}>{selectedSalarySlip.generatedAt ? new Date(selectedSalarySlip.generatedAt).toLocaleDateString() : 'N/A'}</strong>
-              </div>
             </div>
 
-            {/* Salary Breakdown: Earnings vs Deductions */}
+            {/* Earnings vs Deductions Table */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
               
               {/* Earnings Card */}
-              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', borderBottom: '2px solid #10b981', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }}></div>
-                  <h4 style={{ margin: 0, color: '#065f46', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem' }}>
+                <div style={{ borderBottom: '2px solid #10b981', paddingBottom: '0.4rem', marginBottom: '0.65rem' }}>
+                  <h4 style={{ margin: 0, color: '#065f46', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase' }}>
                     Earnings & Allowances
                   </h4>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.82rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#475569' }}>Basic Pay</span>
                     <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.baseSalary || 0).toLocaleString()}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                    <span style={{ color: '#475569' }}>Others Allowance 1</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#475569' }}>Others 1</span>
                     <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others1 || 0).toLocaleString()}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                    <span style={{ color: '#475569' }}>Others Allowance 2</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#475569' }}>Others 2</span>
                     <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others2 || 0).toLocaleString()}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                    <span style={{ color: '#475569' }}>Others Allowance 3</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#475569' }}>Others 3</span>
                     <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others3 || 0).toLocaleString()}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                    <span style={{ color: '#475569' }}>Others Allowance 4</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#475569' }}>Others 4</span>
                     <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others4 || 0).toLocaleString()}</strong>
                   </div>
+                  {(selectedSalarySlip.overtimeDaysPay || 0) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0369a1' }}>
+                      <span>Overtime Days ({selectedSalarySlip.netOvertimeDays} days)</span>
+                      <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.overtimeDaysPay || 0).toLocaleString()}</strong>
+                    </div>
+                  )}
+                  {(selectedSalarySlip.overtimePay || 0) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0369a1' }}>
+                      <span>Overtime Hours ({selectedSalarySlip.overtimeHours} hrs)</span>
+                      <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.overtimePay || 0).toLocaleString()}</strong>
+                    </div>
+                  )}
+                  {selectedSalarySlip.bonusEnabled && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d' }}>
+                      <span>Annual Bonus @ 8.33%</span>
+                      <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.bonusAmount || 0).toLocaleString()}</strong>
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #cbd5e1', color: '#92400e', fontWeight: 800, fontSize: '0.82rem', background: '#fffbeb', padding: '0.5rem 0.65rem', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.65rem', paddingTop: '0.4rem', borderTop: '1px solid #cbd5e1', color: '#065f46', fontWeight: 800, fontSize: '0.82rem', background: '#ecfdf5', padding: '0.4rem 0.5rem', borderRadius: '6px' }}>
                   <span>TOTAL GROSS:</span>
-                  <span style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.grossSalary || ((selectedSalarySlip.baseSalary || 0) + (selectedSalarySlip.allowances || 0))).toLocaleString()}</span>
+                  <span style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.grossSalary || 0).toLocaleString()}</span>
                 </div>
               </div>
 
               {/* Deductions Card */}
-              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }}></div>
-                  <h4 style={{ margin: 0, color: '#991b1b', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem' }}>
+                <div style={{ borderBottom: '2px solid #ef4444', paddingBottom: '0.4rem', marginBottom: '0.65rem' }}>
+                  <h4 style={{ margin: 0, color: '#991b1b', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase' }}>
                     Deductions & Statutory
                   </h4>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.82rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                    <span style={{ color: '#475569' }}>EPF Share (12%)</span>
-                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.pfDeduction || Math.round((selectedSalarySlip.baseSalary || 0) * 0.12)).toLocaleString()}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                    <span style={{ color: '#475569' }}>ESI Share (0.75%)</span>
-                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.esiDeduction || Math.round((selectedSalarySlip.grossSalary || selectedSalarySlip.baseSalary || 0) * 0.0075)).toLocaleString()}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                    <span style={{ color: '#475569' }}>P-TAX</span>
-                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.pTaxDeduction !== undefined ? selectedSalarySlip.pTaxDeduction : 110).toLocaleString()}</strong>
-                  </div>
-                  {selectedSalarySlip.deductions > ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110)) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
-                      <span style={{ color: '#475569' }}>Late & Other Deductions</span>
-                      <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.deductions - ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110))).toLocaleString()}</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem' }}>
+                  {(selectedSalarySlip.absentDeductionPay || 0) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b91c1c' }}>
+                      <span>Absent Deduction ({selectedSalarySlip.leaveDeducted} days)</span>
+                      <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.absentDeductionPay || 0).toLocaleString()}</strong>
                     </div>
                   )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#475569' }}>EPF Share (12%)</span>
+                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.pfDeduction || 0).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#475569' }}>ESI Share (0.75%)</span>
+                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.esiDeduction || 0).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#475569' }}>P-TAX</span>
+                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.pTaxDeduction || 0).toLocaleString()}</strong>
+                  </div>
+                  {(selectedSalarySlip.advanceDeducted || 0) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4338ca' }}>
+                      <span>Advance / Loan Recovery</span>
+                      <strong style={{ color: '#4338ca', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.advanceDeducted || 0).toLocaleString()}</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.65rem', paddingTop: '0.4rem', borderTop: '1px solid #cbd5e1', color: '#991b1b', fontWeight: 800, fontSize: '0.82rem', background: '#fef2f2', padding: '0.4rem 0.5rem', borderRadius: '6px' }}>
+                  <span>TOTAL DEDUCTIONS:</span>
+                  <span style={{ fontFamily: 'monospace' }}>-₹{(selectedSalarySlip.deductions || 0).toLocaleString()}</span>
                 </div>
               </div>
 
             </div>
 
-            {/* Net Take Home Hero Box */}
+            {/* Leave Balance & Loan Recovery Tracking Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.78rem' }}>
+                <div style={{ fontWeight: 800, color: '#15803d', marginBottom: '0.4rem' }}>LEAVE BALANCE TRACKING</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <span>Prev Month Balance:</span> <strong>{selectedSalarySlip.prevLeaveBalance || 14} days</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <span>Curr Month Absents:</span> <strong>{selectedSalarySlip.currMonthLeaveAbsent || 0} days</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', color: '#b91c1c' }}>
+                  <span>Deducted from Salary:</span> <strong>{selectedSalarySlip.leaveDeducted || 0} days</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '3px', fontWeight: 800, color: '#15803d' }}>
+                  <span>End of Month Balance:</span> <strong>{selectedSalarySlip.currLeaveBalance || 0} days</strong>
+                </div>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.78rem' }}>
+                <div style={{ fontWeight: 800, color: '#4338ca', marginBottom: '0.4rem' }}>LOAN / ADVANCE TRACKING</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <span>Prev Loan Due:</span> <strong>₹{(selectedSalarySlip.prevLoanDue || 0).toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <span>Further Loan Taken:</span> <strong>₹{(selectedSalarySlip.furtherLoanTaken || 0).toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', color: '#4338ca' }}>
+                  <span>Advance Deducted:</span> <strong>-₹{(selectedSalarySlip.advanceDeducted || 0).toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '3px', fontWeight: 800, color: '#4338ca' }}>
+                  <span>Remaining Loan Due:</span> <strong>₹{(selectedSalarySlip.remLoanDue || 0).toLocaleString()}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Net Take Home Hero Box (RULE N: NON-EDITABLE) */}
             <div style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1.5px solid #a7f3d0', padding: '1rem 1.25rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.08)' }}>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#065f46', letterSpacing: '0.02em' }}>NET TAKE HOME SALARY</div>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#065f46', letterSpacing: '0.02em' }}>
+                  NET TAKE HOME SALARY (NON-EDITABLE)
+                </div>
                 <div style={{ fontSize: '0.72rem', color: '#047857' }}>Net amount credited to employee bank account</div>
               </div>
               <div style={{ fontWeight: 800, fontSize: '1.6rem', color: '#047857', fontFamily: 'monospace' }}>
@@ -2189,6 +2764,107 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 Close Payslip
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Super Admin Payroll Settings Modal (Rule v) */}
+      {showConfigModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
+          <div className="modal-content" style={{ maxWidth: 580, width: '95%', background: '#ffffff', color: '#0f172a', borderRadius: '16px', padding: '1.5rem', border: '1px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>
+                  Super Admin Payroll Configuration
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Configure global calculation parameters & statutory deduction rates</div>
+              </div>
+              <button onClick={() => setShowConfigModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePayrollConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>Annual Paid Leave Quota</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    value={payrollConfig.annualLeaveQuota}
+                    onChange={e => setPayrollConfig({ ...payrollConfig, annualLeaveQuota: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>EPF Percentage (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    value={payrollConfig.epfPercent}
+                    onChange={e => setPayrollConfig({ ...payrollConfig, epfPercent: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>ESI Percentage (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    value={payrollConfig.esiPercent}
+                    onChange={e => setPayrollConfig({ ...payrollConfig, esiPercent: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>Annual Bonus (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    value={payrollConfig.bonusPercent}
+                    onChange={e => setPayrollConfig({ ...payrollConfig, bonusPercent: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.5rem' }}>Professional Tax Tier Amounts (₹)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#64748b' }}>₹10k–₹15k Tier</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={payrollConfig.pTaxTier2Amount}
+                      onChange={e => setPayrollConfig({ ...payrollConfig, pTaxTier2Amount: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#64748b' }}>₹15k–₹25k Tier</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={payrollConfig.pTaxTier3Amount}
+                      onChange={e => setPayrollConfig({ ...payrollConfig, pTaxTier3Amount: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#64748b' }}>&gt; ₹25k Tier</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={payrollConfig.pTaxTier4Amount}
+                      onChange={e => setPayrollConfig({ ...payrollConfig, pTaxTier4Amount: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowConfigModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Settings</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
