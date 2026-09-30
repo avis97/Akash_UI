@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  CheckSquare, 
-  Calendar, 
-  UserCheck, 
-  Plus, 
-  CheckCircle, 
+import {
+  CheckSquare,
+  Calendar,
+  UserCheck,
+  Plus,
+  CheckCircle,
   FileCheck,
   Building,
   Award,
@@ -171,7 +171,7 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
+
       {/* Top Banner Overview */}
       <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -240,8 +240,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
 
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div style={{ display: 'flex', gap: '0.35rem' }}>
-                <button 
-                  className="btn btn-secondary" 
+                <button
+                  className="btn btn-secondary"
                   style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
                   title="Edit AMC Record"
                   onClick={() => {
@@ -259,8 +259,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
                 >
                   <Edit2 size={14} color="var(--brand-primary)" /> Edit
                 </button>
-                <button 
-                  className="btn btn-secondary" 
+                <button
+                  className="btn btn-secondary"
                   style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                   title="Delete AMC Record"
                   onClick={() => setDeletingAmc(amc)}
@@ -295,8 +295,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
             <form onSubmit={handleCreateAMC} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Site / Facility Name</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={newAmc.siteName}
                   onChange={e => setNewAmc({ ...newAmc, siteName: e.target.value })}
@@ -305,8 +305,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Organization</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={newAmc.clientName}
                   onChange={e => setNewAmc({ ...newAmc, clientName: e.target.value })}
@@ -315,8 +315,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Full Address</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={newAmc.address}
                   onChange={e => setNewAmc({ ...newAmc, address: e.target.value })}
@@ -326,7 +326,7 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assigned Service Staff</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newAmc.assignedEmployeeId}
                     onChange={e => setNewAmc({ ...newAmc, assignedEmployeeId: e.target.value })}
@@ -339,9 +339,9 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Visit Scheduled Date</label>
-                  <input 
+                  <input
                     type="date"
-                    className="input-field" 
+                    className="input-field"
                     value={newAmc.visitDate}
                     onChange={e => setNewAmc({ ...newAmc, visitDate: e.target.value })}
                   />
@@ -366,8 +366,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
             <form onSubmit={handleEditAMC} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Site / Facility Name</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={editAmcData.siteName}
                   onChange={e => setEditAmcData({ ...editAmcData, siteName: e.target.value })}
@@ -375,8 +375,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Organization</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={editAmcData.clientName}
                   onChange={e => setEditAmcData({ ...editAmcData, clientName: e.target.value })}
@@ -384,8 +384,8 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Address</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={editAmcData.address}
                   onChange={e => setEditAmcData({ ...editAmcData, address: e.target.value })}
@@ -394,7 +394,7 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assigned Staff</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editAmcData.assignedEmployeeId}
                     onChange={e => setEditAmcData({ ...editAmcData, assignedEmployeeId: e.target.value })}
@@ -407,16 +407,16 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Scheduled Date</label>
-                  <input 
+                  <input
                     type="date"
-                    className="input-field" 
+                    className="input-field"
                     value={editAmcData.visitDate}
                     onChange={e => setEditAmcData({ ...editAmcData, visitDate: e.target.value })}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editAmcData.status}
                     onChange={e => setEditAmcData({ ...editAmcData, status: e.target.value })}
@@ -449,7 +449,7 @@ export default function SiteAMCTracker({ data = {}, currentRole, currentUser, on
 
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Representative Signature / Name</label>
-              <input 
+              <input
                 className="input-field"
                 required
                 placeholder="Enter client manager name (e.g. Dr. S. K. Banerjee)"

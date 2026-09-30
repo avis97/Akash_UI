@@ -17,6 +17,7 @@ import {
   Mail,
   MessageSquare,
   Eye,
+  EyeOff,
   FileText,
   Briefcase,
   Building,
@@ -29,6 +30,8 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
 
   const [activeTab, setActiveTab] = useState(initialTab || 'users'); // 'users' | 'employees' | 'clients' | 'activity-logs'
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showAddPassword, setShowAddPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [registerMode, setRegisterMode] = useState('full'); // 'quick' | 'full'
   const [editingUser, setEditingUser] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
@@ -161,6 +164,13 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
     { key: 'addressProof', label: 'Address Proof' }
   ];
 
+  const getDocFieldsForRole = (role) => {
+    if (role === 'CLIENT') {
+      return documentFields.filter(d => ['panCard', 'aadhaarCard', 'addressProof'].includes(d.key));
+    }
+    return documentFields;
+  };
+
   // Fetch next employee ID on add modal open
   useEffect(() => {
     if (showAddUserModal) {
@@ -225,6 +235,20 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
       addressProof: user.addressProof ? { name: 'Attached Document', dataUrl: user.addressProof } : null
     });
     setErrorMsg('');
+  };
+
+  const handleDownloadDocument = (docDataUrl, label, userName) => {
+    if (!docDataUrl) return;
+    const link = document.createElement('a');
+    link.href = docDataUrl;
+    const isPdf = docDataUrl.includes('application/pdf') || docDataUrl.toLowerCase().endsWith('.pdf');
+    const ext = isPdf ? '.pdf' : '.png';
+    const cleanUser = (userName || 'user').replace(/[^a-zA-Z0-9]/g, '_');
+    const cleanLabel = label.replace(/[^a-zA-Z0-9]/g, '_');
+    link.setAttribute('download', `${cleanUser}_${cleanLabel}${ext}`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const compressImage = (file, maxDim = 150, quality = 0.85) => {
@@ -433,7 +457,7 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
 
   const displayedUsers = activeTab === 'employees' ? employeesList
     : activeTab === 'clients' ? clientsList
-    : users;
+      : users;
 
   // Access check
   if (!isSuperAdmin) {
@@ -592,8 +616,8 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                           gap: '0.35rem',
                           ...(u.role === 'SUPERADMIN' ? { background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)' } :
                             u.role === 'CLIENT' ? { background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)' } :
-                            u.role === 'EMPLOYEE' ? { background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)' } :
-                            { background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.3)' })
+                              u.role === 'EMPLOYEE' ? { background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)' } :
+                                { background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.3)' })
                         }}>
                           {u.role === 'SUPERADMIN' ? '🛡️ Superadmin' : u.role === 'CLIENT' ? '🤝 Client' : u.role === 'EMPLOYEE' ? '💼 Employee' : (u.role ? u.role.replace('_', ' ') : 'Staff')}
                         </span>
@@ -740,7 +764,7 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
             </div>
 
             <form onSubmit={handleAddUser} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-              
+
               {/* Personal Info */}
               <div style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                 <h4 style={{ margin: '0 0 0.85rem 0', color: '#1e293b', fontSize: '0.95rem', fontWeight: 700 }}>Personal Details</h4>
@@ -761,7 +785,25 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                       <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Account Password*</label>
                       <button type="button" onClick={() => setNewUser({ ...newUser, password: generateRandomPassword() })} style={{ fontSize: '0.72rem', background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: 0, fontWeight: 600 }}>⚡ Auto-generate</button>
                     </div>
-                    <input type="text" className="input-field" required value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="e.g. Akash@8891" style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.88rem' }} />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showAddPassword ? 'text' : 'password'}
+                        className="input-field"
+                        required
+                        value={newUser.password}
+                        onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                        placeholder="e.g. Akash@8891"
+                        style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem 2.25rem 0.55rem 0.75rem', borderRadius: '6px', width: '100%', fontSize: '0.88rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAddPassword(!showAddPassword)}
+                        style={{ position: 'absolute', right: '0.65rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
+                        title={showAddPassword ? "Hide Password" : "Show Password"}
+                      >
+                        {showAddPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Phone Number*</label>
@@ -770,24 +812,35 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                 </div>
 
                 {registerMode === 'full' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Date of Birth</label>
-                      <input type="date" className="input-field" value={newUser.dob} onChange={e => setNewUser({ ...newUser, dob: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Gender</label>
-                      <select className="select-field" value={newUser.gender} onChange={e => setNewUser({ ...newUser, gender: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }}>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
+                  newUser.role === 'CLIENT' ? (
                     <div>
                       <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Address</label>
                       <input className="input-field" value={newUser.address} onChange={e => setNewUser({ ...newUser, address: e.target.value })} placeholder="Kolkata, WB" style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
                     </div>
-                  </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Date of Birth</label>
+                        <input type="date" className="input-field" value={newUser.dob} onChange={e => setNewUser({ ...newUser, dob: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Gender</label>
+                        <select className="select-field" value={newUser.gender} onChange={e => setNewUser({ ...newUser, gender: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }}>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Date of Joining</label>
+                        <input type="date" className="input-field" value={newUser.dateOfJoining} onChange={e => setNewUser({ ...newUser, dateOfJoining: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>Address</label>
+                        <input className="input-field" value={newUser.address} onChange={e => setNewUser({ ...newUser, address: e.target.value })} placeholder="Kolkata, WB" style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
+                      </div>
+                    </div>
+                  )
                 )}
               </div>
 
@@ -837,16 +890,18 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                 )}
               </div>
 
-              {/* Document Upload Card (Full setup mode) - ONLY for non-CLIENT */}
+              {/* Document Upload Card (Full setup mode) - PDF & Images supported (ONLY for non-CLIENT) */}
               {registerMode === 'full' && newUser.role !== 'CLIENT' && (
                 <div style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.85rem' }}>
                     <div style={{ width: '4px', height: '18px', backgroundColor: '#22c55e', borderRadius: '2px', marginRight: '0.5rem' }}></div>
-                    <h4 style={{ margin: 0, color: '#1e293b', fontSize: '0.95rem', fontWeight: 700 }}>Employee Documents</h4>
+                    <h4 style={{ margin: 0, color: '#1e293b', fontSize: '0.95rem', fontWeight: 700 }}>
+                      Employee Documents (PDF / Images)
+                    </h4>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
-                    {documentFields.map((doc) => {
+                    {getDocFieldsForRole(newUser.role).map((doc) => {
                       const uploaded = documents[doc.key];
                       return (
                         <div key={doc.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
@@ -876,6 +931,7 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                                 <span>Choose file</span>
                                 <input
                                   type="file"
+                                  accept="application/pdf,image/*,.pdf"
                                   onChange={(e) => handleFileUpload(e, doc.key)}
                                   style={{ display: 'none' }}
                                 />
@@ -967,13 +1023,61 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Password (Leave empty to retain current)</label>
-                  <input type="password" className="input-field" value={editUserData.password} onChange={e => setEditUserData({ ...editUserData, password: e.target.value })} placeholder="New password" style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.88rem' }} />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showEditPassword ? 'text' : 'password'}
+                      className="input-field"
+                      value={editUserData.password}
+                      onChange={e => setEditUserData({ ...editUserData, password: e.target.value })}
+                      placeholder="New password"
+                      style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem 2.25rem 0.55rem 0.75rem', borderRadius: '6px', width: '100%', fontSize: '0.88rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      style={{ position: 'absolute', right: '0.65rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
+                      title={showEditPassword ? "Hide Password" : "Show Password"}
+                    >
+                      {showEditPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Phone Number</label>
                   <input className="input-field" value={editUserData.phone} onChange={e => setEditUserData({ ...editUserData, phone: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.88rem' }} />
                 </div>
               </div>
+
+              {/* Personal Details Extra Info (Edit Modal) */}
+              {editUserData.role === 'CLIENT' ? (
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Address</label>
+                  <input className="input-field" value={editUserData.address} onChange={e => setEditUserData({ ...editUserData, address: e.target.value })} placeholder="Kolkata, WB" style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Date of Birth</label>
+                    <input type="date" className="input-field" value={editUserData.dob} onChange={e => setEditUserData({ ...editUserData, dob: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Gender</label>
+                    <select className="select-field" value={editUserData.gender} onChange={e => setEditUserData({ ...editUserData, gender: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }}>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Date of Joining</label>
+                    <input type="date" className="input-field" value={editUserData.dateOfJoining} onChange={e => setEditUserData({ ...editUserData, dateOfJoining: e.target.value })} style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Address</label>
+                    <input className="input-field" value={editUserData.address} onChange={e => setEditUserData({ ...editUserData, address: e.target.value })} placeholder="Kolkata, WB" style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.55rem', borderRadius: '6px', width: '100%', fontSize: '0.85rem' }} />
+                  </div>
+                </div>
+              )}
 
               {/* Company Info - ONLY for non-CLIENT */}
               {editUserData.role !== 'CLIENT' && (
@@ -1016,26 +1120,40 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                 </div>
               </div>
 
-              {/* Employee Document Uploads (Edit Modal) - ONLY for non-CLIENT */}
+              {/* Document Uploads (Edit Modal) - PDF & Images supported (ONLY for non-CLIENT) */}
               {editUserData.role !== 'CLIENT' && (
                 <div style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.85rem' }}>
                     <div style={{ width: '4px', height: '18px', backgroundColor: '#22c55e', borderRadius: '2px', marginRight: '0.5rem' }}></div>
-                    <h4 style={{ margin: 0, color: '#1e293b', fontSize: '0.95rem', fontWeight: 700 }}>Employee Documents</h4>
+                    <h4 style={{ margin: 0, color: '#1e293b', fontSize: '0.95rem', fontWeight: 700 }}>
+                      Employee Documents (PDF / Images)
+                    </h4>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
-                    {documentFields.map((doc) => {
+                    {getDocFieldsForRole(editUserData.role).map((doc) => {
                       const uploaded = editDocuments[doc.key];
                       return (
                         <div key={doc.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
                           <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>{doc.label}</span>
                           <div>
                             {uploaded ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', color: '#166534' }}>
-                                <Check size={13} color="#22c55e" />
-                                <span style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uploaded.name}</span>
-                                <X size={13} style={{ cursor: 'pointer', marginLeft: '0.2rem' }} onClick={() => setEditDocuments(prev => ({ ...prev, [doc.key]: null }))} />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', color: '#166534' }}>
+                                  <Check size={13} color="#22c55e" />
+                                  <span style={{ maxWidth: '70px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uploaded.name}</span>
+                                  <X size={13} style={{ cursor: 'pointer', marginLeft: '0.2rem' }} onClick={() => setEditDocuments(prev => ({ ...prev, [doc.key]: null }))} />
+                                </div>
+                                {isSuperAdmin && uploaded.dataUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadDocument(uploaded.dataUrl, doc.label, editUserData.name)}
+                                    style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '4px', padding: '0.25rem 0.45rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                    title="Download Document"
+                                  >
+                                    <Download size={12} />
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <label style={{
@@ -1055,6 +1173,7 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                                 <span>Choose file</span>
                                 <input
                                   type="file"
+                                  accept="application/pdf,image/*,.pdf"
                                   onChange={(e) => handleFileUpload(e, doc.key, true)}
                                   style={{ display: 'none' }}
                                 />
@@ -1134,49 +1253,65 @@ export default function UserManagement({ data = {}, currentRole = 'SUPERADMIN', 
                   <div><strong>Branch:</strong> {viewingUser.branch || 'Main Branch'}</div>
                   <div><strong>Department:</strong> {viewingUser.department || 'General'}</div>
                   <div><strong>Designation:</strong> {viewingUser.designation || 'Staff'}</div>
-                  <div><strong>Joining Date:</strong> {viewingUser.dateOfJoining || '-'}</div>
+                  {viewingUser.role !== 'CLIENT' && <div><strong>Joining Date:</strong> {viewingUser.dateOfJoining || '-'}</div>}
                   <div><strong>Phone:</strong> {viewingUser.phone || 'N/A'}</div>
                   <div><strong>Address:</strong> {viewingUser.address || 'N/A'}</div>
                 </div>
               </div>
 
-              {/* Document Viewer Card */}
-              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ margin: '0 0 0.65rem 0', color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>Attached Employee Documents</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem', fontSize: '0.82rem' }}>
-                  {documentFields.map((doc) => {
-                    const docUrl = viewingUser[doc.key];
-                    return (
-                      <div key={doc.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                        <span style={{ fontWeight: 600, color: '#334155' }}>{doc.label}</span>
-                        {docUrl ? (
-                          <a href={docUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 600, fontSize: '0.78rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                            <Download size={13} /> View File
-                          </a>
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Not uploaded</span>
-                        )}
-                      </div>
-                    );
-                  })}
+              {/* Document Viewer Card (Only Super Admin Can Download, for Employees) */}
+              {viewingUser.role !== 'CLIENT' && (
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: '0 0 0.65rem 0', color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
+                    Attached Identification & Verification Documents (PDF / Certificates)
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem', fontSize: '0.82rem' }}>
+                    {getDocFieldsForRole(viewingUser.role).map((doc) => {
+                      const docUrl = viewingUser[doc.key];
+                      return (
+                        <div key={doc.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontWeight: 600, color: '#334155' }}>{doc.label}</span>
+                          {docUrl ? (
+                            isSuperAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadDocument(docUrl, doc.label, viewingUser.name)}
+                                style={{ background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '4px', padding: '0.25rem 0.55rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <Download size={13} /> Download File
+                              </button>
+                            ) : (
+                              <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <Lock size={12} style={{ color: '#94a3b8' }} /> Super Admin Only
+                              </span>
+                            )
+                          ) : (
+                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Not uploaded</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Bank Details Card */}
-              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ margin: '0 0 0.65rem 0', color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>Bank Account Details</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.85rem' }}>
-                  <div><strong>Holder:</strong> {viewingUser.accountHolderName || '-'}</div>
-                  <div><strong>A/C No:</strong> {viewingUser.accountNumber || '-'}</div>
-                  <div><strong>Bank:</strong> {viewingUser.bankName || '-'}</div>
-                  <div><strong>IFSC:</strong> {viewingUser.bankIdentifierCode || '-'}</div>
+              {/* Bank Details Card (ONLY for Employees) */}
+              {viewingUser.role !== 'CLIENT' && (
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: '0 0 0.65rem 0', color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>Bank Account Details</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.85rem' }}>
+                    <div><strong>Holder:</strong> {viewingUser.accountHolderName || '-'}</div>
+                    <div><strong>A/C No:</strong> {viewingUser.accountNumber || '-'}</div>
+                    <div><strong>Bank:</strong> {viewingUser.bankName || '-'}</div>
+                    <div><strong>IFSC:</strong> {viewingUser.bankIdentifierCode || '-'}</div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 style={{ borderColor: 'var(--brand-primary)', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                 onClick={() => {
                   const u = viewingUser;

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  ShoppingBag, 
-  CreditCard, 
-  Plus, 
-  CheckCircle, 
-  FileCheck, 
+import {
+  ShoppingBag,
+  CreditCard,
+  Plus,
+  CheckCircle,
+  FileCheck,
   DollarSign,
   Tag,
   Edit2,
@@ -200,18 +200,18 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
+
       {/* Sub-nav & Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-          <button 
+          <button
             className={`btn ${activeTab === 'purchases' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab('purchases')}
           >
             <ShoppingBag style={{ width: 16, height: 16 }} />
             Purchase Entry Module ({purchases.length})
           </button>
-          <button 
+          <button
             className={`btn ${activeTab === 'vouchers' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab('vouchers')}
           >
@@ -285,7 +285,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      <button 
+                      <button
                         className="btn btn-secondary"
                         style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
                         title="Edit Purchase Record"
@@ -303,7 +303,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                       >
                         <Edit2 size={14} color="var(--brand-primary)" />
                       </button>
-                      <button 
+                      <button
                         className="btn btn-secondary"
                         style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                         title="Delete Purchase Record"
@@ -351,10 +351,9 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                     </span>
                   </td>
                   <td>
-                    <span className={`badge ${
-                      v.type === 'PAYMENT' ? 'badge-rejected' :
-                      v.type === 'RECEIPT' ? 'badge-approved' : 'badge-scheduled'
-                    }`}>
+                    <span className={`badge ${v.type === 'PAYMENT' ? 'badge-rejected' :
+                        v.type === 'RECEIPT' ? 'badge-approved' : 'badge-scheduled'
+                      }`}>
                       {v.type}
                     </span>
                   </td>
@@ -365,7 +364,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                   <td><span className="badge badge-approved">{v.status}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      <button 
+                      <button
                         className="btn btn-secondary"
                         style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
                         title="Edit Voucher Record"
@@ -382,7 +381,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                       >
                         <Edit2 size={14} color="var(--brand-primary)" />
                       </button>
-                      <button 
+                      <button
                         className="btn btn-secondary"
                         style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                         title="Delete Voucher Record"
@@ -409,8 +408,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
             <form onSubmit={handleCreatePurchase} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vendor Organization Name</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={newPur.vendorName}
                   onChange={e => setNewPur({ ...newPur, vendorName: e.target.value })}
@@ -420,8 +419,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vendor GSTIN</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={newPur.vendorGst}
                     onChange={e => setNewPur({ ...newPur, vendorGst: e.target.value })}
@@ -429,8 +428,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vendor Invoice No</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={newPur.invoiceNo}
                     onChange={e => setNewPur({ ...newPur, invoiceNo: e.target.value })}
@@ -441,7 +440,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Inventory Category</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newPur.category}
                     onChange={e => setNewPur({ ...newPur, category: e.target.value })}
@@ -454,9 +453,9 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Invoice Amount (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={newPur.totalAmount}
                     onChange={e => setNewPur({ ...newPur, totalAmount: e.target.value })}
@@ -482,8 +481,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
             <form onSubmit={handleEditPurchase} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vendor Organization Name</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={editPurData.vendorName}
                   onChange={e => setEditPurData({ ...editPurData, vendorName: e.target.value })}
@@ -492,8 +491,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vendor GSTIN</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={editPurData.vendorGst}
                     onChange={e => setEditPurData({ ...editPurData, vendorGst: e.target.value })}
@@ -501,8 +500,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vendor Invoice No</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={editPurData.invoiceNo}
                     onChange={e => setEditPurData({ ...editPurData, invoiceNo: e.target.value })}
@@ -512,7 +511,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Inventory Category</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editPurData.category}
                     onChange={e => setEditPurData({ ...editPurData, category: e.target.value })}
@@ -525,9 +524,9 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Invoice Amount (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={editPurData.totalAmount}
                     onChange={e => setEditPurData({ ...editPurData, totalAmount: e.target.value })}
@@ -536,7 +535,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Approval Status</label>
-                <select 
+                <select
                   className="select-field"
                   value={editPurData.status}
                   onChange={e => setEditPurData({ ...editPurData, status: e.target.value })}
@@ -565,7 +564,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Voucher Type</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newVch.type}
                     onChange={e => setNewVch({ ...newVch, type: e.target.value })}
@@ -578,9 +577,9 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Voucher Amount (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={newVch.amount}
                     onChange={e => setNewVch({ ...newVch, amount: e.target.value })}
@@ -589,8 +588,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Account Head</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={newVch.accountHead}
                   onChange={e => setNewVch({ ...newVch, accountHead: e.target.value })}
@@ -599,8 +598,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Narration & Description</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={newVch.narration}
                   onChange={e => setNewVch({ ...newVch, narration: e.target.value })}
@@ -626,7 +625,7 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Voucher Type</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editVchData.type}
                     onChange={e => setEditVchData({ ...editVchData, type: e.target.value })}
@@ -639,9 +638,9 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Voucher Amount (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={editVchData.amount}
                     onChange={e => setEditVchData({ ...editVchData, amount: e.target.value })}
@@ -650,8 +649,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Account Head</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={editVchData.accountHead}
                   onChange={e => setEditVchData({ ...editVchData, accountHead: e.target.value })}
@@ -659,8 +658,8 @@ export default function PurchaseVouchers({ data = {}, currentRole, onRefresh, de
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Narration</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={editVchData.narration}
                   onChange={e => setEditVchData({ ...editVchData, narration: e.target.value })}

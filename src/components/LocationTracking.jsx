@@ -26,7 +26,7 @@ const LocationText = ({ location, batteryLevel }) => {
   );
 };
 
-const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = () => {} }) => {
+const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = () => { } }) => {
   const [locations, setLocations] = useState(data.locations || []);
   const [alerts, setAlerts] = useState(data.geofenceAlerts || []);
   const [users, setUsers] = useState(data.users || []);
@@ -80,7 +80,7 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
       if (json.success && json.data) {
         setPhoneSearchResult(json);
         setHighlightedLocationId(json.data.id);
-        
+
         // Add to locations list if not already present or update existing
         setLocations(prev => {
           const exists = prev.some(l => l.id === json.data.id);
@@ -150,9 +150,9 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
   return (
     <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <PageHeader 
-          title="Location Tracking for Service Personnel" 
-          breadcrumbs={['Dashboard', 'Location Tracking']} 
+        <PageHeader
+          title="Location Tracking for Service Personnel"
+          breadcrumbs={['Dashboard', 'Location Tracking']}
         />
         <button className="btn btn-primary" onClick={() => setShowPingModal(true)}>
           <Plus size={16} /> Log GPS Location Ping
@@ -238,8 +238,8 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
                 📍 {phoneSearchResult.data?.address} | Lat: {phoneSearchResult.data?.latitude?.toFixed(4)}, Lng: {phoneSearchResult.data?.longitude?.toFixed(4)} | Battery: {phoneSearchResult.data?.batteryLevel}%
               </div>
             </div>
-            <button 
-              className="btn btn-sm btn-outline" 
+            <button
+              className="btn btn-sm btn-outline"
               onClick={() => setHighlightedLocationId(phoneSearchResult.data?.id)}
               style={{ backgroundColor: 'white' }}
             >
@@ -250,13 +250,13 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
       </div>
 
       <div className="row" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-        
+
         {/* Map Area */}
         <div style={{ flex: '1 1 60%', minWidth: '300px' }}>
           <div className="glass-card" style={{ padding: '0', overflow: 'hidden', height: '580px', position: 'relative', backgroundColor: '#e2e8f0', backgroundImage: 'url("https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&q=80")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
             {/* Map Overlay */}
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.35)', backdropFilter: 'blur(2px)' }}></div>
-            
+
             {/* Dynamic Map Pins */}
             {locations.length === 0 ? (
               <div style={{ position: 'absolute', top: '45%', left: '35%', backgroundColor: 'rgba(15, 23, 42, 0.8)', color: 'white', padding: '1rem 1.5rem', borderRadius: '8px', fontWeight: 600 }}>
@@ -270,48 +270,48 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
                 const leftPos = isHighlighted ? '45%' : `${20 + (idx * 25) % 65}%`;
 
                 return (
-                  <div 
-                    key={loc.id || idx} 
+                  <div
+                    key={loc.id || idx}
                     onClick={() => setHighlightedLocationId(loc.id)}
-                    style={{ 
-                      position: 'absolute', 
-                      top: topPos, 
-                      left: leftPos, 
-                      display: 'flex', 
-                      flexDirection: 'column', 
+                    style={{
+                      position: 'absolute',
+                      top: topPos,
+                      left: leftPos,
+                      display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       zIndex: isHighlighted ? 10 : 2,
                       cursor: 'pointer'
                     }}
                   >
-                    <div style={{ 
-                      padding: '4px 8px', 
-                      backgroundColor: isHighlighted ? '#ea580c' : (idx % 2 === 0 ? 'var(--brand-primary)' : '#10b981'), 
-                      color: 'white', 
-                      borderRadius: '4px', 
-                      fontSize: '0.75rem', 
-                      fontWeight: 'bold', 
-                      marginBottom: '4px', 
+                    <div style={{
+                      padding: '4px 8px',
+                      backgroundColor: isHighlighted ? '#ea580c' : (idx % 2 === 0 ? 'var(--brand-primary)' : '#10b981'),
+                      color: 'white',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      marginBottom: '4px',
                       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                       textAlign: 'center'
                     }}>
                       <div>{loc.userName || 'Service Tech'}</div>
                       <div style={{ fontSize: '0.65rem', opacity: 0.9 }}>📱 {userPhone}</div>
                     </div>
-                    <MapPin 
-                      size={isHighlighted ? 42 : 32} 
-                      color={isHighlighted ? '#ea580c' : (idx % 2 === 0 ? 'var(--brand-primary)' : '#10b981')} 
-                      fill="white" 
-                      style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))', transition: 'all 0.3s ease' }} 
+                    <MapPin
+                      size={isHighlighted ? 42 : 32}
+                      color={isHighlighted ? '#ea580c' : (idx % 2 === 0 ? 'var(--brand-primary)' : '#10b981')}
+                      fill="white"
+                      style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))', transition: 'all 0.3s ease' }}
                     />
-                    <div style={{ 
-                      width: isHighlighted ? '18px' : '12px', 
-                      height: isHighlighted ? '18px' : '12px', 
-                      backgroundColor: isHighlighted ? '#ea580c' : 'var(--brand-primary)', 
-                      borderRadius: '50%', 
-                      opacity: 0.6, 
-                      marginTop: '-8px', 
-                      animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite' 
+                    <div style={{
+                      width: isHighlighted ? '18px' : '12px',
+                      height: isHighlighted ? '18px' : '12px',
+                      backgroundColor: isHighlighted ? '#ea580c' : 'var(--brand-primary)',
+                      borderRadius: '50%',
+                      opacity: 0.6,
+                      marginTop: '-8px',
+                      animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite'
                     }}></div>
                   </div>
                 );
@@ -329,7 +329,7 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
 
         {/* Sidebar Data */}
         <div style={{ flex: '1 1 35%', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
+
           <div className="glass-card" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Bell size={18} color="#ef4444" /> Geofencing Alerts ({alerts.length})
@@ -353,7 +353,7 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <History size={18} /> Tracked Personnel & Phone Numbers ({locations.length})
             </h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '280px', overflowY: 'auto' }}>
               {locations.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No location pings stored yet in database.</p>
@@ -363,20 +363,20 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
                   const isSelected = loc.id === highlightedLocationId;
 
                   return (
-                    <div 
-                      key={loc.id} 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '1rem', 
-                        padding: '0.75rem', 
+                    <div
+                      key={loc.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        padding: '0.75rem',
                         borderRadius: '8px',
                         backgroundColor: isSelected ? '#eff6ff' : 'transparent',
                         border: isSelected ? '1px solid #3b82f6' : '1px solid var(--border-color)',
                         transition: 'all 0.2s ease'
                       }}
                     >
-                      <div 
+                      <div
                         onClick={() => setHighlightedLocationId(loc.id)}
                         style={{ width: '12px', height: '12px', backgroundColor: isSelected ? '#2563eb' : '#10b981', borderRadius: '50%', flexShrink: 0, cursor: 'pointer' }}
                       ></div>
@@ -389,8 +389,8 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
                         </div>
                         <LocationText location={loc.address} batteryLevel={loc.batteryLevel} />
                       </div>
-                      <button 
-                        className="btn btn-secondary" 
+                      <button
+                        className="btn btn-secondary"
                         style={{ padding: '0.25rem 0.45rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                         title="Delete Location Ping"
                         onClick={(e) => {
@@ -421,13 +421,13 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
             <form onSubmit={handleSendPing} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Personnel (Name & Phone)</label>
-                <select 
+                <select
                   className="select-field"
                   value={pingData.userId}
                   onChange={e => {
                     const u = users.find(usr => usr.id === e.target.value);
-                    setPingData({ 
-                      ...pingData, 
+                    setPingData({
+                      ...pingData,
                       userId: e.target.value,
                       phone: u?.phone || ''
                     });
@@ -441,10 +441,10 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Current Site Location / Address</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
-                  placeholder="e.g. Salt Lake Sector V Office, Kolkata" 
+                  placeholder="e.g. Salt Lake Sector V Office, Kolkata"
                   value={pingData.address}
                   onChange={e => setPingData({ ...pingData, address: e.target.value })}
                 />
@@ -452,16 +452,16 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Latitude</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={pingData.latitude}
                     onChange={e => setPingData({ ...pingData, latitude: e.target.value })}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Longitude</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={pingData.longitude}
                     onChange={e => setPingData({ ...pingData, longitude: e.target.value })}
                   />
@@ -498,8 +498,9 @@ const LocationTracking = ({ data = {}, currentRole = 'SUPERADMIN', onRefresh = (
           </div>
         </div>
       )}
-      
-      <style dangerouslySetInnerHTML={{__html: `
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes ping {
           75%, 100% { transform: scale(2.5); opacity: 0; }
         }

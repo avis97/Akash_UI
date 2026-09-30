@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Users, 
-  Briefcase, 
-  FileText, 
+import {
+  Users,
+  Briefcase,
+  FileText,
   DollarSign,
   TrendingUp,
   CreditCard
@@ -38,7 +38,7 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
   }, [fetchDashboardData]);
 
   // Real filtered customers count (CLIENT & USER roles only - excluding Admins & Staff)
-  const clientUsers = (users || []).filter(u => 
+  const clientUsers = (users || []).filter(u =>
     u.role === 'CLIENT' || u.role === 'USER' || u.role === 'Client' || u.role === 'User'
   );
   const totalCustomersCount = clientUsers.length;
@@ -89,7 +89,7 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
+
       {/* Metric Cards Grid */}
       <div className="metrics-grid">
         <div className="glass-card metric-card">
@@ -168,7 +168,7 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
             </div>
             <TrendingUp style={{ width: 18, height: 18, color: 'var(--text-secondary)' }} />
           </div>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
@@ -215,7 +215,7 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
 
       {/* Charts Row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        
+
         {/* Cashflow Chart */}
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -228,15 +228,15 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
               <AreaChart data={erp.cashflowChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorIncomeFlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
                 <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ background: '#ffffff', borderColor: 'rgba(0,0,0,0.08)', borderRadius: '8px', color: '#1e293b' }} 
+                <Tooltip
+                  contentStyle={{ background: '#ffffff', borderColor: 'rgba(0,0,0,0.08)', borderRadius: '8px', color: '#1e293b' }}
                 />
                 <Area type="monotone" dataKey="income" stroke="#f59e0b" fillOpacity={1} fill="url(#colorIncomeFlow)" strokeWidth={3} />
               </AreaChart>
@@ -261,7 +261,7 @@ export default function Dashboard({ data = {}, currentRole, activeTab }) {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
                 <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ background: '#ffffff', borderColor: 'rgba(0,0,0,0.08)', borderRadius: '8px', color: '#1e293b' }}
                 />
                 <Bar dataKey="income" fill="#f59e0b" radius={[4, 4, 0, 0]} />

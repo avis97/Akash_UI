@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  FileText, 
-  Plus, 
-  Send, 
-  CheckCircle, 
-  AlertCircle, 
-  BellRing, 
+import {
+  FileText,
+  Plus,
+  Send,
+  CheckCircle,
+  AlertCircle,
+  BellRing,
   Download,
   DollarSign,
   Briefcase,
@@ -444,7 +444,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
     }
     const validUntilStr = typeof q.validUntil === 'string' ? q.validUntil.slice(0, 10) : new Date(q.validUntil).toISOString().slice(0, 10);
     const createdDateStr = q.createdAt ? new Date(q.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
-    
+
     let parsedItems = [];
     try {
       parsedItems = typeof q.itemsJson === 'string' ? JSON.parse(q.itemsJson) : (q.itemsJson || []);
@@ -981,7 +981,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-      
+
       {actionSuccessMsg && (
         <div style={{
           display: 'flex',
@@ -1003,7 +1003,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
       {/* Sub-nav & Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', background: '#ffffff', padding: '0.45rem 0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.18rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-          <button 
+          <button
             className={`btn ${activeTab === 'invoices' ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
             onClick={() => setActiveTab('invoices')}
@@ -1011,7 +1011,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
             <FileText style={{ width: 14, height: 14 }} />
             Invoices & Automated Billing ({invoices.length})
           </button>
-          <button 
+          <button
             className={`btn ${activeTab === 'quotations' ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
             onClick={() => setActiveTab('quotations')}
@@ -1087,7 +1087,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      <button 
+                      <button
                         className="btn btn-secondary"
                         style={{ padding: '0.35rem 0.55rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                         title="Download / Print Invoice PDF"
@@ -1097,8 +1097,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                         PDF
                       </button>
                       {!isClient && inv.balanceAmount > 0 && (
-                        <button 
-                          className="btn btn-secondary" 
+                        <button
+                          className="btn btn-secondary"
                           style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
                           onClick={() => handleSendPaymentReminder(inv.clientName, inv.invoiceNumber)}
                           title="Send Payment Reminder"
@@ -1108,7 +1108,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                       )}
                       {!isClient && (
                         <>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(59, 130, 246, 0.4)', color: '#3b82f6' }}
                             title="Edit Invoice"
@@ -1126,7 +1126,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                             title="Delete Invoice"
@@ -1211,7 +1211,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                   <td>
                     <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       {/* Download PDF Button */}
-                      <button 
+                      <button
                         className="btn btn-secondary"
                         style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                         title="Download / Print Quotation PDF"
@@ -1223,7 +1223,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
                       {/* Client/Admin Accept Quotation button */}
                       {(q.status === 'SENT' || q.status === 'DRAFT') && (
-                        <button 
+                        <button
                           className="btn btn-secondary"
                           style={{
                             padding: '0.35rem 0.65rem',
@@ -1246,7 +1246,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
                       {/* Super Admin Generate Bill Button */}
                       {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED') && q.status !== 'BILLED' && (
-                        <button 
+                        <button
                           className="btn btn-primary"
                           style={{
                             padding: '0.35rem 0.7rem',
@@ -1270,7 +1270,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
                       {/* Assign Meeting to Employee button */}
                       {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED' || q.status === 'BILLED') && (
-                        <button 
+                        <button
                           className="btn btn-secondary"
                           style={{
                             padding: '0.35rem 0.65rem',
@@ -1292,7 +1292,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
                       {!isClient && (
                         <>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(59, 130, 246, 0.4)', color: '#3b82f6' }}
                             title="Edit Quotation"
@@ -1309,7 +1309,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                             title="Delete Quotation"
@@ -1338,8 +1338,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
             <form onSubmit={handleCreateInvoice} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Organization Name</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={newInv.clientName}
                   onChange={e => setNewInv({ ...newInv, clientName: e.target.value })}
@@ -1348,9 +1348,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Email</label>
-                <input 
+                <input
                   type="email"
-                  className="input-field" 
+                  className="input-field"
                   required
                   value={newInv.clientEmail}
                   onChange={e => setNewInv({ ...newInv, clientEmail: e.target.value })}
@@ -1360,9 +1360,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Invoice Total (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={newInv.totalAmount}
                     onChange={e => setNewInv({ ...newInv, totalAmount: e.target.value })}
@@ -1370,9 +1370,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Payment Due Date</label>
-                  <input 
+                  <input
                     type="date"
-                    className="input-field" 
+                    className="input-field"
                     value={newInv.dueDate}
                     onChange={e => setNewInv({ ...newInv, dueDate: e.target.value })}
                   />
@@ -1398,8 +1398,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Name</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={editInvData.clientName}
                     onChange={e => setEditInvData({ ...editInvData, clientName: e.target.value })}
@@ -1407,9 +1407,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Email</label>
-                  <input 
+                  <input
                     type="email"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={editInvData.clientEmail}
                     onChange={e => setEditInvData({ ...editInvData, clientEmail: e.target.value })}
@@ -1419,9 +1419,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Amount (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={editInvData.totalAmount}
                     onChange={e => setEditInvData({ ...editInvData, totalAmount: e.target.value })}
@@ -1429,16 +1429,16 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Paid Amount (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     value={editInvData.paidAmount}
                     onChange={e => setEditInvData({ ...editInvData, paidAmount: e.target.value })}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editInvData.status}
                     onChange={e => setEditInvData({ ...editInvData, status: e.target.value })}
@@ -1452,9 +1452,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Due Date</label>
-                <input 
+                <input
                   type="date"
-                  className="input-field" 
+                  className="input-field"
                   value={editInvData.dueDate}
                   onChange={e => setEditInvData({ ...editInvData, dueDate: e.target.value })}
                 />
@@ -1478,7 +1478,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
             <form onSubmit={handleCreateQuotation} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Registered Client</label>
-                <select 
+                <select
                   className="select-field"
                   onChange={e => handleClientSelect(e.target.value)}
                   style={{ marginBottom: '0.5rem' }}
@@ -1493,8 +1493,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Name</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={newQuot.clientName}
                   onChange={e => setNewQuot({ ...newQuot, clientName: e.target.value })}
@@ -1503,9 +1503,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Contact Email</label>
-                <input 
+                <input
                   type="email"
-                  className="input-field" 
+                  className="input-field"
                   required
                   value={newQuot.clientEmail}
                   onChange={e => setNewQuot({ ...newQuot, clientEmail: e.target.value })}
@@ -1518,9 +1518,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                     <Briefcase size={15} color="var(--brand-yellow)" />
                     Product Items & Quantity Selection (From Stock Inventory Catalog)
                   </label>
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
                     style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                     onClick={handleAddQuotItem}
                   >
@@ -1534,7 +1534,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                       {/* Select from Inventory */}
                       <div>
                         <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Select Inventory Product</label>
-                        <select 
+                        <select
                           className="select-field"
                           style={{ padding: '0.45rem 0.6rem', fontSize: '0.82rem' }}
                           value={item.productId}
@@ -1552,7 +1552,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                       {/* Item Name / Custom */}
                       <div>
                         <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Item Name</label>
-                        <input 
+                        <input
                           className="input-field"
                           style={{ padding: '0.45rem 0.6rem', fontSize: '0.82rem' }}
                           placeholder="Product / Service Description"
@@ -1564,7 +1564,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                       {/* Quantity */}
                       <div>
                         <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Quantity (Qty)</label>
-                        <input 
+                        <input
                           type="number"
                           min="1"
                           className="input-field"
@@ -1577,7 +1577,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                       {/* Unit Price */}
                       <div>
                         <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Unit Price (₹)</label>
-                        <input 
+                        <input
                           type="number"
                           className="input-field"
                           style={{ padding: '0.45rem 0.6rem', fontSize: '0.82rem' }}
@@ -1588,14 +1588,14 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
                       {/* Remove Button */}
                       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '1.25rem' }}>
-                        <button 
-                          type="button" 
-                          style={{ 
-                            background: '#fef2f2', 
-                            border: '1px solid #fecaca', 
-                            color: '#ef4444', 
-                            borderRadius: '6px', 
-                            padding: '0.45rem', 
+                        <button
+                          type="button"
+                          style={{
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            color: '#ef4444',
+                            borderRadius: '6px',
+                            padding: '0.45rem',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
@@ -1650,8 +1650,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
             <form onSubmit={handleEditQuotation} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Name</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={editQuotData.clientName}
                   onChange={e => setEditQuotData({ ...editQuotData, clientName: e.target.value })}
@@ -1659,9 +1659,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Email</label>
-                <input 
+                <input
                   type="email"
-                  className="input-field" 
+                  className="input-field"
                   required
                   value={editQuotData.clientEmail}
                   onChange={e => setEditQuotData({ ...editQuotData, clientEmail: e.target.value })}
@@ -1670,9 +1670,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Net Amount (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={editQuotData.totalAmount}
                     onChange={e => setEditQuotData({ ...editQuotData, totalAmount: e.target.value })}
@@ -1680,7 +1680,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editQuotData.status}
                     onChange={e => setEditQuotData({ ...editQuotData, status: e.target.value })}
@@ -1693,9 +1693,9 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Valid Until</label>
-                <input 
+                <input
                   type="date"
-                  className="input-field" 
+                  className="input-field"
                   value={editQuotData.validUntil}
                   onChange={e => setEditQuotData({ ...editQuotData, validUntil: e.target.value })}
                 />
@@ -1776,7 +1776,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
             <form onSubmit={handleScheduleMeetingFromQuot} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Meeting Title</label>
-                <input 
+                <input
                   className="input-field"
                   required
                   value={meetingForm.title}
@@ -1787,7 +1787,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Name</label>
-                  <input 
+                  <input
                     className="input-field"
                     required
                     value={meetingForm.clientName}
@@ -1799,7 +1799,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                     <UserCheck size={14} color="var(--brand-primary)" />
                     Assign to Employee
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     required
                     value={meetingForm.assignedToId}
@@ -1818,7 +1818,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Scheduled Date & Time</label>
-                  <input 
+                  <input
                     type="datetime-local"
                     className="input-field"
                     required
@@ -1828,7 +1828,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Site / Meeting Address</label>
-                  <input 
+                  <input
                     className="input-field"
                     required
                     value={meetingForm.clientAddress}
@@ -1840,7 +1840,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Meeting Agenda / Scope</label>
-                <textarea 
+                <textarea
                   className="input-field"
                   rows={2}
                   value={meetingForm.agenda}
@@ -1850,7 +1850,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Expected Deliverables</label>
-                <input 
+                <input
                   className="input-field"
                   value={meetingForm.deliverables}
                   onChange={e => setMeetingForm({ ...meetingForm, deliverables: e.target.value })}

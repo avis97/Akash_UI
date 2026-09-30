@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PageHeader from './common/PageHeader';
-import { 
-  Calendar, 
-  CheckCircle, 
-  Clock, 
-  PackageOpen, 
-  AlertTriangle, 
-  Plus, 
-  UserCheck, 
-  MapPin, 
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  PackageOpen,
+  AlertTriangle,
+  Plus,
+  UserCheck,
+  MapPin,
   FileText,
   Edit3,
   ShieldCheck,
@@ -51,7 +51,7 @@ const PROJECT_OPTIONS = [
   'Routine Safety Inspection'
 ];
 
-const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: initialRequests = [], role = 'SUPERADMIN', currentUser, onRefresh = () => {}, users: initialUsers = [], projects: initialProjects = [], products: initialProducts = [] }) => {
+const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: initialRequests = [], role = 'SUPERADMIN', currentUser, onRefresh = () => { }, users: initialUsers = [], projects: initialProjects = [], products: initialProducts = [] }) => {
   const [activeTab, setActiveTab] = useState('meetings');
   const [meetingFilter, setMeetingFilter] = useState((role === 'EMPLOYEE' || currentUser?.role === 'EMPLOYEE') ? 'my' : 'all');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -107,8 +107,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
   const myMeetings = meetings.filter(m => {
     if (!currentUser) return false;
     return m.assignedToId === currentUser.id ||
-           (m.assignedToName && currentUser.name && m.assignedToName.toLowerCase().trim() === currentUser.name.toLowerCase().trim()) ||
-           (m.assignedTo?.email && currentUser.email && m.assignedTo.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim());
+      (m.assignedToName && currentUser.name && m.assignedToName.toLowerCase().trim() === currentUser.name.toLowerCase().trim()) ||
+      (m.assignedTo?.email && currentUser.email && m.assignedTo.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim());
   });
 
   const displayedMeetings = isClient ? clientMeetings : ((meetingFilter === 'my' || isEmployee) ? myMeetings : meetings);
@@ -572,9 +572,9 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <PageHeader 
-        title="Service Meetings & Material Requests Workflow" 
-        breadcrumbs={['Dashboard', 'Service Meetings']} 
+      <PageHeader
+        title="Service Meetings & Material Requests Workflow"
+        breadcrumbs={['Dashboard', 'Service Meetings']}
       />
 
       {/* Navigation, Filter & Action Header Bar */}
@@ -582,7 +582,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
         {/* Left: Tab switchers & Filters */}
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.65rem' }}>
           <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.18rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-            <button 
+            <button
               className={`btn ${activeTab === 'meetings' ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
               onClick={() => setActiveTab('meetings')}
@@ -590,7 +590,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <Calendar style={{ width: 14, height: 14 }} />
               Meeting Cards ({meetings.length})
             </button>
-            <button 
+            <button
               className={`btn ${activeTab === 'materials' ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
               onClick={() => setActiveTab('materials')}
@@ -613,14 +613,14 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
           {activeTab === 'meetings' && (
             <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', borderLeft: '1px solid #cbd5e1', paddingLeft: '0.65rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Filter:</span>
-              <button 
+              <button
                 className={`btn ${meetingFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
                 onClick={() => setMeetingFilter('all')}
               >
                 All ({meetings.length})
               </button>
-              <button 
+              <button
                 className={`btn ${meetingFilter === 'my' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ padding: '0.2rem 0.55rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                 onClick={() => setMeetingFilter('my')}
@@ -659,7 +659,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <Calendar size={40} style={{ margin: '0 auto 0.75rem auto', color: '#f59e0b', opacity: 0.7 }} />
               <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Service Meetings Found</h4>
               <p style={{ fontSize: '0.88rem', margin: 0 }}>
-                {meetingFilter === 'my' 
+                {meetingFilter === 'my'
                   ? 'You currently have no meetings assigned to your account. Switch to "All Meetings" to view all organization schedules.'
                   : 'No service meetings have been scheduled yet.'}
               </p>
@@ -677,13 +677,13 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 );
 
                 return (
-                  <div 
-                    key={m.id} 
-                    className="glass-card" 
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      justifyContent: 'space-between', 
+                  <div
+                    key={m.id}
+                    className="glass-card"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
                       gap: '0.65rem',
                       border: isAssignedToCurrentUser ? '1.5px solid #22c55e' : '1px solid #e2e8f0',
                       borderRadius: '12px',
@@ -698,18 +698,18 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                     <div>
                       {/* Top Header Bar with ID & Status */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
-                        <span 
-                          style={{ 
-                            fontSize: '0.68rem', 
-                            fontFamily: 'monospace', 
-                            color: '#64748b', 
-                            background: '#f1f5f9', 
-                            padding: '0.15rem 0.45rem', 
-                            borderRadius: '5px', 
-                            fontWeight: 600, 
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontFamily: 'monospace',
+                            color: '#64748b',
+                            background: '#f1f5f9',
+                            padding: '0.15rem 0.45rem',
+                            borderRadius: '5px',
+                            fontWeight: 600,
                             border: '1px solid #e2e8f0',
                             letterSpacing: '0.2px'
-                          }} 
+                          }}
                           title={`Meeting ID: ${m.id}`}
                         >
                           #{m.id.length > 10 ? m.id.substring(0, 7) + '...' : m.id}
@@ -717,15 +717,15 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
                         <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
                           {isAssignedToCurrentUser && (
-                            <span 
-                              className="badge" 
-                              style={{ 
-                                background: '#22c55e', 
-                                color: '#ffffff', 
-                                fontWeight: 700, 
-                                fontSize: '0.65rem', 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
+                            <span
+                              className="badge"
+                              style={{
+                                background: '#22c55e',
+                                color: '#ffffff',
+                                fontWeight: 700,
+                                fontSize: '0.65rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
                                 gap: '0.2rem',
                                 padding: '0.15rem 0.45rem',
                                 borderRadius: '9999px',
@@ -735,11 +735,11 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                               <CheckCircle2 size={10} /> Assigned
                             </span>
                           )}
-                          <span 
-                            style={{ 
-                              textTransform: 'uppercase', 
-                              fontWeight: 700, 
-                              fontSize: '0.65rem', 
+                          <span
+                            style={{
+                              textTransform: 'uppercase',
+                              fontWeight: 700,
+                              fontSize: '0.65rem',
                               letterSpacing: '0.4px',
                               padding: '0.18rem 0.5rem',
                               borderRadius: '9999px',
@@ -767,12 +767,12 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                       <h3 style={{ fontFamily: 'var(--font-heading, sans-serif)', fontSize: '0.98rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.25rem', lineHeight: 1.3 }}>
                         {m.title || `Service Visit: ${m.clientName || m.client}`}
                       </h3>
-                      
+
                       <div style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: 700, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Building size={13} style={{ color: '#0284c7', flexShrink: 0 }} />
                         <span>Client: <strong style={{ color: '#0369a1' }}>{m.clientName || m.client}</strong></span>
                       </div>
-                      
+
                       {m.clientAddress && (
                         <div style={{ fontSize: '0.74rem', color: '#64748b', display: 'flex', alignItems: 'flex-start', gap: '0.3rem', marginBottom: '0.25rem' }}>
                           <MapPin size={12} style={{ flexShrink: 0, marginTop: '2px', color: '#ef4444' }} />
@@ -810,15 +810,15 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                       )}
 
                       {/* Scheduled Time & Assignee Highlight Box */}
-                      <div style={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        gap: '0.35rem', 
-                        fontSize: '0.76rem', 
-                        background: '#f8fafc', 
-                        padding: '0.5rem 0.7rem', 
-                        borderRadius: '8px', 
-                        border: '1px solid #e2e8f0', 
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.35rem',
+                        fontSize: '0.76rem',
+                        background: '#f8fafc',
+                        padding: '0.5rem 0.7rem',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
                         marginBottom: '0.5rem'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#1e293b', fontWeight: 600 }}>
@@ -833,7 +833,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
                       {/* View Details Toggle Button */}
                       <div style={{ marginTop: '0.45rem', marginBottom: expandedMeetings[m.id] ? '0.5rem' : '0' }}>
-                        <button 
+                        <button
                           className="btn btn-secondary"
                           type="button"
                           onClick={() => toggleExpandMeeting(m.id)}
@@ -888,7 +888,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                               if (Array.isArray(m.photos)) photoList = m.photos;
                               else if (typeof m.photos === 'string' && m.photos.trim().startsWith('[')) photoList = JSON.parse(m.photos);
                               else if (typeof m.photos === 'string' && m.photos.length > 0) photoList = [m.photos];
-                            } catch (e) {}
+                            } catch (e) { }
 
                             if (photoList.length === 0) return null;
 
@@ -899,10 +899,10 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                                   {photoList.map((pUrl, idx) => (
-                                    <img 
-                                      key={idx} 
-                                      src={pUrl} 
-                                      alt={`Meeting Photo ${idx+1}`} 
+                                    <img
+                                      key={idx}
+                                      src={pUrl}
+                                      alt={`Meeting Photo ${idx + 1}`}
                                       style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', cursor: 'pointer', border: '1px solid #cbd5e1', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 0.15s ease' }}
                                       onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
                                       onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -926,15 +926,15 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
                           {/* Card Action Buttons */}
                           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', marginTop: '0.4rem', display: 'flex', justifyContent: 'flex-end', gap: '0.45rem' }}>
-                            <button 
-                              className="btn" 
-                              style={{ 
-                                padding: '0.35rem 0.65rem', 
-                                fontSize: '0.76rem', 
-                                color: '#dc2626', 
-                                border: '1px solid #fecaca', 
-                                background: '#fef2f2', 
-                                borderRadius: '8px', 
+                            <button
+                              className="btn"
+                              style={{
+                                padding: '0.35rem 0.65rem',
+                                fontSize: '0.76rem',
+                                color: '#dc2626',
+                                border: '1px solid #fecaca',
+                                background: '#fef2f2',
+                                borderRadius: '8px',
                                 fontWeight: 600,
                                 cursor: 'pointer',
                                 display: 'flex',
@@ -946,18 +946,18 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                             >
                               <Trash2 size={13} /> Delete
                             </button>
-                            <button 
-                              className="btn" 
-                              style={{ 
-                                padding: '0.38rem 0.75rem', 
-                                fontSize: '0.78rem', 
-                                borderRadius: '8px', 
-                                fontWeight: 700, 
-                                background: 'linear-gradient(135deg, #22c55e, #16a34a)', 
+                            <button
+                              className="btn"
+                              style={{
+                                padding: '0.38rem 0.75rem',
+                                fontSize: '0.78rem',
+                                borderRadius: '8px',
+                                fontWeight: 700,
+                                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
                                 color: '#ffffff',
-                                border: 'none', 
-                                display: 'flex', 
-                                alignItems: 'center', 
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: '0.35rem',
                                 cursor: 'pointer',
                                 boxShadow: '0 3px 10px rgba(34, 197, 94, 0.25)',
@@ -970,7 +970,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                                   if (Array.isArray(m.photos)) parsedPhotos = m.photos;
                                   else if (typeof m.photos === 'string' && m.photos.trim().startsWith('[')) parsedPhotos = JSON.parse(m.photos);
                                   else if (typeof m.photos === 'string' && m.photos.length > 0) parsedPhotos = [m.photos];
-                                } catch (e) {}
+                                } catch (e) { }
 
                                 setUpdateData({
                                   title: m.title || '',
@@ -1001,11 +1001,11 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                     </div>
                   </div>
                 );
-          })}
-        </div>
+              })}
+            </div>
+          )}
+        </>
       )}
-    </>
-  )}
 
       {/* TAB 2: Material Requests Workflow */}
       {activeTab === 'materials' && (
@@ -1088,8 +1088,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                     <td>
                       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                         {r.status === 'PENDING_MASTER_ADMIN' && (role === 'MASTER_ADMIN' || role === 'SUPERADMIN') && (
-                          <button 
-                            className="btn btn-primary" 
+                          <button
+                            className="btn btn-primary"
                             style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
                             onClick={() => handleApproveMaterialRequest(r.id)}
                           >
@@ -1097,15 +1097,15 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                           </button>
                         )}
                         {r.status === 'PENDING_FACILITY_MANAGER' && (role === 'FACILITY_MANAGER' || role === 'SUPERADMIN') && (
-                          <button 
-                            className="btn btn-primary" 
+                          <button
+                            className="btn btn-primary"
                             style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', backgroundColor: '#10b981' }}
                             onClick={() => handleApproveMaterialRequest(r.id)}
                           >
                             <CheckCircle size={14} /> Step 2
                           </button>
                         )}
-                        <button 
+                        <button
                           className="btn btn-secondary"
                           title="Edit Material Request"
                           style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
@@ -1123,7 +1123,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                         >
                           <Edit size={14} color="var(--brand-primary)" />
                         </button>
-                        <button 
+                        <button
                           className="btn btn-secondary"
                           title="Delete Material Request"
                           style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
@@ -1155,7 +1155,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     Branch<span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     required
                     value={newMeeting.branch}
@@ -1171,7 +1171,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     Department<span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     required
                     value={newMeeting.department}
@@ -1191,7 +1191,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     Project
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMeeting.project}
                     onChange={e => setNewMeeting({ ...newMeeting, project: e.target.value })}
@@ -1212,8 +1212,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     Meeting Title<span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     placeholder="Enter Meeting Title (e.g. Field Audit)"
                     value={newMeeting.title}
@@ -1226,7 +1226,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Select Client (Registered)</label>
-                  <select 
+                  <select
                     className="select-field"
                     onChange={e => {
                       const selectedId = e.target.value;
@@ -1255,8 +1255,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Client Name (Auto-filled or Custom)</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     placeholder="e.g. Tata Consultancy Services"
                     value={newMeeting.clientName}
@@ -1267,8 +1267,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Address / Site</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   placeholder="e.g. Sector V, Salt Lake, Kolkata"
                   value={newMeeting.clientAddress}
@@ -1279,9 +1279,9 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Scheduled Date & Time</label>
-                  <input 
+                  <input
                     type="datetime-local"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={newMeeting.scheduledAt}
                     onChange={e => setNewMeeting({ ...newMeeting, scheduledAt: e.target.value })}
@@ -1289,7 +1289,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Assign Service Personnel (Employee)</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMeeting.assignedToId}
                     onChange={e => setNewMeeting({ ...newMeeting, assignedToId: e.target.value })}
@@ -1304,8 +1304,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Agenda & Description</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={newMeeting.agenda}
                   onChange={e => setNewMeeting({ ...newMeeting, agenda: e.target.value })}
@@ -1319,8 +1319,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     Location
                   </label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     placeholder="Enter Location"
                     value={newMeeting.location}
                     onChange={e => setNewMeeting({ ...newMeeting, location: e.target.value })}
@@ -1330,7 +1330,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     Status
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMeeting.status}
                     onChange={e => setNewMeeting({ ...newMeeting, status: e.target.value })}
@@ -1351,15 +1351,15 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
+                    <input
+                      type="file"
+                      accept="image/*"
                       multiple
                       id="schedule-file-input"
                       style={{ display: 'none' }}
                       onChange={e => handleFileUpload(e, 'schedule')}
                     />
-                    <label 
+                    <label
                       htmlFor="schedule-file-input"
                       className="btn btn-secondary"
                       style={{ cursor: 'pointer', margin: 0, padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ffffff' }}
@@ -1367,12 +1367,12 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                       <Upload size={14} /> Choose Files
                     </label>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {newMeeting.photos && newMeeting.photos.length > 0 
-                        ? `${newMeeting.photos.length} file(s) chosen` 
+                      {newMeeting.photos && newMeeting.photos.length > 0
+                        ? `${newMeeting.photos.length} file(s) chosen`
                         : 'No file chosen'}
                     </span>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-primary"
                       style={{ backgroundColor: '#475569', borderColor: '#334155', padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                       onClick={() => startCamera('schedule')}
@@ -1383,14 +1383,14 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <div style={{ fontSize: '0.73rem', color: '#64748b' }}>
                     You can select multiple files or use camera capture below
                   </div>
-                  
+
                   {/* Photos Preview Grid */}
                   {newMeeting.photos && newMeeting.photos.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.4rem' }}>
                       {newMeeting.photos.map((pUrl, pIdx) => (
                         <div key={pIdx} style={{ position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                          <img src={pUrl} alt={`Uploaded ${pIdx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setViewingPhoto(pUrl)} />
-                          <button 
+                          <img src={pUrl} alt={`Uploaded ${pIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setViewingPhoto(pUrl)} />
+                          <button
                             type="button"
                             style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onClick={() => setNewMeeting(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== pIdx) }))}
@@ -1407,8 +1407,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               {/* Meeting Feedback */}
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Meeting Feedback</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   placeholder="Enter Meeting Feedback"
                   value={newMeeting.meetingFeedback}
@@ -1433,8 +1433,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>
                 Edit Service Meeting ({selectedMeeting.id})
               </h3>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowUpdateModal(false)}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
               >
@@ -1447,7 +1447,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Branch</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={updateData.branch}
                     onChange={e => setUpdateData({ ...updateData, branch: e.target.value })}
@@ -1458,7 +1458,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Department</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={updateData.department}
                     onChange={e => setUpdateData({ ...updateData, department: e.target.value })}
@@ -1469,7 +1469,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Project</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={updateData.project}
                     onChange={e => setUpdateData({ ...updateData, project: e.target.value })}
@@ -1491,8 +1491,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Meeting Title</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={updateData.title}
                     onChange={e => setUpdateData({ ...updateData, title: e.target.value })}
@@ -1500,7 +1500,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Select Client (Registered)</label>
-                  <select 
+                  <select
                     className="select-field"
                     onChange={e => {
                       const selectedId = e.target.value;
@@ -1532,8 +1532,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Client Name</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={updateData.clientName}
                     onChange={e => setUpdateData({ ...updateData, clientName: e.target.value })}
@@ -1541,8 +1541,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Client Address</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={updateData.clientAddress}
                     onChange={e => setUpdateData({ ...updateData, clientAddress: e.target.value })}
                   />
@@ -1555,9 +1555,9 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '4px' }}>
                     <Calendar size={15} /> Scheduled Date & Time
                   </label>
-                  <input 
+                  <input
                     type="datetime-local"
-                    className="input-field" 
+                    className="input-field"
                     required
                     style={{ borderColor: '#f59e0b', fontWeight: 600 }}
                     value={updateData.scheduledAt}
@@ -1568,7 +1568,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '4px' }}>
                     <UserCheck size={15} /> Assigned Staff (Employee)
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={updateData.assignedToId}
                     onChange={e => setUpdateData({ ...updateData, assignedToId: e.target.value })}
@@ -1585,8 +1585,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Location</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     placeholder="Enter Location"
                     value={updateData.location}
                     onChange={e => setUpdateData({ ...updateData, location: e.target.value })}
@@ -1594,7 +1594,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Current Meeting Status</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={updateData.status}
                     onChange={e => setUpdateData({ ...updateData, status: e.target.value })}
@@ -1615,15 +1615,15 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
+                    <input
+                      type="file"
+                      accept="image/*"
                       multiple
                       id="update-file-input"
                       style={{ display: 'none' }}
                       onChange={e => handleFileUpload(e, 'update')}
                     />
-                    <label 
+                    <label
                       htmlFor="update-file-input"
                       className="btn btn-secondary"
                       style={{ cursor: 'pointer', margin: 0, padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ffffff' }}
@@ -1631,12 +1631,12 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                       <Upload size={14} /> Choose Files
                     </label>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {updateData.photos && updateData.photos.length > 0 
-                        ? `${updateData.photos.length} file(s) chosen` 
+                      {updateData.photos && updateData.photos.length > 0
+                        ? `${updateData.photos.length} file(s) chosen`
                         : 'No file chosen'}
                     </span>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-primary"
                       style={{ backgroundColor: '#475569', borderColor: '#334155', padding: '0.45rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                       onClick={() => startCamera('update')}
@@ -1647,14 +1647,14 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <div style={{ fontSize: '0.73rem', color: '#64748b' }}>
                     You can select multiple files or use camera capture below
                   </div>
-                  
+
                   {/* Photos Preview Grid */}
                   {updateData.photos && updateData.photos.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.4rem' }}>
                       {updateData.photos.map((pUrl, pIdx) => (
                         <div key={pIdx} style={{ position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                          <img src={pUrl} alt={`Uploaded ${pIdx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setViewingPhoto(pUrl)} />
-                          <button 
+                          <img src={pUrl} alt={`Uploaded ${pIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setViewingPhoto(pUrl)} />
+                          <button
                             type="button"
                             style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onClick={() => setUpdateData(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== pIdx) }))}
@@ -1671,8 +1671,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               {/* Meeting Feedback */}
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Meeting Feedback</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   placeholder="Enter Meeting Feedback"
                   value={updateData.meetingFeedback}
@@ -1682,8 +1682,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Meeting Agenda & Description</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={updateData.agenda}
                   onChange={e => setUpdateData({ ...updateData, agenda: e.target.value })}
@@ -1693,8 +1693,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Real-time Service Progress Update</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={updateData.serviceUpdates}
                   onChange={e => setUpdateData({ ...updateData, serviceUpdates: e.target.value })}
@@ -1704,8 +1704,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Outcome Notes & Deliverables Summary</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={updateData.outcomeNotes}
                   onChange={e => setUpdateData({ ...updateData, outcomeNotes: e.target.value })}
@@ -1728,7 +1728,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
       {viewingPhoto && (
         <div className="modal-overlay" style={{ zIndex: 1100, backgroundColor: 'rgba(0, 0, 0, 0.85)' }} onClick={() => setViewingPhoto(null)}>
           <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
-            <button 
+            <button
               type="button"
               style={{ position: 'absolute', top: -40, right: 0, background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
               onClick={() => setViewingPhoto(null)}
@@ -1771,7 +1771,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
       {showMaterialModal && (
         <div className="modal-overlay" onClick={() => setShowMaterialModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '640px', maxHeight: 'calc(100vh - 3rem)', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #e2e8f0', margin: 'auto' }}>
-            
+
             {/* Header Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
               <h3 style={{ fontFamily: 'var(--font-heading, sans-serif)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
@@ -1810,14 +1810,14 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
             </div>
 
             <form onSubmit={handleSubmitMaterialRequest} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-              
+
               {/* Subject */}
               <div>
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                   Subject<span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   placeholder="Enter Material Request"
                   value={newMatReq.subject}
@@ -1832,13 +1832,13 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Material Request for User
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.requestedForUserId}
                     onChange={e => {
                       const u = users.find(usr => usr.id === e.target.value);
-                      setNewMatReq({ 
-                        ...newMatReq, 
+                      setNewMatReq({
+                        ...newMatReq,
                         requestedForUserId: e.target.value,
                         requestedForUserName: u ? u.name : ''
                       });
@@ -1846,8 +1846,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.9rem' }}
                   >
                     <option value="">Select User</option>
-                    {users.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    {users.filter(u => (u.role || '').toUpperCase() === 'CLIENT' || (u.role || '').toUpperCase() === 'USER').map(u => (
+                      <option key={u.id} value={u.id}>{u.name} (CLIENT)</option>
                     ))}
                   </select>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
@@ -1859,7 +1859,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Priority
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.priority}
                     onChange={e => setNewMatReq({ ...newMatReq, priority: e.target.value })}
@@ -1879,7 +1879,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Status
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.status}
                     onChange={e => setNewMatReq({ ...newMatReq, status: e.target.value })}
@@ -1898,7 +1898,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     End Date<span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <input 
+                  <input
                     type="date"
                     className="input-field"
                     required
@@ -1914,8 +1914,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                   Description
                 </label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={3}
                   placeholder="Enter Description"
                   value={newMatReq.description}
@@ -1930,13 +1930,13 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   Attachment
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                  <input 
-                    type="file" 
-                    id="create-mat-attachment-input" 
-                    style={{ display: 'none' }} 
+                  <input
+                    type="file"
+                    id="create-mat-attachment-input"
+                    style={{ display: 'none' }}
                     onChange={e => handleMatAttachmentUpload(e, false)}
                   />
-                  <label 
+                  <label
                     htmlFor="create-mat-attachment-input"
                     style={{
                       background: '#f1f5f9',
@@ -1975,10 +1975,10 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.85rem' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Material / Item Description</label>
-                    <select 
+                    <select
                       className="select-field"
                       value={
-                        newMatReq.selectedProdId || 
+                        newMatReq.selectedProdId ||
                         ((products || []).some(p => p.name === newMatReq.itemTitle) ? (products || []).find(p => p.name === newMatReq.itemTitle)?.id : (newMatReq.itemTitle ? 'CUSTOM' : ''))
                       }
                       onChange={e => {
@@ -1988,11 +1988,11 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                         } else if (val) {
                           const prod = (products || []).find(p => p.id === val);
                           if (prod) {
-                            setNewMatReq(prev => ({ 
-                              ...prev, 
+                            setNewMatReq(prev => ({
+                              ...prev,
                               selectedProdId: val,
-                              itemTitle: prod.name, 
-                              unit: prod.unit || 'Pcs' 
+                              itemTitle: prod.name,
+                              unit: prod.unit || 'Pcs'
                             }));
                           }
                         } else {
@@ -2011,8 +2011,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                     </select>
 
                     {(newMatReq.selectedProdId === 'CUSTOM' || (!(products || []).some(p => p.name === newMatReq.itemTitle) && newMatReq.itemTitle)) && (
-                      <input 
-                        className="input-field" 
+                      <input
+                        className="input-field"
                         placeholder="e.g. Copper Wire Coil 50m"
                         value={newMatReq.itemTitle}
                         onChange={e => setNewMatReq({ ...newMatReq, itemTitle: e.target.value })}
@@ -2022,10 +2022,10 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Quantity</label>
-                    <input 
+                    <input
                       type="number"
                       min="1"
-                      className="input-field" 
+                      className="input-field"
                       value={newMatReq.quantity}
                       onChange={e => setNewMatReq({ ...newMatReq, quantity: e.target.value })}
                       style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
@@ -2033,8 +2033,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Unit</label>
-                    <input 
-                      className="input-field" 
+                    <input
+                      className="input-field"
                       value={newMatReq.unit}
                       onChange={e => setNewMatReq({ ...newMatReq, unit: e.target.value })}
                       style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
@@ -2044,7 +2044,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
                 <div>
                   <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Link to Service Meeting (Optional)</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.meetingId}
                     onChange={e => setNewMatReq({ ...newMatReq, meetingId: e.target.value })}
@@ -2060,16 +2060,16 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.85rem', marginTop: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                <button 
-                  type="button" 
-                  className="btn" 
+                <button
+                  type="button"
+                  className="btn"
                   onClick={() => setShowMaterialModal(false)}
                   style={{ background: '#64748b', color: '#ffffff', border: 'none', padding: '0.65rem 1.4rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="btn"
                   style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#ffffff', border: 'none', padding: '0.65rem 1.6rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
                 >
@@ -2093,8 +2093,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Material Title</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={editMatReqData.itemTitle}
                     onChange={e => setEditMatReqData({ ...editMatReqData, itemTitle: e.target.value })}
@@ -2102,10 +2102,10 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Quantity</label>
-                  <input 
+                  <input
                     type="number"
                     min="1"
-                    className="input-field" 
+                    className="input-field"
                     required
                     value={editMatReqData.quantity}
                     onChange={e => setEditMatReqData({ ...editMatReqData, quantity: e.target.value })}
@@ -2113,8 +2113,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Unit</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={editMatReqData.unit}
                     onChange={e => setEditMatReqData({ ...editMatReqData, unit: e.target.value })}
@@ -2124,8 +2124,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Justification</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   required
                   value={editMatReqData.justification}
@@ -2135,7 +2135,7 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                <select 
+                <select
                   className="select-field"
                   value={editMatReqData.status}
                   onChange={e => setEditMatReqData({ ...editMatReqData, status: e.target.value })}

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  UserCheck, 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  Clock, 
-  Plus, 
-  CheckCircle, 
+import {
+  UserCheck,
+  Calendar,
+  DollarSign,
+  FileText,
+  Clock,
+  Plus,
+  CheckCircle,
   AlertCircle,
   Download,
   Building,
@@ -49,7 +49,7 @@ const LocationDisplay = ({ location }) => {
             setAddress(resolved);
           }
         })
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => {
           if (isMounted) setLoading(false);
         });
@@ -126,12 +126,12 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     const o4 = user.others4 || 0;
     const gross = basic + o1 + o2 + o3 + o4;
 
-    const defaultEpf = user.epfShare !== undefined && user.epfShare !== null && user.epfShare > 0 
-      ? user.epfShare 
+    const defaultEpf = user.epfShare !== undefined && user.epfShare !== null && user.epfShare > 0
+      ? user.epfShare
       : Math.round(basic * 0.12);
 
-    const defaultEsi = user.esiShare !== undefined && user.esiShare !== null && user.esiShare > 0 
-      ? user.esiShare 
+    const defaultEsi = user.esiShare !== undefined && user.esiShare !== null && user.esiShare > 0
+      ? user.esiShare
       : Math.round(gross * 0.0075);
 
     const defaultPtax = user.pTax !== undefined && user.pTax !== null ? user.pTax : 110;
@@ -156,7 +156,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       const targetUserId = basicSalaryUser.userId || basicSalaryUser.id;
       const res = await fetch(`/api/users/${targetUserId}/basic-salary`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(localStorage.getItem('token') ? { 'Authorization': `Bearer ${localStorage.getItem('token')}` } : {})
         },
@@ -227,26 +227,26 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const displayedAttendance = isEmployee
     ? attendance.filter(a => !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase()))
     : attendance.filter(a => {
-        const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStaff = selectedStaffId === 'ALL' || a.userId === selectedStaffId || (selectedUserObj && a.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
-        return matchesSearch && matchesStaff;
-      });
+      const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStaff = selectedStaffId === 'ALL' || a.userId === selectedStaffId || (selectedUserObj && a.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
+      return matchesSearch && matchesStaff;
+    });
 
   const displayedLeaves = isEmployee
     ? leaves.filter(l => !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase()))
     : leaves.filter(l => {
-        const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && l.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
-        return matchesSearch && matchesStaff;
-      });
+      const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && l.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
+      return matchesSearch && matchesStaff;
+    });
 
   const displayedSalaryRecords = isEmployee
     ? salaryRecords.filter(s => !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase()))
     : salaryRecords.filter(s => {
-        const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStaff = selectedStaffId === 'ALL' || s.userId === selectedStaffId || (selectedUserObj && s.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
-        return matchesSearch && matchesStaff;
-      });
+      const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStaff = selectedStaffId === 'ALL' || s.userId === selectedStaffId || (selectedUserObj && s.userName?.toLowerCase() === selectedUserObj.name?.toLowerCase());
+      return matchesSearch && matchesStaff;
+    });
 
   const filteredMonthlyReport = monthlyReport.filter(r => {
     const matchesSearch = !searchQuery || r.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || r.designation?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -261,8 +261,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   const fetchAttendanceData = useCallback(async () => {
     try {
-      const queryParam = (isEmployee && (activeUser?.id || activeUser?.name)) 
-        ? `?userId=${encodeURIComponent(activeUser?.id || '')}&userName=${encodeURIComponent(activeUser?.name || '')}` 
+      const queryParam = (isEmployee && (activeUser?.id || activeUser?.name))
+        ? `?userId=${encodeURIComponent(activeUser?.id || '')}&userName=${encodeURIComponent(activeUser?.name || '')}`
         : '';
       const [attRes, lveRes, payRes, usrRes] = await Promise.allSettled([
         fetch(`/api/attendance${queryParam}`).then(r => r.json()),
@@ -371,12 +371,12 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     const o4 = selectedUser.others4 || 0;
     const gross = basic + o1 + o2 + o3 + o4;
 
-    const defaultEpf = selectedUser.epfShare !== undefined && selectedUser.epfShare !== null && selectedUser.epfShare > 0 
-      ? selectedUser.epfShare 
+    const defaultEpf = selectedUser.epfShare !== undefined && selectedUser.epfShare !== null && selectedUser.epfShare > 0
+      ? selectedUser.epfShare
       : Math.round(basic * 0.12);
 
-    const defaultEsi = selectedUser.esiShare !== undefined && selectedUser.esiShare !== null && selectedUser.esiShare > 0 
-      ? selectedUser.esiShare 
+    const defaultEsi = selectedUser.esiShare !== undefined && selectedUser.esiShare !== null && selectedUser.esiShare > 0
+      ? selectedUser.esiShare
       : Math.round(gross * 0.0075);
 
     const defaultPtax = selectedUser.pTax !== undefined && selectedUser.pTax !== null ? selectedUser.pTax : 110;
@@ -442,7 +442,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
           epfShare: Number(newSalary.epfShare) || 0,
           esiShare: Number(newSalary.esiShare) || 0,
           pTax: Number(newSalary.pTax) || 0,
-          allowances: ((Number(newSalary.others1)||0) + (Number(newSalary.others2)||0) + (Number(newSalary.others3)||0) + (Number(newSalary.others4)||0)) || Number(newSalary.allowances) || 0,
+          allowances: ((Number(newSalary.others1) || 0) + (Number(newSalary.others2) || 0) + (Number(newSalary.others3) || 0) + (Number(newSalary.others4) || 0)) || Number(newSalary.allowances) || 0,
           userName: selectedUser ? selectedUser.name : 'Staff Member'
         })
       });
@@ -843,7 +843,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-      
+
       {/* Overview Header & Metric Cards (Collapsible) */}
       {showSummaryCards && (
         <>
@@ -890,8 +890,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               {!isEmployee && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#f8fafc', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                   <Users size={12} color="#64748b" />
-                  <select 
-                    value={selectedStaffId} 
+                  <select
+                    value={selectedStaffId}
                     onChange={e => setSelectedStaffId(e.target.value)}
                     style={{ border: 'none', background: 'transparent', fontSize: '0.74rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', outline: 'none', maxWidth: 145 }}
                   >
@@ -905,8 +905,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#f8fafc', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                 <Calendar size={12} color="#64748b" />
-                <select 
-                  value={selectedMonth} 
+                <select
+                  value={selectedMonth}
                   onChange={e => setSelectedMonth(e.target.value)}
                   style={{ border: 'none', background: 'transparent', fontSize: '0.74rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
                 >
@@ -914,8 +914,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
-                <select 
-                  value={selectedYear} 
+                <select
+                  value={selectedYear}
                   onChange={e => setSelectedYear(e.target.value)}
                   style={{ border: 'none', background: 'transparent', fontSize: '0.74rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
                 >
@@ -927,7 +927,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
               <div style={{ position: 'relative' }}>
                 <Search size={12} color="#94a3b8" style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
+                <input
                   type="text"
                   placeholder="Search staff..."
                   value={searchQuery}
@@ -970,9 +970,9 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
           </div>
 
           {/* Overview Metric Ribbon Bar (Ultra-Compact Single Row) */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
             gap: '0.4rem'
           }}>
             {isEmployee ? (
@@ -1088,7 +1088,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem', background: '#ffffff', padding: '0.25rem 0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: '2px', background: '#f1f5f9', padding: '2px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-            <button 
+            <button
               className={`btn ${activeTab === 'attendance' ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
               onClick={() => setActiveTab('attendance')}
@@ -1098,7 +1098,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             </button>
 
             {!isEmployee && (
-              <button 
+              <button
                 className={`btn ${activeTab === 'monthly_report' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
                 onClick={() => setActiveTab('monthly_report')}
@@ -1108,7 +1108,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               </button>
             )}
 
-            <button 
+            <button
               className={`btn ${activeTab === 'leaves' ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
               onClick={() => setActiveTab('leaves')}
@@ -1116,8 +1116,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <Calendar style={{ width: 12, height: 12 }} />
               Leave Requests ({displayedLeaves.length})
             </button>
-            
-            <button 
+
+            <button
               className={`btn ${activeTab === 'payroll' ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.18rem 0.45rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '4px' }}
               onClick={() => setActiveTab('payroll')}
@@ -1154,8 +1154,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               {!isEmployee && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: '#f8fafc', padding: '0.15rem 0.35rem', borderRadius: '5px', border: '1px solid #cbd5e1' }}>
                   <Users size={12} color="#64748b" />
-                  <select 
-                    value={selectedStaffId} 
+                  <select
+                    value={selectedStaffId}
                     onChange={e => setSelectedStaffId(e.target.value)}
                     style={{ border: 'none', background: 'transparent', fontSize: '0.72rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer', outline: 'none', maxWidth: 120 }}
                   >
@@ -1169,8 +1169,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: '#f8fafc', padding: '0.15rem 0.35rem', borderRadius: '5px', border: '1px solid #cbd5e1' }}>
                 <Calendar size={12} color="#64748b" />
-                <select 
-                  value={selectedMonth} 
+                <select
+                  value={selectedMonth}
                   onChange={e => setSelectedMonth(e.target.value)}
                   style={{ border: 'none', background: 'transparent', fontSize: '0.72rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
                 >
@@ -1178,8 +1178,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     <option key={m} value={m}>{m.slice(0, 3)}</option>
                   ))}
                 </select>
-                <select 
-                  value={selectedYear} 
+                <select
+                  value={selectedYear}
                   onChange={e => setSelectedYear(e.target.value)}
                   style={{ border: 'none', background: 'transparent', fontSize: '0.72rem', fontWeight: 600, color: '#334155', cursor: 'pointer', outline: 'none' }}
                 >
@@ -1191,7 +1191,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
               <div style={{ position: 'relative' }}>
                 <Search size={12} color="#94a3b8" style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
+                <input
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
@@ -1214,20 +1214,20 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
         {/* Tab-Contextual & Always-Visible Action Buttons Bar */}
         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* ALWAYS VISIBLE: Punch In & Punch Out Buttons */}
-          <button 
-            className="btn btn-primary" 
-            style={{ 
-              padding: '0.2rem 0.5rem', 
-              fontSize: '0.74rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.2rem', 
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+          <button
+            className="btn btn-primary"
+            style={{
+              padding: '0.2rem 0.5rem',
+              fontSize: '0.74rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.2rem',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               border: 'none',
               boxShadow: '0 1px 4px rgba(16, 185, 129, 0.25)',
               borderRadius: '5px',
               cursor: isPunching ? 'not-allowed' : 'pointer'
-            }} 
+            }}
             onClick={handleWebCheckIn}
             disabled={isPunching}
             title="Record morning attendance check-in"
@@ -1236,20 +1236,20 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             {isPunching ? 'Punching...' : 'Punch In'}
           </button>
 
-          <button 
-            className="btn btn-primary" 
-            style={{ 
-              padding: '0.2rem 0.5rem', 
-              fontSize: '0.74rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.2rem', 
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+          <button
+            className="btn btn-primary"
+            style={{
+              padding: '0.2rem 0.5rem',
+              fontSize: '0.74rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.2rem',
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
               border: 'none',
               boxShadow: '0 1px 4px rgba(245, 158, 11, 0.25)',
               borderRadius: '5px',
               cursor: isPunching ? 'not-allowed' : 'pointer'
-            }} 
+            }}
             onClick={handleWebCheckOut}
             disabled={isPunching}
             title="Record evening attendance check-out"
@@ -1260,8 +1260,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
           {/* TAB 2: Leaves Specific Actions */}
           {activeTab === 'leaves' && (
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               style={{ padding: '0.2rem 0.5rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }}
               onClick={() => setShowLeaveModal(true)}
             >
@@ -1275,27 +1275,17 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             <>
               {!isEmployee && (
                 <>
-                  <button 
-                    className="btn btn-secondary" 
+                  <button
+                    className="btn btn-secondary"
                     style={{ padding: '0.2rem 0.45rem', fontSize: '0.74rem', borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)', borderRadius: '5px' }}
                     onClick={() => handleOpenBasicSalaryModal(selectedUserObj || staffUsers[0])}
                   >
                     Set Basic Salary
                   </button>
 
-                  <button 
-                    className="btn btn-secondary" 
-                    style={{ padding: '0.2rem 0.45rem', fontSize: '0.74rem', borderColor: '#6366f1', color: '#6366f1', background: 'rgba(99, 102, 241, 0.05)', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }} 
-                    onClick={handleBatchGenerateSalaries}
-                    disabled={isGeneratingBatch}
-                  >
-                    <Zap style={{ width: 12, height: 12, color: '#6366f1' }} />
-                    {isGeneratingBatch ? 'Generating Payroll...' : `Batch Generate ${selectedMonth.slice(0, 3)} Salary`}
-                  </button>
-
-                  <button 
-                    className="btn btn-primary" 
-                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }} 
+                  <button
+                    className="btn btn-primary"
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }}
                     onClick={() => setShowSalaryModal(true)}
                   >
                     <DollarSign style={{ width: 12, height: 12 }} />
@@ -1304,8 +1294,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 </>
               )}
               {isEmployee && (
-                <button 
-                  className="btn btn-primary" 
+                <button
+                  className="btn btn-primary"
                   style={{ padding: '0.2rem 0.5rem', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: '5px' }}
                   onClick={() => setShowLeaveModal(true)}
                 >
@@ -1410,7 +1400,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   }
 
                   return (
-                    <div 
+                    <div
                       key={day.dateStr}
                       onClick={() => setSelectedCalendarDay(day)}
                       style={{
@@ -1503,7 +1493,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                     {!isEmployee && (
                       <td>
                         <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
                             title="Edit Attendance Record"
@@ -1520,7 +1510,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                           >
                             <Edit2 size={14} color="#2563eb" />
                           </button>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                             title="Delete Attendance Record"
@@ -1616,16 +1606,16 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                          <button 
-                            className="btn btn-secondary" 
+                          <button
+                            className="btn btn-secondary"
                             style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', borderColor: '#0d9488', color: '#0d9488', background: 'rgba(13, 148, 136, 0.05)' }}
                             onClick={() => handleOpenBasicSalaryModal(item)}
                             title="Set or Edit Full Salary Breakdown"
                           >
                             <Edit2 size={13} /> Edit Salary Fields
                           </button>
-                          <button 
-                            className="btn btn-secondary" 
+                          <button
+                            className="btn btn-secondary"
                             style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
                             onClick={() => {
                               setNewSalary({
@@ -1694,7 +1684,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       )}
                       {!isEmployee && (
                         <>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
                             title="Edit Leave Request"
@@ -1711,7 +1701,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                           >
                             <Edit2 size={14} color="#2563eb" />
                           </button>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                             title="Delete Leave Request"
@@ -1781,7 +1771,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       </button>
                       {!isEmployee && (
                         <>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#2563eb', borderColor: 'rgba(37, 99, 235, 0.3)' }}
                             title="Edit Salary Record"
@@ -1800,7 +1790,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                           >
                             <Edit2 size={14} color="#2563eb" />
                           </button>
-                          <button 
+                          <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                             title="Delete Salary Record"
@@ -1829,7 +1819,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             <form onSubmit={handleApplyLeave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Leave Category</label>
-                <select 
+                <select
                   className="select-field"
                   value={newLeave.leaveType}
                   onChange={e => setNewLeave({ ...newLeave, leaveType: e.target.value })}
@@ -1842,18 +1832,18 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Start Date</label>
-                  <input 
+                  <input
                     type="date"
-                    className="input-field" 
+                    className="input-field"
                     value={newLeave.startDate}
                     onChange={e => setNewLeave({ ...newLeave, startDate: e.target.value })}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>End Date</label>
-                  <input 
+                  <input
                     type="date"
-                    className="input-field" 
+                    className="input-field"
                     value={newLeave.endDate}
                     onChange={e => setNewLeave({ ...newLeave, endDate: e.target.value })}
                   />
@@ -1861,8 +1851,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Reason for Application</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={newLeave.reason}
                   onChange={e => setNewLeave({ ...newLeave, reason: e.target.value })}
@@ -1888,7 +1878,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             <form onSubmit={handleGenerateSalary} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Employee</label>
-                <select 
+                <select
                   className="select-field"
                   value={newSalary.userId}
                   onChange={e => handleSelectSalaryUser(e.target.value)}
@@ -1904,17 +1894,17 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Month</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={newSalary.month}
                     onChange={e => setNewSalary({ ...newSalary, month: e.target.value })}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Year</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     value={newSalary.year}
                     onChange={e => setNewSalary({ ...newSalary, year: e.target.value })}
                   />
@@ -1924,14 +1914,14 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Base Salary (₹)</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     value={newSalary.baseSalary}
                     onChange={e => {
                       const val = e.target.value;
                       const num = Number(val) || 0;
-                      const g = num + (Number(newSalary.others1)||0) + (Number(newSalary.others2)||0) + (Number(newSalary.others3)||0) + (Number(newSalary.others4)||0);
+                      const g = num + (Number(newSalary.others1) || 0) + (Number(newSalary.others2) || 0) + (Number(newSalary.others3) || 0) + (Number(newSalary.others4) || 0);
                       setNewSalary(prev => ({
                         ...prev,
                         baseSalary: val,
@@ -1943,9 +1933,9 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overtime Hours</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     value={newSalary.overtimeHours}
                     onChange={e => setNewSalary({ ...newSalary, overtimeHours: e.target.value })}
                   />
@@ -1958,38 +1948,38 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 1 / HRA (₹)</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      value={newSalary.others1} 
-                      onChange={e => setNewSalary({ ...newSalary, others1: e.target.value })} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.others1}
+                      onChange={e => setNewSalary({ ...newSalary, others1: e.target.value })}
                     />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 2 / Special (₹)</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      value={newSalary.others2} 
-                      onChange={e => setNewSalary({ ...newSalary, others2: e.target.value })} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.others2}
+                      onChange={e => setNewSalary({ ...newSalary, others2: e.target.value })}
                     />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 3 / Conveyance (₹)</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      value={newSalary.others3} 
-                      onChange={e => setNewSalary({ ...newSalary, others3: e.target.value })} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.others3}
+                      onChange={e => setNewSalary({ ...newSalary, others3: e.target.value })}
                     />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Allowance 4 / Medical (₹)</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      value={newSalary.others4} 
-                      onChange={e => setNewSalary({ ...newSalary, others4: e.target.value })} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.others4}
+                      onChange={e => setNewSalary({ ...newSalary, others4: e.target.value })}
                     />
                   </div>
                 </div>
@@ -2001,36 +1991,36 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>EPF Share 12% (₹)</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      value={newSalary.epfShare} 
-                      onChange={e => setNewSalary({ ...newSalary, epfShare: e.target.value })} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.epfShare}
+                      onChange={e => setNewSalary({ ...newSalary, epfShare: e.target.value })}
                     />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ESI Share 0.75% (₹)</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      value={newSalary.esiShare} 
-                      onChange={e => setNewSalary({ ...newSalary, esiShare: e.target.value })} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.esiShare}
+                      onChange={e => setNewSalary({ ...newSalary, esiShare: e.target.value })}
                     />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>P-Tax (₹)</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      value={newSalary.pTax} 
-                      onChange={e => setNewSalary({ ...newSalary, pTax: e.target.value })} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={newSalary.pTax}
+                      onChange={e => setNewSalary({ ...newSalary, pTax: e.target.value })}
                     />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Late & Other Deductions (₹)</label>
-                    <input 
+                    <input
                       type="number"
-                      className="input-field" 
+                      className="input-field"
                       value={newSalary.deductions}
                       onChange={e => setNewSalary({ ...newSalary, deductions: e.target.value })}
                     />
@@ -2049,96 +2039,153 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
 
       {/* Modal 3: Digital Salary Slip Preview */}
       {selectedSalarySlip && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ border: '2px solid var(--brand-gold)', maxWidth: 680 }}>
-            <div style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#1e293b' }}>
-                AKASH ENGINEERING - SALARY DETAILS - FOR V S DIGITECH TECHNOLOGY
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                KADARAT, NARENDRAPUR, KOLKATA 700150 | Mobile: 9831053297, 9062773542
-              </div>
-              <div style={{ marginTop: '0.5rem', fontWeight: 700, fontSize: '1rem', color: '#d97706' }}>
-                OFFICIAL PAYSLIP - {selectedSalarySlip.month ? selectedSalarySlip.month.toUpperCase() : ''} {selectedSalarySlip.year}
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem', marginBottom: '1.25rem', background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
-              <div><strong>Employee Name:</strong> {selectedSalarySlip.userName}</div>
-              <div><strong>Designation:</strong> {selectedSalarySlip.designation || 'Staff'}</div>
-              <div><strong>Status:</strong> {selectedSalarySlip.status}</div>
-              <div><strong>Generated Date:</strong> {selectedSalarySlip.generatedAt ? new Date(selectedSalarySlip.generatedAt).toLocaleDateString() : 'N/A'}</div>
-            </div>
-
-            {/* Salary Breakdown Table */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div>
-                <h4 style={{ color: 'var(--brand-green)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
-                  EARNINGS & ALLOWANCES
-                </h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Basic Pay:</span>
-                  <strong>₹{(selectedSalarySlip.baseSalary || 0).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Others Allowance 1:</span>
-                  <strong>₹{(selectedSalarySlip.others1 || 0).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Others Allowance 2:</span>
-                  <strong>₹{(selectedSalarySlip.others2 || 0).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Others Allowance 3:</span>
-                  <strong>₹{(selectedSalarySlip.others3 || 0).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>Others Allowance 4:</span>
-                  <strong>₹{(selectedSalarySlip.others4 || 0).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.4rem 0', borderTop: '1px solid #e2e8f0', color: '#b45309', fontWeight: 700 }}>
-                  <span>TOTAL GROSS SALARY:</span>
-                  <strong>₹{(selectedSalarySlip.grossSalary || ((selectedSalarySlip.baseSalary || 0) + (selectedSalarySlip.allowances || 0))).toLocaleString()}</strong>
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ color: 'var(--brand-red)', fontSize: '0.9rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
-                  DEDUCTIONS & STATUTORY
-                </h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>EPF Employee Share (12%):</span>
-                  <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.pfDeduction || Math.round((selectedSalarySlip.baseSalary || 0) * 0.12)).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>ESI Employee Share (0.75%):</span>
-                  <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.esiDeduction || Math.round((selectedSalarySlip.grossSalary || selectedSalarySlip.baseSalary || 0) * 0.0075)).toLocaleString()}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                  <span>P TAX:</span>
-                  <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.pTaxDeduction !== undefined ? selectedSalarySlip.pTaxDeduction : 110).toLocaleString()}</strong>
-                </div>
-                {selectedSalarySlip.deductions > ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110)) && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0' }}>
-                    <span>Late & Other Deductions:</span>
-                    <strong style={{ color: '#dc2626' }}>₹{(selectedSalarySlip.deductions - ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110))).toLocaleString()}</strong>
+        <div className="modal-overlay" onClick={() => setSelectedSalarySlip(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '18px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #cbd5e1' }}>
+            
+            {/* Payslip Header Banner */}
+            <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#ffffff', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.25rem', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#f8fafc' }}>
+                    AKASH ENGINEERING
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>
+                    FOR V S DIGITECH TECHNOLOGY
                   </div>
-                )}
+                  <div style={{ fontSize: '0.72rem', color: '#cbd5e1', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span>📍 KADARAT, NARENDRAPUR, KOLKATA 700150</span>
+                    <span>•</span>
+                    <span>📞 9831053297 / 9062773542</span>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedSalarySlip(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', cursor: 'pointer' }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '1rem', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: '#fbbf24' }}>
+                <span>📜 OFFICIAL PAYSLIP</span>
+                <span>•</span>
+                <span>{selectedSalarySlip.month ? selectedSalarySlip.month.toUpperCase() : ''} {selectedSalarySlip.year}</span>
               </div>
             </div>
 
-            <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>NET TAKE HOME SALARY:</div>
-              <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--brand-green)' }}>
+            {/* Employee Details Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', fontSize: '0.82rem', marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Employee Name</span>
+                <strong style={{ color: '#0f172a', fontSize: '0.9rem' }}>{selectedSalarySlip.userName}</strong>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Job Designation</span>
+                <strong style={{ color: '#0f172a', fontSize: '0.9rem' }}>{selectedSalarySlip.designation || 'Staff'}</strong>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Payment Status</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 700, fontSize: '0.75rem' }}>
+                  <Check size={12} color="#16a34a" /> {selectedSalarySlip.status || 'PROCESSED'}
+                </span>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Generated Date</span>
+                <strong style={{ color: '#334155' }}>{selectedSalarySlip.generatedAt ? new Date(selectedSalarySlip.generatedAt).toLocaleDateString() : 'N/A'}</strong>
+              </div>
+            </div>
+
+            {/* Salary Breakdown: Earnings vs Deductions */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              
+              {/* Earnings Card */}
+              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', borderBottom: '2px solid #10b981', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }}></div>
+                  <h4 style={{ margin: 0, color: '#065f46', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Earnings & Allowances
+                  </h4>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.82rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>Basic Pay</span>
+                    <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.baseSalary || 0).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>Others Allowance 1</span>
+                    <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others1 || 0).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>Others Allowance 2</span>
+                    <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others2 || 0).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>Others Allowance 3</span>
+                    <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others3 || 0).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>Others Allowance 4</span>
+                    <strong style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.others4 || 0).toLocaleString()}</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #cbd5e1', color: '#92400e', fontWeight: 800, fontSize: '0.82rem', background: '#fffbeb', padding: '0.5rem 0.65rem', borderRadius: '6px' }}>
+                  <span>TOTAL GROSS:</span>
+                  <span style={{ fontFamily: 'monospace' }}>₹{(selectedSalarySlip.grossSalary || ((selectedSalarySlip.baseSalary || 0) + (selectedSalarySlip.allowances || 0))).toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Deductions Card */}
+              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }}></div>
+                  <h4 style={{ margin: 0, color: '#991b1b', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Deductions & Statutory
+                  </h4>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.82rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>EPF Share (12%)</span>
+                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.pfDeduction || Math.round((selectedSalarySlip.baseSalary || 0) * 0.12)).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>ESI Share (0.75%)</span>
+                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.esiDeduction || Math.round((selectedSalarySlip.grossSalary || selectedSalarySlip.baseSalary || 0) * 0.0075)).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                    <span style={{ color: '#475569' }}>P-TAX</span>
+                    <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.pTaxDeduction !== undefined ? selectedSalarySlip.pTaxDeduction : 110).toLocaleString()}</strong>
+                  </div>
+                  {selectedSalarySlip.deductions > ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110)) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.3rem', borderBottom: '1px dashed #f1f5f9' }}>
+                      <span style={{ color: '#475569' }}>Late & Other Deductions</span>
+                      <strong style={{ color: '#dc2626', fontFamily: 'monospace' }}>₹{(selectedSalarySlip.deductions - ((selectedSalarySlip.pfDeduction || 0) + (selectedSalarySlip.esiDeduction || 0) + (selectedSalarySlip.pTaxDeduction || 110))).toLocaleString()}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Net Take Home Hero Box */}
+            <div style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1.5px solid #a7f3d0', padding: '1rem 1.25rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.08)' }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#065f46', letterSpacing: '0.02em' }}>NET TAKE HOME SALARY</div>
+                <div style={{ fontSize: '0.72rem', color: '#047857' }}>Net amount credited to employee bank account</div>
+              </div>
+              <div style={{ fontWeight: 800, fontSize: '1.6rem', color: '#047857', fontFamily: 'monospace' }}>
                 ₹{(selectedSalarySlip.netSalary || 0).toLocaleString()}
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
-              <button className="btn btn-secondary" onClick={() => window.print()}>
-                <Download style={{ width: 16, height: 16 }} /> Print / Download Payslip
-              </button>
-              <button className="btn btn-primary" onClick={() => setSelectedSalarySlip(null)}>
+            {/* Modal Actions - NO Download button */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setSelectedSalarySlip(null)}
+                style={{ background: '#2563eb', color: '#ffffff', border: 'none', padding: '0.6rem 1.75rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)' }}
+              >
                 Close Payslip
               </button>
             </div>
@@ -2157,16 +2204,16 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Check-in Time</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={editAttData.checkInTime}
                     onChange={e => setEditAttData({ ...editAttData, checkInTime: e.target.value })}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Check-out Time</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={editAttData.checkOutTime}
                     onChange={e => setEditAttData({ ...editAttData, checkOutTime: e.target.value })}
                   />
@@ -2175,15 +2222,15 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Location / Site</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={editAttData.location}
                     onChange={e => setEditAttData({ ...editAttData, location: e.target.value })}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Punch Method</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editAttData.method}
                     onChange={e => setEditAttData({ ...editAttData, method: e.target.value })}
@@ -2196,7 +2243,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                <select 
+                <select
                   className="select-field"
                   value={editAttData.status}
                   onChange={e => setEditAttData({ ...editAttData, status: e.target.value })}
@@ -2332,11 +2379,11 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
                     BASIC SALARY (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     required
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     value={salaryInputs.basicSalary}
                     onChange={e => {
                       const newBasic = e.target.value;
@@ -2346,8 +2393,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       const o3 = Number(salaryInputs.others3) || 0;
                       const o4 = Number(salaryInputs.others4) || 0;
                       const gross = b + o1 + o2 + o3 + o4;
-                      setSalaryInputs({ 
-                        ...salaryInputs, 
+                      setSalaryInputs({
+                        ...salaryInputs,
                         basicSalary: newBasic,
                         epfShare: Math.round(b * 0.12).toString(),
                         esiShare: Math.round(gross * 0.0075).toString()
@@ -2361,10 +2408,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
                     OTHERS 1 (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     value={salaryInputs.others1}
                     onChange={e => {
                       const newO1 = e.target.value;
@@ -2374,8 +2421,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       const o3 = Number(salaryInputs.others3) || 0;
                       const o4 = Number(salaryInputs.others4) || 0;
                       const gross = b + o1 + o2 + o3 + o4;
-                      setSalaryInputs({ 
-                        ...salaryInputs, 
+                      setSalaryInputs({
+                        ...salaryInputs,
                         others1: newO1,
                         esiShare: Math.round(gross * 0.0075).toString()
                       });
@@ -2388,10 +2435,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
                     OTHERS 2 (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     value={salaryInputs.others2}
                     onChange={e => {
                       const newO2 = e.target.value;
@@ -2401,8 +2448,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       const o3 = Number(salaryInputs.others3) || 0;
                       const o4 = Number(salaryInputs.others4) || 0;
                       const gross = b + o1 + o2 + o3 + o4;
-                      setSalaryInputs({ 
-                        ...salaryInputs, 
+                      setSalaryInputs({
+                        ...salaryInputs,
                         others2: newO2,
                         esiShare: Math.round(gross * 0.0075).toString()
                       });
@@ -2415,10 +2462,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
                     OTHERS 3 (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     value={salaryInputs.others3}
                     onChange={e => {
                       const newO3 = e.target.value;
@@ -2428,8 +2475,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       const o3 = Number(newO3) || 0;
                       const o4 = Number(salaryInputs.others4) || 0;
                       const gross = b + o1 + o2 + o3 + o4;
-                      setSalaryInputs({ 
-                        ...salaryInputs, 
+                      setSalaryInputs({
+                        ...salaryInputs,
                         others3: newO3,
                         esiShare: Math.round(gross * 0.0075).toString()
                       });
@@ -2442,10 +2489,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
                     OTHERS 4 (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     value={salaryInputs.others4}
                     onChange={e => {
                       const newO4 = e.target.value;
@@ -2455,8 +2502,8 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                       const o3 = Number(salaryInputs.others3) || 0;
                       const o4 = Number(newO4) || 0;
                       const gross = b + o1 + o2 + o3 + o4;
-                      setSalaryInputs({ 
-                        ...salaryInputs, 
+                      setSalaryInputs({
+                        ...salaryInputs,
                         others4: newO4,
                         esiShare: Math.round(gross * 0.0075).toString()
                       });
@@ -2469,10 +2516,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.25rem', display: 'block' }}>
                     EPF EMPLOYEE SHARE 12% (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     style={{ borderColor: 'rgba(220, 38, 38, 0.4)' }}
                     value={salaryInputs.epfShare}
                     onChange={e => setSalaryInputs({ ...salaryInputs, epfShare: e.target.value })}
@@ -2484,10 +2531,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.25rem', display: 'block' }}>
                     ESI EMPLOYEE SHARE 0.75% (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     style={{ borderColor: 'rgba(220, 38, 38, 0.4)' }}
                     value={salaryInputs.esiShare}
                     onChange={e => setSalaryInputs({ ...salaryInputs, esiShare: e.target.value })}
@@ -2499,10 +2546,10 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.25rem', display: 'block' }}>
                     P TAX DEDUCTION (₹)
                   </label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
-                    className="input-field" 
+                    className="input-field"
                     value={salaryInputs.pTax}
                     onChange={e => setSalaryInputs({ ...salaryInputs, pTax: e.target.value })}
                     placeholder="e.g. 110"
@@ -2584,12 +2631,11 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                   {selectedUserObj?.designation || 'Staff Member'}
                 </div>
               </div>
-              <span className={`badge ${
-                selectedCalendarDay.status === 'PRESENT' ? 'badge-present' :
-                selectedCalendarDay.status === 'LATE' ? 'badge-pending' :
-                selectedCalendarDay.status === 'LEAVE' ? 'badge-info' :
-                'badge-danger'
-              }`} style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}>
+              <span className={`badge ${selectedCalendarDay.status === 'PRESENT' ? 'badge-present' :
+                  selectedCalendarDay.status === 'LATE' ? 'badge-pending' :
+                    selectedCalendarDay.status === 'LEAVE' ? 'badge-info' :
+                      'badge-danger'
+                }`} style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}>
                 {selectedCalendarDay.status === 'PRESENT' && '✓ PRESENT'}
                 {selectedCalendarDay.status === 'LATE' && '⏰ LATE ENTRY'}
                 {selectedCalendarDay.status === 'LEAVE' && '🏖️ APPROVED LEAVE'}
@@ -2632,7 +2678,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             <div style={{ background: '#f1f5f9', padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.8rem', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div>Punch Source: <strong>{selectedCalendarDay.attRecord?.method || 'WEB / GPS'}</strong></div>
               {!isEmployee && selectedCalendarDay.attRecord && (
-                <button 
+                <button
                   className="btn btn-secondary"
                   style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', color: '#2563eb', borderColor: '#2563eb' }}
                   onClick={() => {

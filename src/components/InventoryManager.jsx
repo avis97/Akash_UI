@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Package, 
+import {
+  Package,
   PackageOpen,
-  Plus, 
-  QrCode, 
-  AlertTriangle, 
-  ArrowUpRight, 
-  ArrowDownRight, 
+  Plus,
+  QrCode,
+  AlertTriangle,
+  ArrowUpRight,
+  ArrowDownRight,
   Search,
   Filter,
   Layers,
@@ -28,7 +28,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
   const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'material_requests'
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
-  
+
   // Modals for Inventory Products
   const [showAddProdModal, setShowAddProdModal] = useState(false);
   const [showTxModal, setShowTxModal] = useState(false);
@@ -221,9 +221,9 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
   const filteredMaterialRequests = materialRequests.filter(m => {
     const term = searchTerm.toLowerCase();
     return (m.subject || '').toLowerCase().includes(term) ||
-           (m.itemTitle || '').toLowerCase().includes(term) ||
-           (m.requestedForUserName || '').toLowerCase().includes(term) ||
-           (m.status || '').toLowerCase().includes(term);
+      (m.itemTitle || '').toLowerCase().includes(term) ||
+      (m.requestedForUserName || '').toLowerCase().includes(term) ||
+      (m.status || '').toLowerCase().includes(term);
   });
 
   // Product Actions
@@ -505,14 +505,14 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      
+
       {/* Top Navigation & Action Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: '#ffffff', padding: '0.65rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-        
+
         {/* Left: Tab Switcher & Search */}
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.85rem' }}>
           <div style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-            <button 
+            <button
               className={`btn ${activeTab === 'catalog' ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.35rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
               onClick={() => setActiveTab('catalog')}
@@ -520,7 +520,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
               <Package style={{ width: 16, height: 16 }} />
               Stock Catalog ({products.length})
             </button>
-            <button 
+            <button
               className={`btn ${activeTab === 'material_requests' ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.35rem 0.85rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
               onClick={() => setActiveTab('material_requests')}
@@ -533,8 +533,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 260 }}>
             <div style={{ position: 'relative', width: '100%' }}>
               <Search style={{ position: 'absolute', left: 10, top: 10, width: 15, height: 15, color: '#64748b' }} />
-              <input 
-                className="input-field" 
+              <input
+                className="input-field"
                 style={{ paddingLeft: '2.1rem', fontSize: '0.85rem', padding: '0.45rem 0.65rem 0.45rem 2.1rem' }}
                 placeholder={activeTab === 'catalog' ? "Search products by code or name..." : "Search material requests..."}
                 value={searchTerm}
@@ -542,7 +542,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
               />
             </div>
             {activeTab === 'catalog' && (
-              <select 
+              <select
                 className="select-field"
                 style={{ width: 150, fontSize: '0.85rem', padding: '0.45rem' }}
                 value={categoryFilter}
@@ -563,11 +563,12 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
             Scan Barcode / QR
           </button>
 
-          <button 
-            className="btn btn-secondary" 
-            style={{ fontSize: '0.82rem', padding: '0.45rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderColor: '#22c55e', color: '#15803d', fontWeight: 600 }} 
+          <button
+            className="btn btn-secondary"
+            style={{ fontSize: '0.82rem', padding: '0.45rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderColor: '#22c55e', color: '#15803d', fontWeight: 600 }}
             onClick={() => {
-              const defaultUser = currentUser || users[0];
+              const defaultClient = users.find(u => (u.role || '').toUpperCase() === 'CLIENT' || (u.role || '').toUpperCase() === 'USER');
+              const defaultUser = defaultClient || currentUser || users[0];
               setNewMatReq({
                 subject: '',
                 requestedForUserId: defaultUser?.id || '',
@@ -694,8 +695,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                         </td>
                         <td style={{ padding: '0.75rem' }}>
                           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                            <button 
-                              className="btn btn-secondary" 
+                            <button
+                              className="btn btn-secondary"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#f1f5f9', borderColor: '#cbd5e1' }}
                               onClick={() => {
                                 setSelectedProduct(p);
@@ -704,16 +705,16 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                             >
                               Stock +/-
                             </button>
-                            <button 
-                              className="btn btn-secondary" 
+                            <button
+                              className="btn btn-secondary"
                               title="Request Material for this Product"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#f0fdf4', borderColor: '#86efac', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.2rem' }}
                               onClick={() => handleOpenRequestModalForProduct(p)}
                             >
                               <PackageOpen size={13} /> Request
                             </button>
-                            <button 
-                              className="btn btn-secondary" 
+                            <button
+                              className="btn btn-secondary"
                               title="Edit Product Details"
                               style={{ padding: '0.25rem 0.45rem', fontSize: '0.75rem', background: '#f8fafc' }}
                               onClick={() => {
@@ -731,8 +732,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                             >
                               <Edit2 size={13} color="#2563eb" />
                             </button>
-                            <button 
-                              className="btn btn-secondary" 
+                            <button
+                              className="btn btn-secondary"
                               title="Delete Product"
                               style={{ padding: '0.25rem 0.45rem', fontSize: '0.75rem', borderColor: '#fca5a5', color: '#ef4444', background: '#fef2f2' }}
                               onClick={() => setDeletingProduct(p)}
@@ -763,11 +764,12 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 Track materials requested for field work, site maintenance, and inventory dispatches.
               </p>
             </div>
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               style={{ padding: '0.4rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}
               onClick={() => {
-                const defaultUser = currentUser || users[0];
+                const defaultClient = users.find(u => (u.role || '').toUpperCase() === 'CLIENT' || (u.role || '').toUpperCase() === 'USER');
+                const defaultUser = defaultClient || currentUser || users[0];
                 setNewMatReq({
                   subject: '',
                   requestedForUserId: defaultUser?.id || '',
@@ -812,8 +814,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
                       <PackageOpen size={36} style={{ margin: '0 auto 0.5rem auto', opacity: 0.5, color: '#22c55e' }} />
                       <div>No material requests submitted yet.</div>
-                      <button 
-                        className="btn btn-secondary" 
+                      <button
+                        className="btn btn-secondary"
                         style={{ marginTop: '0.75rem', fontSize: '0.8rem', borderColor: '#22c55e', color: '#16a34a' }}
                         onClick={() => setShowMaterialModal(true)}
                       >
@@ -823,18 +825,18 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   </tr>
                 ) : (
                   filteredMaterialRequests.map(m => {
-                    const priorityColor = 
+                    const priorityColor =
                       m.priority === 'Urgent' ? { bg: '#fef2f2', text: '#dc2626', border: '#fecaca' } :
-                      m.priority === 'High' ? { bg: '#fff7ed', text: '#ea580c', border: '#ffedd5' } :
-                      m.priority === 'Medium' ? { bg: '#fefce8', text: '#ca8a04', border: '#fef08a' } :
-                      { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0' };
+                        m.priority === 'High' ? { bg: '#fff7ed', text: '#ea580c', border: '#ffedd5' } :
+                          m.priority === 'Medium' ? { bg: '#fefce8', text: '#ca8a04', border: '#fef08a' } :
+                            { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0' };
 
-                    const statusBadge = 
+                    const statusBadge =
                       m.status === 'Approved' || m.status === 'APPROVED' ? { bg: '#f0fdf4', text: '#16a34a', label: 'Approved ✓' } :
-                      m.status === 'Rejected' || m.status === 'REJECTED' ? { bg: '#fef2f2', text: '#dc2626', label: 'Rejected ✗' } :
-                      m.status === 'Completed' ? { bg: '#f8fafc', text: '#0f172a', label: 'Completed' } :
-                      m.status === 'Pending' || m.status.startsWith('PENDING') ? { bg: '#fff7ed', text: '#d97706', label: 'Pending Approval' } :
-                      { bg: '#eff6ff', text: '#2563eb', label: m.status || 'Open' };
+                        m.status === 'Rejected' || m.status === 'REJECTED' ? { bg: '#fef2f2', text: '#dc2626', label: 'Rejected ✗' } :
+                          m.status === 'Completed' ? { bg: '#f8fafc', text: '#0f172a', label: 'Completed' } :
+                            m.status === 'Pending' || m.status.startsWith('PENDING') ? { bg: '#fff7ed', text: '#d97706', label: 'Pending Approval' } :
+                              { bg: '#eff6ff', text: '#2563eb', label: m.status || 'Open' };
 
                     const formattedEndDate = m.endDate ? new Date(m.endDate).toLocaleDateString() : 'N/A';
 
@@ -901,8 +903,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                             {/* Workflow Approval Action Buttons */}
                             {currentRole === 'MASTER_ADMIN' && m.status === 'PENDING_MASTER_ADMIN' && (
-                              <button 
-                                className="btn btn-secondary" 
+                              <button
+                                className="btn btn-secondary"
                                 style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', background: '#eff6ff', color: '#2563eb', borderColor: '#93c5fd', fontWeight: 700 }}
                                 onClick={() => handleApproveMaterialStep(m.id, 'MASTER_ADMIN')}
                               >
@@ -911,8 +913,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                             )}
 
                             {currentRole === 'FACILITY_MANAGER' && m.status === 'PENDING_FACILITY_MANAGER' && (
-                              <button 
-                                className="btn btn-secondary" 
+                              <button
+                                className="btn btn-secondary"
                                 style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', background: '#f0fdf4', color: '#16a34a', borderColor: '#86efac', fontWeight: 700 }}
                                 onClick={() => handleApproveMaterialStep(m.id, 'FACILITY_MANAGER')}
                               >
@@ -920,8 +922,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                               </button>
                             )}
 
-                            <button 
-                              className="btn btn-secondary" 
+                            <button
+                              className="btn btn-secondary"
                               title="Edit Material Request"
                               style={{ padding: '0.25rem 0.45rem', fontSize: '0.75rem' }}
                               onClick={() => {
@@ -946,8 +948,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                               <Edit2 size={13} color="#2563eb" />
                             </button>
 
-                            <button 
-                              className="btn btn-secondary" 
+                            <button
+                              className="btn btn-secondary"
                               title="Delete Material Request"
                               style={{ padding: '0.25rem 0.45rem', fontSize: '0.75rem', borderColor: '#fca5a5', color: '#ef4444', background: '#fef2f2' }}
                               onClick={() => setDeletingMaterialReq(m)}
@@ -970,7 +972,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
       {showMaterialModal && (
         <div className="modal-overlay" onClick={() => setShowMaterialModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '640px', maxHeight: 'calc(100vh - 3rem)', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #e2e8f0', margin: 'auto' }}>
-            
+
             {/* Header Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
               <h3 style={{ fontFamily: 'var(--font-heading, sans-serif)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
@@ -1009,14 +1011,14 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
             </div>
 
             <form onSubmit={handleSubmitMaterialRequest} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-              
+
               {/* Subject */}
               <div>
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                   Subject<span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   placeholder="Enter Material Request"
                   value={newMatReq.subject}
@@ -1031,13 +1033,13 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Material Request for User
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.requestedForUserId}
                     onChange={e => {
                       const u = users.find(usr => usr.id === e.target.value);
-                      setNewMatReq({ 
-                        ...newMatReq, 
+                      setNewMatReq({
+                        ...newMatReq,
                         requestedForUserId: e.target.value,
                         requestedForUserName: u ? u.name : ''
                       });
@@ -1045,8 +1047,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.9rem' }}
                   >
                     <option value="">Select User</option>
-                    {users.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    {users.filter(u => (u.role || '').toUpperCase() === 'CLIENT' || (u.role || '').toUpperCase() === 'USER').map(u => (
+                      <option key={u.id} value={u.id}>{u.name} (CLIENT)</option>
                     ))}
                   </select>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
@@ -1058,7 +1060,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Priority
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.priority}
                     onChange={e => setNewMatReq({ ...newMatReq, priority: e.target.value })}
@@ -1078,7 +1080,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Status
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.status}
                     onChange={e => setNewMatReq({ ...newMatReq, status: e.target.value })}
@@ -1097,7 +1099,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     End Date<span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <input 
+                  <input
                     type="date"
                     className="input-field"
                     required
@@ -1113,8 +1115,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                   Description
                 </label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={3}
                   placeholder="Enter Description"
                   value={newMatReq.description}
@@ -1129,13 +1131,13 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   Attachment
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                  <input 
-                    type="file" 
-                    id="inventory-mat-attachment-input" 
-                    style={{ display: 'none' }} 
+                  <input
+                    type="file"
+                    id="inventory-mat-attachment-input"
+                    style={{ display: 'none' }}
                     onChange={e => handleMatAttachmentUpload(e, false)}
                   />
-                  <label 
+                  <label
                     htmlFor="inventory-mat-attachment-input"
                     style={{
                       background: '#f1f5f9',
@@ -1174,10 +1176,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.85rem' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Material / Item Description</label>
-                    <select 
+                    <select
                       className="select-field"
                       value={
-                        newMatReq.selectedProdId || 
+                        newMatReq.selectedProdId ||
                         (products.some(p => p.name === newMatReq.itemTitle) ? products.find(p => p.name === newMatReq.itemTitle)?.id : (newMatReq.itemTitle ? 'CUSTOM' : ''))
                       }
                       onChange={e => {
@@ -1187,11 +1189,11 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                         } else if (val) {
                           const prod = products.find(p => p.id === val);
                           if (prod) {
-                            setNewMatReq(prev => ({ 
-                              ...prev, 
+                            setNewMatReq(prev => ({
+                              ...prev,
                               selectedProdId: val,
-                              itemTitle: prod.name, 
-                              unit: prod.unit || 'Pcs' 
+                              itemTitle: prod.name,
+                              unit: prod.unit || 'Pcs'
                             }));
                           }
                         } else {
@@ -1210,8 +1212,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     </select>
 
                     {(newMatReq.selectedProdId === 'CUSTOM' || (!products.some(p => p.name === newMatReq.itemTitle) && newMatReq.itemTitle)) && (
-                      <input 
-                        className="input-field" 
+                      <input
+                        className="input-field"
                         placeholder="e.g. Copper Wire Coil 50m"
                         value={newMatReq.itemTitle}
                         onChange={e => setNewMatReq({ ...newMatReq, itemTitle: e.target.value })}
@@ -1221,10 +1223,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Quantity</label>
-                    <input 
+                    <input
                       type="number"
                       min="1"
-                      className="input-field" 
+                      className="input-field"
                       value={newMatReq.quantity}
                       onChange={e => setNewMatReq({ ...newMatReq, quantity: e.target.value })}
                       style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
@@ -1232,8 +1234,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Unit</label>
-                    <input 
-                      className="input-field" 
+                    <input
+                      className="input-field"
                       value={newMatReq.unit}
                       onChange={e => setNewMatReq({ ...newMatReq, unit: e.target.value })}
                       style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
@@ -1243,7 +1245,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
                 <div>
                   <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Link to Service Meeting (Optional)</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newMatReq.meetingId}
                     onChange={e => setNewMatReq({ ...newMatReq, meetingId: e.target.value })}
@@ -1259,16 +1261,16 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.85rem', marginTop: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                <button 
-                  type="button" 
-                  className="btn" 
+                <button
+                  type="button"
+                  className="btn"
                   onClick={() => setShowMaterialModal(false)}
                   style={{ background: '#64748b', color: '#ffffff', border: 'none', padding: '0.65rem 1.4rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="btn"
                   style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#ffffff', border: 'none', padding: '0.65rem 1.6rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
                 >
@@ -1297,8 +1299,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
             <form onSubmit={handleUpdateMaterialRequest} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
               <div>
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Subject*</label>
-                <input 
-                  className="input-field" 
+                <input
+                  className="input-field"
                   required
                   value={editMatReqData.subject}
                   onChange={e => setEditMatReqData({ ...editMatReqData, subject: e.target.value })}
@@ -1309,13 +1311,13 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Material Request for User</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editMatReqData.requestedForUserId}
                     onChange={e => {
                       const u = users.find(usr => usr.id === e.target.value);
-                      setEditMatReqData({ 
-                        ...editMatReqData, 
+                      setEditMatReqData({
+                        ...editMatReqData,
                         requestedForUserId: e.target.value,
                         requestedForUserName: u ? u.name : ''
                       });
@@ -1323,15 +1325,15 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.9rem' }}
                   >
                     <option value="">Select User</option>
-                    {users.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    {users.filter(u => (u.role || '').toUpperCase() === 'CLIENT' || (u.role || '').toUpperCase() === 'USER').map(u => (
+                      <option key={u.id} value={u.id}>{u.name} (CLIENT)</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Priority</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editMatReqData.priority}
                     onChange={e => setEditMatReqData({ ...editMatReqData, priority: e.target.value })}
@@ -1348,7 +1350,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Status</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editMatReqData.status}
                     onChange={e => setEditMatReqData({ ...editMatReqData, status: e.target.value })}
@@ -1365,7 +1367,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>End Date*</label>
-                  <input 
+                  <input
                     type="date"
                     className="input-field"
                     required
@@ -1378,8 +1380,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
               <div>
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Description</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={3}
                   value={editMatReqData.description}
                   onChange={e => setEditMatReqData({ ...editMatReqData, description: e.target.value })}
@@ -1395,10 +1397,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.85rem' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Material / Item Description</label>
-                    <select 
+                    <select
                       className="select-field"
                       value={
-                        editMatReqData.selectedProdId || 
+                        editMatReqData.selectedProdId ||
                         (products.some(p => p.name === editMatReqData.itemTitle) ? products.find(p => p.name === editMatReqData.itemTitle)?.id : (editMatReqData.itemTitle ? 'CUSTOM' : ''))
                       }
                       onChange={e => {
@@ -1408,11 +1410,11 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                         } else if (val) {
                           const prod = products.find(p => p.id === val);
                           if (prod) {
-                            setEditMatReqData(prev => ({ 
-                              ...prev, 
+                            setEditMatReqData(prev => ({
+                              ...prev,
                               selectedProdId: val,
-                              itemTitle: prod.name, 
-                              unit: prod.unit || 'Pcs' 
+                              itemTitle: prod.name,
+                              unit: prod.unit || 'Pcs'
                             }));
                           }
                         } else {
@@ -1431,8 +1433,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     </select>
 
                     {(editMatReqData.selectedProdId === 'CUSTOM' || (!products.some(p => p.name === editMatReqData.itemTitle) && editMatReqData.itemTitle)) && (
-                      <input 
-                        className="input-field" 
+                      <input
+                        className="input-field"
                         value={editMatReqData.itemTitle}
                         onChange={e => setEditMatReqData({ ...editMatReqData, itemTitle: e.target.value })}
                         style={{ marginTop: '0.35rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
@@ -1441,10 +1443,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Quantity</label>
-                    <input 
+                    <input
                       type="number"
                       min="1"
-                      className="input-field" 
+                      className="input-field"
                       value={editMatReqData.quantity}
                       onChange={e => setEditMatReqData({ ...editMatReqData, quantity: e.target.value })}
                       style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
@@ -1452,8 +1454,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Unit</label>
-                    <input 
-                      className="input-field" 
+                    <input
+                      className="input-field"
                       value={editMatReqData.unit}
                       onChange={e => setEditMatReqData({ ...editMatReqData, unit: e.target.value })}
                       style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', width: '100%' }}
@@ -1463,7 +1465,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
                 <div>
                   <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.25rem' }}>Link to Service Meeting (Optional)</label>
-                  <select 
+                  <select
                     className="select-field"
                     value={editMatReqData.meetingId}
                     onChange={e => setEditMatReqData({ ...editMatReqData, meetingId: e.target.value })}
@@ -1513,7 +1515,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
       {showAddProdModal && (
         <div className="modal-overlay" onClick={() => setShowAddProdModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: 'calc(100vh - 2.5rem)', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #e2e8f0', margin: 'auto' }}>
-            
+
             {/* Header with AI Generate button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
               <h3 style={{ fontFamily: 'var(--font-heading, sans-serif)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
@@ -1552,15 +1554,15 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
             </div>
 
             <form onSubmit={handleAddProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              
+
               {/* Row 1: Name & SKU */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Name<span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     placeholder="Enter Name"
                     value={newProd.name}
@@ -1572,8 +1574,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     SKU<span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     placeholder="AE - 0313"
                     value={newProd.sku}
@@ -1589,9 +1591,9 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Sale Price
                   </label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     placeholder="Enter Sale Price"
                     value={newProd.salePrice}
                     onChange={e => setNewProd({ ...newProd, salePrice: e.target.value, unitPrice: e.target.value })}
@@ -1602,9 +1604,9 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Purchase Price
                   </label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     placeholder="Enter Purchase Price"
                     value={newProd.purchasePrice}
                     onChange={e => setNewProd({ ...newProd, purchasePrice: e.target.value })}
@@ -1619,8 +1621,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Tax
                   </label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     placeholder="Select / Enter Tax (e.g. 18% GST)"
                     value={newProd.tax}
                     onChange={e => setNewProd({ ...newProd, tax: e.target.value })}
@@ -1635,7 +1637,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Brand
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newProd.brand}
                     onChange={e => setNewProd({ ...newProd, brand: e.target.value })}
@@ -1660,7 +1662,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Category
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newProd.category}
                     onChange={e => setNewProd({ ...newProd, category: e.target.value })}
@@ -1682,7 +1684,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Unit
                   </label>
-                  <select 
+                  <select
                     className="select-field"
                     value={newProd.unit}
                     onChange={e => setNewProd({ ...newProd, unit: e.target.value })}
@@ -1707,14 +1709,14 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     Product Image
                   </label>
                   <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
-                    <input 
-                      type="file" 
-                      id="create-product-image-file" 
+                    <input
+                      type="file"
+                      id="create-product-image-file"
                       style={{ display: 'none' }}
                       accept="image/*"
                       onChange={e => handleProductImageUpload(e, false)}
                     />
-                    <label 
+                    <label
                       htmlFor="create-product-image-file"
                       style={{ background: '#f1f5f9', color: '#334155', padding: '0.6rem 1rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', borderRight: '1px solid #cbd5e1', whiteSpace: 'nowrap' }}
                     >
@@ -1732,10 +1734,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   </label>
                   <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', paddingTop: '0.4rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.9rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
-                      <input 
-                        type="radio" 
-                        name="productType" 
-                        value="Product" 
+                      <input
+                        type="radio"
+                        name="productType"
+                        value="Product"
                         checked={newProd.type === 'Product'}
                         onChange={e => setNewProd({ ...newProd, type: e.target.value })}
                         style={{ accentColor: '#22c55e', width: 18, height: 18 }}
@@ -1743,10 +1745,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                       Product
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.9rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
-                      <input 
-                        type="radio" 
-                        name="productType" 
-                        value="Service" 
+                      <input
+                        type="radio"
+                        name="productType"
+                        value="Service"
                         checked={newProd.type === 'Service'}
                         onChange={e => setNewProd({ ...newProd, type: e.target.value })}
                         style={{ accentColor: '#22c55e', width: 18, height: 18 }}
@@ -1763,9 +1765,9 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Quantity
                   </label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     placeholder="Enter Quantity"
                     value={newProd.stockQuantity}
                     onChange={e => setNewProd({ ...newProd, stockQuantity: e.target.value })}
@@ -1779,8 +1781,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                   Description
                 </label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={3}
                   placeholder="Enter Description"
                   value={newProd.description}
@@ -1791,15 +1793,15 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
               {/* Footer Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.85rem', marginTop: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowAddProdModal(false)}
                   style={{ background: '#64748b', color: '#ffffff', border: 'none', padding: '0.65rem 1.4rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '0.65rem 1.6rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
                 >
                   Create
@@ -1827,8 +1829,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Name*</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={editProd.name}
                     onChange={e => setEditProd({ ...editProd, name: e.target.value })}
@@ -1837,8 +1839,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 </div>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>SKU*</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     required
                     value={editProd.sku || editProd.code || ''}
                     onChange={e => setEditProd({ ...editProd, sku: e.target.value, code: e.target.value })}
@@ -1850,9 +1852,9 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Sale Price</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     value={editProd.salePrice !== undefined ? editProd.salePrice : editProd.unitPrice}
                     onChange={e => setEditProd({ ...editProd, salePrice: e.target.value, unitPrice: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
@@ -1860,9 +1862,9 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 </div>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Purchase Price</label>
-                  <input 
+                  <input
                     type="number"
-                    className="input-field" 
+                    className="input-field"
                     value={editProd.purchasePrice || 0}
                     onChange={e => setEditProd({ ...editProd, purchasePrice: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
@@ -1873,8 +1875,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Brand</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={editProd.brand}
                     onChange={e => setEditProd({ ...editProd, brand: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
@@ -1882,8 +1884,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 </div>
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Category</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={editProd.category}
                     onChange={e => setEditProd({ ...editProd, category: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
@@ -1895,9 +1897,9 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 {editProd.type !== 'Service' && (
                   <div>
                     <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Stock Quantity</label>
-                    <input 
+                    <input
                       type="number"
-                      className="input-field" 
+                      className="input-field"
                       required
                       value={editProd.stockQuantity}
                       onChange={e => setEditProd({ ...editProd, stockQuantity: e.target.value })}
@@ -1907,8 +1909,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 )}
                 <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Unit</label>
-                  <input 
-                    className="input-field" 
+                  <input
+                    className="input-field"
                     value={editProd.unit}
                     onChange={e => setEditProd({ ...editProd, unit: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
@@ -1918,8 +1920,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
               <div>
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>Description</label>
-                <textarea 
-                  className="input-field" 
+                <textarea
+                  className="input-field"
                   rows={2}
                   value={editProd.description || ''}
                   onChange={e => setEditProd({ ...editProd, description: e.target.value })}
@@ -1952,8 +1954,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Transaction Type</label>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.35rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-                    <input 
-                      type="radio" 
+                    <input
+                      type="radio"
                       name="txtype"
                       value="INFLOW"
                       checked={stockTx.type === 'INFLOW'}
@@ -1962,8 +1964,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     <span style={{ color: '#16a34a', fontWeight: 700 }}>Inflow (+) Received</span>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-                    <input 
-                      type="radio" 
+                    <input
+                      type="radio"
                       name="txtype"
                       value="OUTFLOW"
                       checked={stockTx.type === 'OUTFLOW'}
@@ -1976,7 +1978,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Quantity</label>
-                <input 
+                <input
                   type="number"
                   className="input-field"
                   required
@@ -1989,7 +1991,7 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Reference PO / Invoice No</label>
-                <input 
+                <input
                   className="input-field"
                   required
                   value={stockTx.referenceNo}
