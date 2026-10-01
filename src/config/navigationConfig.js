@@ -58,13 +58,6 @@ export const allNavItems = [
     roles: ['SUPERADMIN', 'EMPLOYEE', 'SERVICE_PERSONNEL', 'MASTER_ADMIN', 'SUB_ADMIN', 'FACILITY_MANAGER']
   },
   {
-    id: 'location_tracking',
-    label: 'Location Tracking',
-    icon: Navigation,
-    url: '/location-tracking',
-    roles: ['SUPERADMIN', 'EMPLOYEE', 'SERVICE_PERSONNEL', 'MASTER_ADMIN', 'SUB_ADMIN', 'FACILITY_MANAGER']
-  },
-  {
     id: 'products_inventory',
     label: 'Inventory Management',
     icon: ShoppingCart,
@@ -105,5 +98,12 @@ export const allNavItems = [
     icon: Users,
     url: '/user-management',
     roles: ['SUPERADMIN']
+  },
+  {
+    id: 'location_tracking',
+    label: 'Location Tracking',
+    icon: Navigation,
+    url: '/location-tracking',
+    roles: ['SUPERADMIN', 'EMPLOYEE', 'SERVICE_PERSONNEL', 'MASTER_ADMIN', 'SUB_ADMIN', 'FACILITY_MANAGER']
   }
 ];

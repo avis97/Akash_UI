@@ -94,9 +94,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const [selectedStaffId, setSelectedStaffId] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Local Leave Tab Filters
-  const [leaveEmployeeFilter, setLeaveEmployeeFilter] = useState('ALL');
-  const [leaveStatusFilter, setLeaveStatusFilter] = useState('ALL');
+
 
   // Edit / Delete states
   const [editingAtt, setEditingAtt] = useState(null);
@@ -260,21 +258,17 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const displayedLeaves = isEmployee
     ? leaves.filter(l => {
       const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesMonthYear = selectedMonth === 'ALL' || l.status === 'PENDING' || isDateInSelectedMonthYear(l.startDate || l.createdAt);
+      const matchesMonthYear = selectedMonth === 'ALL' || l.status === 'PENDING' || isDateInSelectedMonthYear(l.startDate) || isDateInSelectedMonthYear(l.endDate) || isDateInSelectedMonthYear(l.createdAt);
       return matchesSearch && matchesMonthYear;
     })
     : leaves.filter(l => {
       const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && l.userName?.toLowerCase().includes(selectedUserObj.name?.toLowerCase())) || (selectedStaffName && l.userName?.toLowerCase().includes(selectedStaffName.toLowerCase()));
-      const matchesMonthYear = selectedMonth === 'ALL' || l.status === 'PENDING' || isDateInSelectedMonthYear(l.startDate || l.createdAt);
+      const matchesStaff = selectedStaffId === 'ALL' || l.userId === selectedStaffId || (selectedUserObj && (l.userId === selectedUserObj.id || l.userName?.toLowerCase().includes(selectedUserObj.name?.toLowerCase()))) || (selectedStaffName && l.userName?.toLowerCase().includes(selectedStaffName.toLowerCase()));
+      const matchesMonthYear = selectedMonth === 'ALL' || l.status === 'PENDING' || isDateInSelectedMonthYear(l.startDate) || isDateInSelectedMonthYear(l.endDate) || isDateInSelectedMonthYear(l.createdAt);
       return matchesSearch && matchesStaff && matchesMonthYear;
     });
 
-  const tabLeaves = displayedLeaves.filter(l => {
-    const matchesEmp = leaveEmployeeFilter === 'ALL' || l.userId === leaveEmployeeFilter || (l.userName && leaveEmployeeFilter && l.userName.toLowerCase().includes(leaveEmployeeFilter.toLowerCase()));
-    const matchesStatus = leaveStatusFilter === 'ALL' || l.status === leaveStatusFilter;
-    return matchesEmp && matchesStatus;
-  });
+
 
   const displayedSalaryRecords = isEmployee
     ? salaryRecords.filter(s => {
@@ -1796,76 +1790,15 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
             </span>
           </div>
 
-          {/* Employee & Status Filter Bar for Leave Requests */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem', background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <Users size={14} color="#64748b" /> Filter Employee:
-              </div>
-              <select
-                className="select-field"
-                value={leaveEmployeeFilter}
-                onChange={e => setLeaveEmployeeFilter(e.target.value)}
-                style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem', minWidth: 170, background: '#ffffff', borderColor: '#cbd5e1' }}
-              >
-                <option value="ALL">👤 All Employees ({displayedLeaves.length})</option>
-                {staffUsers.map(u => (
-                  <option key={u.id} value={u.name}>👤 {u.name} ({formatUserRole(u.role)})</option>
-                ))}
-              </select>
-
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem', marginLeft: '0.5rem' }}>
-                Filter Status:
-              </div>
-              <select
-                className="select-field"
-                value={leaveStatusFilter}
-                onChange={e => setLeaveStatusFilter(e.target.value)}
-                style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem', minWidth: 130, background: '#ffffff', borderColor: '#cbd5e1' }}
-              >
-                <option value="ALL">📋 All Statuses</option>
-                <option value="PENDING">⏳ Pending</option>
-                <option value="APPROVED">✅ Approved</option>
-                <option value="REJECTED">❌ Rejected</option>
-              </select>
-            </div>
-
-            {(leaveEmployeeFilter !== 'ALL' || leaveStatusFilter !== 'ALL') && (
-              <button
-                className="btn btn-secondary"
-                style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem', color: '#64748b' }}
-                onClick={() => {
-                  setLeaveEmployeeFilter('ALL');
-                  setLeaveStatusFilter('ALL');
-                }}
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-
-          {tabLeaves.length === 0 ? (
+          {displayedLeaves.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px border-dashed #cbd5e1', color: '#64748b' }}>
               <Calendar size={36} color="#94a3b8" style={{ marginBottom: '0.5rem' }} />
               <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#334155' }}>No Leave Requests Found</div>
               <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>
-                {leaveEmployeeFilter !== 'ALL' || leaveStatusFilter !== 'ALL'
-                  ? 'No leave requests match the selected employee or status filter.'
-                  : (selectedMonth === 'ALL'
-                    ? 'No leave requests recorded for the selected staff member.'
-                    : `No leave requests recorded for ${selectedMonth} ${selectedYear}. Select "All Months" to view all requests.`)}
+                {selectedMonth === 'ALL'
+                  ? 'No leave requests recorded for the selected staff member.'
+                  : `No leave requests recorded for ${selectedMonth} ${selectedYear}. Select "All Months" to view all requests.`}
               </p>
-              <button
-                className="btn btn-secondary"
-                style={{ marginTop: '0.75rem', fontSize: '0.78rem' }}
-                onClick={() => {
-                  setLeaveEmployeeFilter('ALL');
-                  setLeaveStatusFilter('ALL');
-                  setSelectedMonth('ALL');
-                }}
-              >
-                Clear Filters & View All
-              </button>
             </div>
           ) : (
             <table className="custom-table">
@@ -1881,7 +1814,7 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
                 </tr>
               </thead>
               <tbody>
-                {tabLeaves.map(l => (
+                {displayedLeaves.map(l => (
                   <tr key={l.id}>
                     <td><strong>{l.userName}</strong></td>
                     <td><span style={{ color: 'var(--brand-yellow)', fontWeight: 600 }}>{l.leaveType}</span></td>
