@@ -1459,7 +1459,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                           PDF
                         </button>
 
-                        {/* Triple-Dot Action Dropdown Menu for Accept / Reject */}
+                        {/* Triple-Dot Action Dropdown Menu */}
                         <div style={{ position: 'relative', display: 'inline-block' }}>
                           <button
                             className="btn btn-secondary"
@@ -1473,7 +1473,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                               borderColor: openQuotMenuId === q.id ? '#2563eb' : 'rgba(148, 163, 184, 0.4)',
                               background: openQuotMenuId === q.id ? '#eff6ff' : 'transparent'
                             }}
-                            title="Quotation Actions (Accept / Reject)"
+                            title="Quotation Actions"
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenQuotMenuId(openQuotMenuId === q.id ? null : q.id);
@@ -1493,115 +1493,102 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                                 borderRadius: '10px',
                                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25)',
                                 zIndex: 9999,
-                                minWidth: '170px',
+                                minWidth: '185px',
                                 padding: '0.35rem 0',
                                 display: 'flex',
                                 flexDirection: 'column'
                               }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  padding: '0.55rem 0.85rem',
-                                  fontSize: '0.78rem',
-                                  fontWeight: 600,
-                                  color: '#059669',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.5rem',
-                                  cursor: 'pointer',
-                                  width: '100%',
-                                  textAlign: 'left'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = '#f0fdf4'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                onClick={() => {
-                                  setOpenQuotMenuId(null);
-                                  handleAcceptQuotation(q);
-                                }}
-                              >
-                                <Check size={15} color="#059669" />
-                                Accept Quotation
-                              </button>
+                              {(q.status === 'SENT' || q.status === 'DRAFT' || q.status === 'REJECTED') && (
+                                <>
+                                  <button
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0.55rem 0.85rem',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      color: '#059669',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'pointer',
+                                      width: '100%',
+                                      textAlign: 'left'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f0fdf4'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    onClick={() => {
+                                      setOpenQuotMenuId(null);
+                                      handleAcceptQuotation(q);
+                                    }}
+                                  >
+                                    <Check size={15} color="#059669" />
+                                    Accept Quotation
+                                  </button>
 
-                              <button
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  padding: '0.55rem 0.85rem',
-                                  fontSize: '0.78rem',
-                                  fontWeight: 600,
-                                  color: '#dc2626',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.5rem',
-                                  cursor: 'pointer',
-                                  width: '100%',
-                                  textAlign: 'left'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                onClick={() => {
-                                  setOpenQuotMenuId(null);
-                                  handleRejectQuotation(q);
-                                }}
-                              >
-                                <XCircle size={15} color="#dc2626" />
-                                Reject Quotation
-                              </button>
+                                  <button
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0.55rem 0.85rem',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      color: '#dc2626',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'pointer',
+                                      width: '100%',
+                                      textAlign: 'left'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    onClick={() => {
+                                      setOpenQuotMenuId(null);
+                                      handleRejectQuotation(q);
+                                    }}
+                                  >
+                                    <XCircle size={15} color="#dc2626" />
+                                    Reject Quotation
+                                  </button>
+                                </>
+                              )}
+
+                              {/* Option 3: Generate Bill / Invoice (Shown when Quotation is Accepted) */}
+                              {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED') && q.status !== 'BILLED' && (
+                                <button
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    padding: '0.55rem 0.85rem',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 700,
+                                    color: '#2563eb',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    width: '100%',
+                                    textAlign: 'left'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = '#eff6ff'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                  onClick={() => {
+                                    setOpenQuotMenuId(null);
+                                    handleGenerateBill(q);
+                                  }}
+                                >
+                                  <DollarSign size={15} color="#2563eb" />
+                                  Generate Bill (Invoice)
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
 
-                        {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED') && q.status !== 'BILLED' && (
-                          <button
-                            className="btn btn-primary"
-                            style={{
-                              padding: '0.35rem 0.7rem',
-                              fontSize: '0.75rem',
-                              background: 'linear-gradient(135deg, #059669, #10b981)',
-                              color: '#fff',
-                              border: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              fontWeight: 700,
-                              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-                              whiteSpace: 'nowrap'
-                            }}
-                            title="Generate Tax Invoice & Deduct Product Quantity from Inventory"
-                            onClick={() => handleGenerateBill(q)}
-                          >
-                            <DollarSign size={14} />
-                            Generate Bill
-                          </button>
-                        )}
-
-                      {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED' || q.status === 'BILLED') && (
-                        <button
-                          className="btn btn-secondary"
-                          style={{
-                            padding: '0.35rem 0.65rem',
-                            fontSize: '0.75rem',
-                            borderColor: 'rgba(37, 99, 235, 0.4)',
-                            color: '#2563eb',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            fontWeight: 600
-                          }}
-                          title="Schedule & Assign Service Meeting to Employee"
-                          onClick={() => openAssignMeetingModal(q)}
-                        >
-                          <Calendar size={14} />
-                          Assign Meeting
-                        </button>
-                      )}
-
-                      {!isClient && (
-                        <>
+                        {!isClient && (
                           <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
@@ -1610,8 +1597,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                           >
                             <Trash2 size={14} />
                           </button>
-                        </>
-                      )}
+                        )}
                     </div>
                   </td>
                 </tr>
