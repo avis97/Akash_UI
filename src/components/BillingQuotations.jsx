@@ -143,43 +143,43 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
         body {
           font-family: 'Inter', sans-serif;
           margin: 0;
-          padding: 36px;
+          padding: 16px 24px;
           color: #0f172a;
           background: #ffffff;
         }
         .header-letterhead {
           text-align: center;
           border-bottom: 2px solid #0f172a;
-          padding-bottom: 10px;
-          margin-bottom: 12px;
+          padding-bottom: 6px;
+          margin-bottom: 8px;
         }
         .company-name {
-          font-size: 26px;
+          font-size: 22px;
           font-weight: 800;
           color: #0f172a;
           letter-spacing: 0.5px;
           text-transform: uppercase;
         }
         .company-tagline {
-          font-size: 13px;
+          font-size: 11.5px;
           font-weight: 600;
           color: #334155;
-          margin-top: 3px;
+          margin-top: 2px;
         }
         .company-contact {
-          font-size: 11px;
+          font-size: 10px;
           color: #64748b;
-          margin-top: 3px;
+          margin-top: 2px;
         }
         .reg-bar {
           background: #f8fafc;
           border: 1px solid #cbd5e1;
-          border-radius: 6px;
-          padding: 8px 12px;
-          font-size: 11px;
+          border-radius: 5px;
+          padding: 6px 10px;
+          font-size: 10px;
           color: #334155;
-          margin-bottom: 20px;
-          line-height: 1.6;
+          margin-bottom: 10px;
+          line-height: 1.4;
           display: flex;
           justify-content: space-between;
           flex-wrap: wrap;
@@ -188,12 +188,12 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
+          margin-bottom: 10px;
           border-bottom: 1px solid #e2e8f0;
-          padding-bottom: 12px;
+          padding-bottom: 6px;
         }
         .doc-head-title {
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 800;
           color: #1e3a8a;
           text-transform: uppercase;
@@ -203,91 +203,81 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
           background: #eff6ff;
           color: #1d4ed8;
           border: 1px solid #bfdbfe;
-          font-size: 13px;
+          font-size: 11.5px;
           font-weight: 700;
-          padding: 4px 12px;
-          border-radius: 6px;
+          padding: 3px 10px;
+          border-radius: 5px;
         }
         .grid-2 {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 20px;
+          gap: 12px;
+          margin-bottom: 10px;
         }
         .box {
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 14px 16px;
+          border-radius: 6px;
+          padding: 8px 12px;
         }
         .box-title {
-          font-size: 11px;
+          font-size: 9.5px;
           font-weight: 700;
           text-transform: uppercase;
           color: #64748b;
           letter-spacing: 0.5px;
-          margin-bottom: 6px;
+          margin-bottom: 4px;
         }
         .box-name {
-          font-size: 15px;
+          font-size: 13.5px;
           font-weight: 700;
           color: #0f172a;
         }
         .box-detail {
-          font-size: 12.5px;
+          font-size: 11px;
           color: #475569;
-          margin-top: 3px;
+          margin-top: 2px;
         }
         .subject-box {
           background: #eff6ff;
-          border-left: 4px solid #2563eb;
-          padding: 10px 14px;
-          margin-bottom: 18px;
+          border-left: 3.5px solid #2563eb;
+          padding: 6px 12px;
+          margin-bottom: 10px;
           border-radius: 4px;
-        }
-        .preface-box {
-          font-size: 13px;
-          color: #334155;
-          font-style: italic;
-          margin-bottom: 18px;
-          line-height: 1.6;
-          background: #f9fafb;
-          padding: 12px;
-          border-radius: 6px;
-          border: 1px dashed #d1d5db;
         }
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 20px;
+          margin-bottom: 10px;
         }
         th {
           background: #0f172a;
           color: #ffffff;
-          font-size: 11.5px;
+          font-size: 10.5px;
           text-transform: uppercase;
           font-weight: 700;
-          padding: 10px 14px;
+          padding: 6px 10px;
           text-align: left;
         }
         td {
-          padding: 12px 14px;
+          padding: 6px 10px;
           border-bottom: 1px solid #e2e8f0;
-          font-size: 13px;
+          font-size: 11px;
           color: #334155;
         }
         .text-right { text-align: right; }
         .totals-table {
-          width: 320px;
+          width: 280px;
           margin-left: auto;
-          margin-bottom: 24px;
+          margin-bottom: 10px;
         }
         .totals-table td {
-          padding: 6px 14px;
+          padding: 3px 10px;
           border-bottom: none;
+          font-size: 11.5px;
         }
         .grand-total {
-          font-size: 15px;
+          font-size: 13.5px;
           font-weight: 800;
           color: #1e40af;
           border-top: 2px solid #cbd5e1;
@@ -295,42 +285,43 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
           background: #eff6ff;
         }
         .terms-section {
-          margin-top: 24px;
+          margin-top: 8px;
           border-top: 1.5px solid #e2e8f0;
-          padding-top: 14px;
+          padding-top: 6px;
         }
         .terms-title {
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 800;
           color: #0f172a;
-          margin-bottom: 8px;
+          margin-bottom: 4px;
           text-transform: uppercase;
         }
         .terms-list {
           margin: 0;
-          padding-left: 18px;
-          font-size: 11.5px;
+          padding-left: 16px;
+          font-size: 9.5px;
           color: #334155;
-          line-height: 1.65;
+          line-height: 1.35;
         }
         .signature-block {
-          margin-top: 40px;
+          margin-top: 18px;
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
+          page-break-inside: avoid;
         }
         .sig-box { text-align: center; }
         .sig-line {
           border-top: 1px solid #94a3b8;
-          width: 200px;
+          width: 170px;
           text-align: center;
-          padding-top: 6px;
-          font-size: 12px;
+          padding-top: 4px;
+          font-size: 11px;
           font-weight: 600;
           color: #475569;
         }
         .print-btn-bar {
-          margin-bottom: 20px;
+          margin-bottom: 12px;
           display: flex;
           justify-content: flex-end;
           gap: 10px;
@@ -339,15 +330,20 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
           background: #2563eb;
           color: #fff;
           border: none;
-          padding: 10px 20px;
+          padding: 8px 16px;
           border-radius: 6px;
           font-weight: 600;
           cursor: pointer;
-          font-size: 14px;
+          font-size: 13px;
         }
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 6mm 8mm;
+          }
           .print-btn-bar { display: none !important; }
-          body { padding: 0; }
+          body { padding: 0 !important; margin: 0 !important; }
+          .signature-block { page-break-inside: avoid !important; }
         }
       </style>
     </head>
@@ -398,15 +394,8 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
       <!-- Subject -->
       ${doc.subject ? `
         <div class="subject-box">
-          <strong style="color: #1e40af; font-size: 12.5px;">Subject:</strong>
-          <span style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-left: 6px;">${doc.subject}</span>
-        </div>
-      ` : ''}
-
-      <!-- Preface -->
-      ${doc.preface ? `
-        <div class="preface-box">
-          ${doc.preface}
+          <strong style="color: #1e40af; font-size: 11.5px;">Subject:</strong>
+          <span style="font-size: 12.5px; font-weight: 700; color: #0f172a; margin-left: 6px;">${doc.subject}</span>
         </div>
       ` : ''}
 
@@ -427,7 +416,7 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
               <td>${idx + 1}</td>
               <td>
                 <strong>${item.name || 'Product Line Item'}</strong>
-                ${item.code ? `<span style="font-size: 11px; color: #64748b; margin-left: 6px;">[Code: ${item.code}]</span>` : ''}
+                ${item.code ? `<span style="font-size: 10px; color: #64748b; margin-left: 6px;">[Code: ${item.code}]</span>` : ''}
               </td>
               <td class="text-right">${item.qty || 1}</td>
               <td class="text-right">₹${Number(item.unitPrice || (item.total / (item.qty || 1)))?.toLocaleString()}</td>
@@ -466,15 +455,13 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
       <!-- Signatures -->
       <div class="signature-block">
         <div class="sig-box">
-          <div style="font-size: 12px; color: #64748b; margin-bottom: 45px;">Client's Acceptance & Confirmation Stamp</div>
+          <div style="font-size: 11px; color: #64748b; margin-bottom: 25px;">Client's Acceptance & Confirmation Stamp</div>
           <div class="sig-line">Accepted & Confirmed</div>
         </div>
         <div class="sig-box">
-          <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 45px;">For AKASH ENGINEERING</div>
+          <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; margin-bottom: 25px;">For AKASH ENGINEERING</div>
           <div class="sig-line">Authorized Signatory</div>
         </div>
-      </div>
-
       <script>
         window.onload = function() {
           setTimeout(function() {
