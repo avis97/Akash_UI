@@ -175,14 +175,13 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
           background: #f8fafc;
           border: 1px solid #cbd5e1;
           border-radius: 5px;
-          padding: 6px 10px;
-          font-size: 10px;
+          padding: 5px 8px;
+          font-size: 8.8px;
           color: #334155;
           margin-bottom: 10px;
-          line-height: 1.4;
-          display: flex;
-          justify-content: space-between;
-          flex-wrap: wrap;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
         }
         .doc-title-bar {
           display: flex;
@@ -361,8 +360,7 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
 
       <!-- Registration Bar -->
       <div class="reg-bar">
-        <div><strong>GSTIN NO.:</strong> 19AIYPH5363D1ZU &nbsp;|&nbsp; <strong>PAN NO.:</strong> AIYPH5363D &nbsp;|&nbsp; <strong>MSME REG.:</strong> UDYAM-WB-18-0005364</div>
-        <div><strong>ESI CODE:</strong> 41000559200000606 &nbsp;|&nbsp; <strong>EPF CODE:</strong> WBCAL1559618000</div>
+        <strong>GSTIN NO.:</strong> 19AIYPH5363D1ZU &nbsp;|&nbsp; <strong>PAN NO.:</strong> AIYPH5363D &nbsp;|&nbsp; <strong>MSME REG.:</strong> UDYAM-WB-18-0005364 &nbsp;|&nbsp; <strong>ESI CODE:</strong> 41000559200000606 &nbsp;|&nbsp; <strong>EPF CODE:</strong> WBCAL1559618000
       </div>
 
       <!-- Document Title & Ref -->
