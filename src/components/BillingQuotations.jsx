@@ -389,6 +389,7 @@ function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
           <div class="box-title">DOCUMENT SUMMARY</div>
           <div class="box-detail"><strong>${dateLabel}:</strong> ${createdDateStr}</div>
           <div class="box-detail"><strong>${secondDateLabel}:</strong> ${secondDateVal}</div>
+          ${doc.quotationNo || doc.quotationNumber ? `<div class="box-detail"><strong>Quotation Ref No:</strong> ${doc.quotationNo || doc.quotationNumber}</div>` : ''}
           ${doc.kindAttention ? `<div class="box-detail"><strong>Kind Attention:</strong> ${doc.kindAttention}</div>` : ''}
           <div class="box-detail"><strong>Status:</strong> ${doc.status || 'ACTIVE'}</div>
         </div>
@@ -1020,13 +1021,30 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
     printWindow.document.close();
   };
 
+  const getLinkedQuotationNumber = (inv) => {
+    if (!inv) return null;
+    if (inv.quotation?.quotationNumber) return inv.quotation.quotationNumber;
+    if (inv.quotationNumber) return inv.quotationNumber;
+    if (inv.quotationId) {
+      const found = quotations.find(q => q.id === inv.quotationId);
+      if (found) return found.quotationNumber;
+    }
+    // Match by client & subject or clientEmail & totalAmount as fallback
+    const matched = quotations.find(q => 
+      (q.clientId && inv.clientId && q.clientId === inv.clientId && q.subject && q.subject === inv.subject) ||
+      (q.clientEmail && inv.clientEmail && q.clientEmail.toLowerCase() === inv.clientEmail?.toLowerCase() && Math.abs((q.grandTotal || q.totalAmount) - inv.totalAmount) < 10)
+    );
+    return matched ? matched.quotationNumber : null;
+  };
+
   const handlePrintInvPDF = (inv) => {
     const printWindow = window.open('', '_blank', 'width=900,height=1150');
     if (!printWindow) {
       alert('Pop-up blocked! Please allow pop-ups to print/download the PDF.');
       return;
     }
-    const htmlContent = renderDocumentPDFHtml(inv, 'INVOICE');
+    const qtnNo = getLinkedQuotationNumber(inv);
+    const htmlContent = renderDocumentPDFHtml({ ...inv, quotationNo: qtnNo }, 'INVOICE');
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
@@ -1308,13 +1326,24 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                 </tr>
               </thead>
               <tbody>
-                {displayedInvoices.map(inv => (
-                  <tr key={inv.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)', fontSize: '0.85rem' }}>
-                        {inv.invoiceNumber}
-                      </span>
-                    </td>
+                {displayedInvoices.map(inv => {
+                  const linkedQtnNo = getLinkedQuotationNumber(inv);
+                  return (
+                    <tr key={inv.id}>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)', fontSize: '0.85rem' }}>
+                          {inv.invoiceNumber}
+                        </div>
+                        {linkedQtnNo ? (
+                          <span style={{ fontSize: '0.72rem', background: '#fef3c7', color: '#b45309', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, display: 'inline-block', marginTop: '0.25rem' }}>
+                            Qtn: {linkedQtnNo}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic', display: 'block', marginTop: '0.2rem' }}>
+                            Direct Invoice
+                          </span>
+                        )}
+                      </td>
                     <td>
                       <div style={{ fontWeight: 700 }}>{inv.clientName}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{inv.clientEmail}</div>
@@ -1380,7 +1409,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>
