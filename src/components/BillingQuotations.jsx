@@ -17,13 +17,480 @@ import {
   Check,
   Clock,
   MapPin,
-  Building
+  Building,
+  ChevronDown,
+  ChevronUp,
+  X,
+  MoreVertical,
+  XCircle
 } from 'lucide-react';
+
+const DEFAULT_TERMS_CONFIG = {
+  validity: 'one month',
+  gstRate: '18% extra',
+  additionalCharges: true,
+  jobAccess: true,
+  shutdownRequired: true,
+  officeHoursOnly: true,
+  electricalPower: true,
+  storageSpace: true,
+  tankFilled: false,
+  localHazard: true,
+  actualQuantityOption: 'actual_delivered_and_executed',
+  completionTime: '7 working days',
+  completionTimeCustom: '',
+  paymentTerms: 'option_a',
+  customTermsText: ''
+};
+
+function formatTermsList(configInput) {
+  if (!configInput) return [];
+  let config = configInput;
+  if (typeof configInput === 'string') {
+    try {
+      config = JSON.parse(configInput);
+    } catch (e) {
+      return [configInput];
+    }
+  }
+  if (!config || typeof config !== 'object') return [];
+
+  const list = [];
+  if (config.validity) {
+    list.push(`Quotation is valid for ${config.validity} only.`);
+  }
+  if (config.gstRate) {
+    list.push(`GST ${config.gstRate}.`);
+  }
+  if (config.additionalCharges !== false) {
+    list.push(`Additional charges will be applicable for all other materials and works except that mentioned therein in the above quotation.`);
+  }
+  if (config.jobAccess !== false) {
+    list.push(`All necessary job accesses and permission should be arranged and ensured from client end.`);
+  }
+  if (config.shutdownRequired !== false) {
+    list.push(`Shut down of the system must be required for the job and that should be arranged from client end.`);
+  }
+  if (config.officeHoursOnly !== false) {
+    list.push(`The job will be carried out at office hours/ day hours only.`);
+  }
+  if (config.electricalPower !== false) {
+    list.push(`Necessary electrical power should be provided from the client end.`);
+  }
+  if (config.storageSpace !== false) {
+    list.push(`A space should be arranged to stay/ keep tools and materials from client end.`);
+  }
+  if (config.tankFilled) {
+    list.push(`The tank/ reservoir should be filled up from end as required for the job.`);
+  }
+  if (config.localHazard !== false) {
+    list.push(`Local hazard (if any) should be handled/ settled by the client.`);
+  }
+  if (config.actualQuantityOption === 'actual_delivered_only') {
+    list.push(`Invoice will be raised against actual delivered quantity.`);
+  } else if (config.actualQuantityOption !== 'none') {
+    list.push(`Invoice will be raised against actual delivered quantity and work executed therewith.`);
+  }
+  if (config.completionTime) {
+    const timeText = config.completionTime === 'custom' ? (config.completionTimeCustom || 'As agreed') : config.completionTime;
+    list.push(`Job completion time: ${timeText}.`);
+  }
+  if (config.paymentTerms === 'option_b') {
+    list.push(`Payment should be made 50% as advance along with work order and the balance amount should be released in full within seven days of job completion.`);
+  } else if (config.paymentTerms !== 'none') {
+    list.push(`Payment should be made 40% as advance along with work order. More 30% should be released on delivery of materials at site. The balance amount should be released in full within seven days of job completion.`);
+  }
+  if (config.customTermsText && config.customTermsText.trim()) {
+    config.customTermsText.split('\n').forEach(t => {
+      if (t.trim()) list.push(t.trim());
+    });
+  }
+
+  return list;
+}
+
+function renderDocumentPDFHtml(doc, type = 'QUOTATION') {
+  const isInvoice = type === 'INVOICE';
+  const createdDateStr = doc.createdAt ? new Date(doc.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const dateLabel = isInvoice ? 'Invoice Date' : 'Quotation Date';
+  const secondDateLabel = isInvoice ? 'Due Date' : 'Valid Until';
+  const secondDateVal = isInvoice 
+    ? (doc.dueDate ? new Date(doc.dueDate).toISOString().slice(0, 10) : 'N/A')
+    : (doc.validUntil ? new Date(doc.validUntil).toISOString().slice(0, 10) : 'N/A');
+
+  let parsedItems = [];
+  try {
+    parsedItems = typeof doc.itemsJson === 'string' ? JSON.parse(doc.itemsJson) : (doc.itemsJson || []);
+  } catch (e) {
+    parsedItems = [];
+  }
+  if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+    parsedItems = [{ name: 'Equipment Supply & Technical Service', qty: 1, unitPrice: doc.totalAmount, total: doc.totalAmount }];
+  }
+
+  const termsList = formatTermsList(doc.termsAndConditions);
+  const docHead = doc.documentHead || (isInvoice ? 'TAX INVOICE' : 'QUOTATION / PROPOSAL');
+  const refNo = doc.quotationNumber || doc.invoiceNumber || 'N/A';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${docHead}_${refNo.replace(/\//g, '_')}</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+        body {
+          font-family: 'Inter', sans-serif;
+          margin: 0;
+          padding: 36px;
+          color: #0f172a;
+          background: #ffffff;
+        }
+        .header-letterhead {
+          text-align: center;
+          border-bottom: 2px solid #0f172a;
+          padding-bottom: 10px;
+          margin-bottom: 12px;
+        }
+        .company-name {
+          font-size: 26px;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+        .company-tagline {
+          font-size: 13px;
+          font-weight: 600;
+          color: #334155;
+          margin-top: 3px;
+        }
+        .company-contact {
+          font-size: 11px;
+          color: #64748b;
+          margin-top: 3px;
+        }
+        .reg-bar {
+          background: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 8px 12px;
+          font-size: 11px;
+          color: #334155;
+          margin-bottom: 20px;
+          line-height: 1.6;
+          display: flex;
+          justify-content: space-between;
+          flex-wrap: wrap;
+        }
+        .doc-title-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 12px;
+        }
+        .doc-head-title {
+          font-size: 22px;
+          font-weight: 800;
+          color: #1e3a8a;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .doc-ref-badge {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 4px 12px;
+          border-radius: 6px;
+        }
+        .grid-2 {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        .box {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 14px 16px;
+        }
+        .box-title {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #64748b;
+          letter-spacing: 0.5px;
+          margin-bottom: 6px;
+        }
+        .box-name {
+          font-size: 15px;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .box-detail {
+          font-size: 12.5px;
+          color: #475569;
+          margin-top: 3px;
+        }
+        .subject-box {
+          background: #eff6ff;
+          border-left: 4px solid #2563eb;
+          padding: 10px 14px;
+          margin-bottom: 18px;
+          border-radius: 4px;
+        }
+        .preface-box {
+          font-size: 13px;
+          color: #334155;
+          font-style: italic;
+          margin-bottom: 18px;
+          line-height: 1.6;
+          background: #f9fafb;
+          padding: 12px;
+          border-radius: 6px;
+          border: 1px dashed #d1d5db;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        th {
+          background: #0f172a;
+          color: #ffffff;
+          font-size: 11.5px;
+          text-transform: uppercase;
+          font-weight: 700;
+          padding: 10px 14px;
+          text-align: left;
+        }
+        td {
+          padding: 12px 14px;
+          border-bottom: 1px solid #e2e8f0;
+          font-size: 13px;
+          color: #334155;
+        }
+        .text-right { text-align: right; }
+        .totals-table {
+          width: 320px;
+          margin-left: auto;
+          margin-bottom: 24px;
+        }
+        .totals-table td {
+          padding: 6px 14px;
+          border-bottom: none;
+        }
+        .grand-total {
+          font-size: 15px;
+          font-weight: 800;
+          color: #1e40af;
+          border-top: 2px solid #cbd5e1;
+          border-bottom: 2px solid #cbd5e1 !important;
+          background: #eff6ff;
+        }
+        .terms-section {
+          margin-top: 24px;
+          border-top: 1.5px solid #e2e8f0;
+          padding-top: 14px;
+        }
+        .terms-title {
+          font-size: 13px;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 8px;
+          text-transform: uppercase;
+        }
+        .terms-list {
+          margin: 0;
+          padding-left: 18px;
+          font-size: 11.5px;
+          color: #334155;
+          line-height: 1.65;
+        }
+        .signature-block {
+          margin-top: 40px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+        }
+        .sig-box { text-align: center; }
+        .sig-line {
+          border-top: 1px solid #94a3b8;
+          width: 200px;
+          text-align: center;
+          padding-top: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #475569;
+        }
+        .print-btn-bar {
+          margin-bottom: 20px;
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+        .btn-print {
+          background: #2563eb;
+          color: #fff;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        @media print {
+          .print-btn-bar { display: none !important; }
+          body { padding: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-btn-bar">
+        <button class="btn-print" onclick="window.print()">🖨️ Save as PDF / Print</button>
+      </div>
+
+      <!-- Letterhead Header -->
+      <div class="header-letterhead">
+        <div class="company-name">AKASH ENGINEERING</div>
+        <div class="company-tagline">Engineers, Contractors & General Order Suppliers</div>
+        <div class="company-contact">Regd. Office: Kolkata, West Bengal | Phone: +91 98300 00000 | Email: info@akashengineering.in</div>
+      </div>
+
+      <!-- Registration Bar -->
+      <div class="reg-bar">
+        <div><strong>GSTIN NO.:</strong> 19AIYPH5363D1ZU &nbsp;|&nbsp; <strong>PAN NO.:</strong> AIYPH5363D &nbsp;|&nbsp; <strong>MSME REG.:</strong> UDYAM-WB-18-0005364</div>
+        <div><strong>ESI CODE:</strong> 41000559200000606 &nbsp;|&nbsp; <strong>EPF CODE:</strong> WBCAL1559618000</div>
+      </div>
+
+      <!-- Document Title & Ref -->
+      <div class="doc-title-bar">
+        <div class="doc-head-title">${docHead}</div>
+        <div class="doc-ref-badge">Ref No: ${refNo}</div>
+      </div>
+
+      <!-- Grid Details -->
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">CUSTOMER DETAILS (BILL TO)</div>
+          <div class="box-name">${doc.clientName || 'Valued Client'}</div>
+          ${doc.clientAddress ? `<div class="box-detail"><strong>Address:</strong> ${doc.clientAddress}</div>` : ''}
+          <div class="box-detail"><strong>Email:</strong> ${doc.clientEmail || 'N/A'} ${doc.clientPhone ? `| <strong>Phone:</strong> ${doc.clientPhone}` : ''}</div>
+          ${doc.clientGst ? `<div class="box-detail"><strong>Customer GSTIN:</strong> ${doc.clientGst}</div>` : ''}
+          ${doc.clientPan ? `<div class="box-detail"><strong>Customer PAN:</strong> ${doc.clientPan}</div>` : ''}
+        </div>
+        <div class="box">
+          <div class="box-title">DOCUMENT SUMMARY</div>
+          <div class="box-detail"><strong>${dateLabel}:</strong> ${createdDateStr}</div>
+          <div class="box-detail"><strong>${secondDateLabel}:</strong> ${secondDateVal}</div>
+          ${doc.kindAttention ? `<div class="box-detail"><strong>Kind Attention:</strong> ${doc.kindAttention}</div>` : ''}
+          <div class="box-detail"><strong>Status:</strong> ${doc.status || 'ACTIVE'}</div>
+        </div>
+      </div>
+
+      <!-- Subject -->
+      ${doc.subject ? `
+        <div class="subject-box">
+          <strong style="color: #1e40af; font-size: 12.5px;">Subject:</strong>
+          <span style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-left: 6px;">${doc.subject}</span>
+        </div>
+      ` : ''}
+
+      <!-- Preface -->
+      ${doc.preface ? `
+        <div class="preface-box">
+          ${doc.preface}
+        </div>
+      ` : ''}
+
+      <!-- Items Table -->
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product / Service Description</th>
+            <th class="text-right">Qty</th>
+            <th class="text-right">Unit Price (₹)</th>
+            <th class="text-right">Line Total (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${parsedItems.map((item, idx) => `
+            <tr>
+              <td>${idx + 1}</td>
+              <td>
+                <strong>${item.name || 'Product Line Item'}</strong>
+                ${item.code ? `<span style="font-size: 11px; color: #64748b; margin-left: 6px;">[Code: ${item.code}]</span>` : ''}
+              </td>
+              <td class="text-right">${item.qty || 1}</td>
+              <td class="text-right">₹${Number(item.unitPrice || (item.total / (item.qty || 1)))?.toLocaleString()}</td>
+              <td class="text-right">₹${Number(item.total || (item.qty * item.unitPrice))?.toLocaleString()}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <!-- Totals -->
+      <table class="totals-table">
+        <tr>
+          <td>Subtotal:</td>
+          <td class="text-right">₹${(doc.totalAmount || 0).toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td>GST Amount:</td>
+          <td class="text-right">₹${(doc.gstAmount || Math.round((doc.totalAmount || 0) * 0.18)).toLocaleString()}</td>
+        </tr>
+        <tr class="grand-total">
+          <td>Grand Total:</td>
+          <td class="text-right">₹${(doc.grandTotal || (doc.totalAmount + Math.round((doc.totalAmount || 0) * 0.18))).toLocaleString()}</td>
+        </tr>
+      </table>
+
+      <!-- Terms & Conditions -->
+      ${termsList.length > 0 ? `
+        <div class="terms-section">
+          <div class="terms-title">Terms & Conditions:</div>
+          <ol class="terms-list">
+            ${termsList.map(t => `<li>${t}</li>`).join('')}
+          </ol>
+        </div>
+      ` : ''}
+
+      <!-- Signatures -->
+      <div class="signature-block">
+        <div class="sig-box">
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 45px;">Client's Acceptance & Confirmation Stamp</div>
+          <div class="sig-line">Accepted & Confirmed</div>
+        </div>
+        <div class="sig-box">
+          <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 45px;">For AKASH ENGINEERING</div>
+          <div class="sig-line">Authorized Signatory</div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 300);
+        }
+      </script>
+    </body>
+    </html>
+  `;
+}
 
 export default function BillingQuotations({ data = {}, currentRole, currentUser, onRefresh, defaultTab }) {
   const [activeTab, setActiveTab] = useState(defaultTab || 'invoices'); // 'invoices' | 'quotations'
   const [showInvModal, setShowInvModal] = useState(false);
   const [showQuotModal, setShowQuotModal] = useState(false);
+  const [showTermsAccordion, setShowTermsAccordion] = useState(true);
 
   // Edit / Delete state for Invoices & Quotations
   const [editingInv, setEditingInv] = useState(null);
@@ -32,6 +499,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
   const [deletingQuot, setDeletingQuot] = useState(null);
 
   // Flow State: Quotation Acceptance & Meeting Assignment
+  const [openQuotMenuId, setOpenQuotMenuId] = useState(null);
   const [assignMeetingQuot, setAssignMeetingQuot] = useState(null);
   const [actionSuccessMsg, setActionSuccessMsg] = useState('');
   const [meetingForm, setMeetingForm] = useState({
@@ -167,20 +635,96 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
     return true;
   });
 
-  // Handle client selection when creating quotation
-  const handleClientSelect = (clientId) => {
+  // New Invoice Form State
+  const [newInv, setNewInv] = useState({
+    invoiceNumber: `AKASH/INV/25-26/${327 + invoices.length}`,
+    documentHead: 'TAX INVOICE',
+    subject: '',
+    kindAttention: '',
+    clientId: '',
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientAddress: '',
+    clientGst: '',
+    clientPan: '',
+    preface: '',
+    termsConfig: { ...DEFAULT_TERMS_CONFIG },
+    totalAmount: 45000,
+    dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
+  });
+
+  // Edit Invoice Form State
+  const [editInvData, setEditInvData] = useState({
+    clientName: '',
+    clientEmail: '',
+    totalAmount: 45000,
+    paidAmount: 0,
+    dueDate: '',
+    status: 'UNPAID'
+  });
+
+  // New Quotation Form State
+  const [newQuot, setNewQuot] = useState({
+    quotationNumber: `AKASH/QTN/25-26/${327 + quotations.length}`,
+    documentHead: 'QUOTATION / PROPOSAL',
+    subject: '',
+    kindAttention: '',
+    clientId: '',
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientAddress: '',
+    clientGst: '',
+    clientPan: '',
+    preface: '',
+    termsConfig: { ...DEFAULT_TERMS_CONFIG },
+    totalAmount: 60000
+  });
+
+  // Edit Quotation Form State
+  const [editQuotData, setEditQuotData] = useState({
+    documentHead: 'QUOTATION / PROPOSAL',
+    subject: '',
+    kindAttention: '',
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientAddress: '',
+    clientGst: '',
+    clientPan: '',
+    preface: '',
+    totalAmount: 60000,
+    validUntil: '',
+    status: 'SENT'
+  });
+
+  // Handle client selection when creating quotation/invoice
+  const handleClientSelect = (clientId, isInvoice = false) => {
     if (!clientId) {
-      setNewQuot(prev => ({ ...prev, clientId: '', clientName: '', clientEmail: '' }));
+      if (isInvoice) {
+        setNewInv(prev => ({ ...prev, clientId: '', clientName: '', clientEmail: '', clientPhone: '', clientAddress: '', clientGst: '', clientPan: '' }));
+      } else {
+        setNewQuot(prev => ({ ...prev, clientId: '', clientName: '', clientEmail: '', clientPhone: '', clientAddress: '', clientGst: '', clientPan: '' }));
+      }
       return;
     }
     const found = registeredClients.find(c => c.id === clientId);
     if (found) {
-      setNewQuot(prev => ({
-        ...prev,
+      const updatedFields = {
         clientId: found.id,
         clientName: found.name,
-        clientEmail: found.email
-      }));
+        clientEmail: found.email || '',
+        clientPhone: found.phone || '',
+        clientAddress: found.address || '',
+        clientGst: found.panCard ? '' : '',
+        clientPan: found.panCard || ''
+      };
+      if (isInvoice) {
+        setNewInv(prev => ({ ...prev, ...updatedFields }));
+      } else {
+        setNewQuot(prev => ({ ...prev, ...updatedFields }));
+      }
     }
   };
 
@@ -198,21 +742,40 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
         setTimeout(() => setActionSuccessMsg(''), 7000);
         fetchBillingData();
         if (onRefresh) onRefresh();
-      } else {
-        alert(json.message || 'Failed to accept quotation');
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Handle Super Admin Generating Bill & Deducting Inventory Quantity
+  // Handle Client / Super Admin Rejecting Quotation
+  const handleRejectQuotation = async (quot) => {
+    try {
+      const res = await fetch(`/api/billing/quotations/${quot.id}/reject`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rejectedBy: currentUser?.name || 'Client Representative' })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setActionSuccessMsg(`Quotation #${quot.quotationNumber} marked as REJECTED.`);
+        setTimeout(() => setActionSuccessMsg(''), 7000);
+        fetchBillingData();
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Super Admin Generates Bill (Tax Invoice) from Accepted Quotation
   const handleGenerateBill = async (quot) => {
     try {
+      const nextInvNo = `AKASH/INV/25-26/${327 + invoices.length}`;
       const res = await fetch(`/api/billing/quotations/${quot.id}/generate-bill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ generatedBy: currentUser?.name || 'Super Admin' })
+        body: JSON.stringify({ generatedBy: currentUser?.name || 'Superadmin', invoiceNumber: nextInvNo })
       });
       const json = await res.json();
       if (json.success) {
@@ -224,26 +787,23 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
         alert(json.message || 'Failed to generate bill');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error generating bill:', err);
     }
   };
 
-  // Open modal to assign meeting to an employee from accepted quotation
   const openAssignMeetingModal = (quot) => {
-    const defaultEmp = availableEmployees.length > 0 ? availableEmployees[0].id : '';
     setAssignMeetingQuot(quot);
     setMeetingForm({
-      title: `Service Onboarding & Setup: ${quot.clientName}`,
-      clientName: quot.clientName,
-      clientAddress: 'Client Corporate Site / Headquarters',
-      scheduledAt: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-      assignedToId: defaultEmp,
+      title: `Service Kickoff: ${quot.subject || quot.quotationNumber}`,
+      clientName: quot.clientName || '',
+      clientAddress: quot.clientAddress || 'Client Site Location',
+      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+      assignedToId: availableEmployees[0]?.id || '',
       agenda: `Service kickoff and installation for accepted Quotation #${quot.quotationNumber} (₹${quot.grandTotal?.toLocaleString() || quot.totalAmount?.toLocaleString()})`,
-      deliverables: 'Service delivery checklist, technical setup audit, sign-off sheet'
+      deliverables: 'Service checklist, site audit report, client sign-off'
     });
   };
 
-  // Submit meeting assignment to backend
   const handleScheduleMeetingFromQuot = async (e) => {
     e.preventDefault();
     if (!assignMeetingQuot) return;
@@ -271,55 +831,41 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
     }
   };
 
-  // New Invoice Form State
-  const [newInv, setNewInv] = useState({
-    clientName: '',
-    clientEmail: '',
-    totalAmount: 45000,
-    dueDate: '2026-09-20'
-  });
-
-  // Edit Invoice Form State
-  const [editInvData, setEditInvData] = useState({
-    clientName: '',
-    clientEmail: '',
-    totalAmount: 45000,
-    paidAmount: 0,
-    dueDate: '',
-    status: 'UNPAID'
-  });
-
-  // New Quotation Form State
-  const [newQuot, setNewQuot] = useState({
-    clientId: '',
-    clientName: '',
-    clientEmail: '',
-    totalAmount: 60000
-  });
-
-  // Edit Quotation Form State
-  const [editQuotData, setEditQuotData] = useState({
-    clientName: '',
-    clientEmail: '',
-    totalAmount: 60000,
-    validUntil: '',
-    status: 'SENT'
-  });
-
   const handleCreateInvoice = async (e) => {
     e.preventDefault();
     try {
       const res = await fetch('/api/billing/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newInv)
+        body: JSON.stringify({
+          ...newInv,
+          termsAndConditions: JSON.stringify(newInv.termsConfig)
+        })
       });
       const json = await res.json();
       if (json.success) {
         setShowInvModal(false);
-        setNewInv({ clientName: '', clientEmail: '', totalAmount: 45000, dueDate: '2026-09-20' });
+        setNewInv({
+          invoiceNumber: `AKASH/INV/25-26/${327 + invoices.length + 1}`,
+          documentHead: 'TAX INVOICE',
+          subject: '',
+          kindAttention: '',
+          clientId: '',
+          clientName: '',
+          clientEmail: '',
+          clientPhone: '',
+          clientAddress: '',
+          clientGst: '',
+          clientPan: '',
+          preface: '',
+          termsConfig: { ...DEFAULT_TERMS_CONFIG },
+          totalAmount: 45000,
+          dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
+        });
         fetchBillingData();
         if (onRefresh) onRefresh();
+      } else {
+        alert(json.message || 'Error creating invoice');
       }
     } catch (err) {
       console.error(err);
@@ -370,10 +916,22 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
       const subtotal = quotSubtotal > 0 ? quotSubtotal : Number(newQuot.totalAmount) || 0;
 
       const payload = {
+        quotationNumber: newQuot.quotationNumber || `AKASH/QTN/25-26/${327 + quotations.length}`,
+        documentHead: newQuot.documentHead,
+        subject: newQuot.subject,
+        kindAttention: newQuot.kindAttention,
         clientId: newQuot.clientId || null,
         clientName: newQuot.clientName,
         clientEmail: newQuot.clientEmail,
+        clientPhone: newQuot.clientPhone,
+        clientAddress: newQuot.clientAddress,
+        clientGst: newQuot.clientGst,
+        clientPan: newQuot.clientPan,
+        preface: newQuot.preface,
+        termsAndConditions: JSON.stringify(newQuot.termsConfig),
         totalAmount: subtotal,
+        gstAmount: Math.round(subtotal * (newQuot.termsConfig.gstRate.includes('28') ? 0.28 : 0.18)),
+        grandTotal: subtotal + Math.round(subtotal * (newQuot.termsConfig.gstRate.includes('28') ? 0.28 : 0.18)),
         items: validItems.length > 0 ? validItems : [{ name: 'Service & System Package', qty: 1, unitPrice: subtotal, total: subtotal }]
       };
 
@@ -385,7 +943,22 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
       const json = await res.json();
       if (json.success) {
         setShowQuotModal(false);
-        setNewQuot({ clientId: '', clientName: '', clientEmail: '', totalAmount: 0 });
+        setNewQuot({
+          quotationNumber: `AKASH/QTN/25-26/${327 + quotations.length + 1}`,
+          documentHead: 'QUOTATION / PROPOSAL',
+          subject: '',
+          kindAttention: '',
+          clientId: '',
+          clientName: '',
+          clientEmail: '',
+          clientPhone: '',
+          clientAddress: '',
+          clientGst: '',
+          clientPan: '',
+          preface: '',
+          termsConfig: { ...DEFAULT_TERMS_CONFIG },
+          totalAmount: 0
+        });
         setQuotItems([{ productId: '', name: '', code: '', unitPrice: 0, qty: 1, total: 0 }]);
         setActionSuccessMsg(`Official Quotation #${json.data?.quotationNumber} successfully created and sent to ${newQuot.clientName}!`);
         setTimeout(() => setActionSuccessMsg(''), 7000);
@@ -437,566 +1010,235 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
   };
 
   const handlePrintQuotPDF = (q) => {
-    const printWindow = window.open('', '_blank', 'width=850,height=1100');
+    const printWindow = window.open('', '_blank', 'width=900,height=1150');
     if (!printWindow) {
       alert('Pop-up blocked! Please allow pop-ups to print/download the PDF.');
       return;
     }
-    const validUntilStr = typeof q.validUntil === 'string' ? q.validUntil.slice(0, 10) : new Date(q.validUntil).toISOString().slice(0, 10);
-    const createdDateStr = q.createdAt ? new Date(q.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
-
-    let parsedItems = [];
-    try {
-      parsedItems = typeof q.itemsJson === 'string' ? JSON.parse(q.itemsJson) : (q.itemsJson || []);
-    } catch (e) {
-      parsedItems = [];
-    }
-    if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
-      parsedItems = [{ name: 'Enterprise Service & Equipment Package', qty: 1, unitPrice: q.totalAmount, total: q.totalAmount }];
-    }
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Quotation_${q.quotationNumber}</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-          * { box-sizing: border-box; }
-          body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 40px;
-            color: #0f172a;
-            background: #ffffff;
-          }
-          .quot-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-          }
-          .company-title {
-            font-size: 24px;
-            font-weight: 800;
-            color: #2563eb;
-            letter-spacing: -0.5px;
-          }
-          .company-subtitle {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: 4px;
-          }
-          .quot-title {
-            font-size: 28px;
-            font-weight: 800;
-            color: #0f172a;
-            text-align: right;
-          }
-          .quot-badge {
-            display: inline-block;
-            background: #eff6ff;
-            color: #2563eb;
-            font-size: 14px;
-            font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 6px;
-            margin-top: 6px;
-            text-align: right;
-          }
-          .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-          }
-          .box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px 20px;
-          }
-          .box-title {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #64748b;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-          }
-          .box-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-          }
-          .box-detail {
-            font-size: 13px;
-            color: #475569;
-            margin-top: 4px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 24px;
-          }
-          th {
-            background: #0f172a;
-            color: #ffffff;
-            font-size: 12px;
-            text-transform: uppercase;
-            font-weight: 700;
-            padding: 12px 16px;
-            text-align: left;
-          }
-          td {
-            padding: 14px 16px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 14px;
-            color: #334155;
-          }
-          .text-right { text-align: right; }
-          .totals-table {
-            width: 320px;
-            margin-left: auto;
-            margin-bottom: 30px;
-          }
-          .totals-table td {
-            padding: 8px 16px;
-            border-bottom: none;
-          }
-          .grand-total {
-            font-size: 16px;
-            font-weight: 800;
-            color: #1e40af;
-            border-top: 2px solid #cbd5e1;
-            border-bottom: 2px solid #cbd5e1 !important;
-            background: #eff6ff;
-          }
-          .terms {
-            font-size: 12px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 20px;
-            margin-top: 40px;
-            line-height: 1.6;
-          }
-          .signature-block {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-          }
-          .sig-line {
-            border-top: 1px solid #94a3b8;
-            width: 200px;
-            text-align: center;
-            padding-top: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #475569;
-          }
-          .print-btn-bar {
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-          }
-          .btn-print {
-            background: #2563eb;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-          }
-          @media print {
-            .print-btn-bar { display: none !important; }
-            body { padding: 0; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="print-btn-bar">
-          <button class="btn-print" onclick="window.print()">🖨️ Save as PDF / Print</button>
-        </div>
-
-        <div class="quot-header">
-          <div>
-            <div class="company-title">VS DIGITECH ENTERPRISE</div>
-            <div class="company-subtitle">Enterprise Software & Facility Solutions</div>
-            <div class="company-subtitle">Email: billing@vsdigitech.com | Web: www.vsdigitech.com</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="quot-title">QUOTATION</div>
-            <div class="quot-badge"># ${q.quotationNumber}</div>
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <div class="box">
-            <div class="box-title">Client Details (Bill To)</div>
-            <div class="box-name">${q.clientName || 'Valued Client'}</div>
-            <div class="box-detail">Email: ${q.clientEmail || 'N/A'}</div>
-            ${q.client?.companyName ? `<div class="box-detail">Company: ${q.client.companyName}</div>` : ''}
-            ${q.client?.gstin ? `<div class="box-detail">GSTIN: ${q.client.gstin}</div>` : ''}
-          </div>
-          <div class="box">
-            <div class="box-title">Quotation Summary</div>
-            <div class="box-detail"><strong>Quotation Date:</strong> ${createdDateStr}</div>
-            <div class="box-detail"><strong>Valid Until:</strong> ${validUntilStr}</div>
-            <div class="box-detail"><strong>Status:</strong> ${q.status}</div>
-            <div class="box-detail"><strong>Currency:</strong> INR (₹)</div>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Product / Service Description</th>
-              <th class="text-right">Qty</th>
-              <th class="text-right">Unit Price (₹)</th>
-              <th class="text-right">Line Total (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${parsedItems.map((item, idx) => `
-              <tr>
-                <td>${idx + 1}</td>
-                <td>
-                  <strong>${item.name || 'Product Line Item'}</strong>
-                  ${item.code ? `<span style="font-size: 11px; color: #64748b; margin-left: 6px;">[Code: ${item.code}]</span>` : ''}
-                </td>
-                <td class="text-right">${item.qty || 1}</td>
-                <td class="text-right">₹${Number(item.unitPrice || (item.total / (item.qty || 1)))?.toLocaleString()}</td>
-                <td class="text-right">₹${Number(item.total)?.toLocaleString()}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <table class="totals-table">
-          <tr>
-            <td>Subtotal:</td>
-            <td class="text-right">₹${q.totalAmount?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>GST (18%):</td>
-            <td class="text-right">₹${q.gstAmount?.toLocaleString()}</td>
-          </tr>
-          <tr class="grand-total">
-            <td>Grand Total:</td>
-            <td class="text-right">₹${q.grandTotal?.toLocaleString()}</td>
-          </tr>
-        </table>
-
-        <div class="signature-block">
-          <div class="terms">
-            <strong>Terms & Conditions:</strong><br/>
-            1. Validity: This quotation is valid until ${validUntilStr}.<br/>
-            2. Payment: Payable upon formal acceptance.<br/>
-            3. GST: 18% GST added as per prevailing taxation laws.
-          </div>
-          <div>
-            <div class="sig-line">Authorized Signatory</div>
-          </div>
-        </div>
-
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 300);
-          }
-        </script>
-      </body>
-      </html>
-    `;
-
+    const htmlContent = renderDocumentPDFHtml(q, 'QUOTATION');
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
 
   const handlePrintInvPDF = (inv) => {
-    const printWindow = window.open('', '_blank', 'width=850,height=1100');
+    const printWindow = window.open('', '_blank', 'width=900,height=1150');
     if (!printWindow) {
       alert('Pop-up blocked! Please allow pop-ups to print/download the PDF.');
       return;
     }
-    const dueDateStr = typeof inv.dueDate === 'string' ? inv.dueDate.slice(0, 10) : new Date(inv.dueDate).toISOString().slice(0, 10);
-    const createdDateStr = inv.createdAt ? new Date(inv.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Invoice_${inv.invoiceNumber}</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-          * { box-sizing: border-box; }
-          body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 40px;
-            color: #0f172a;
-            background: #ffffff;
-          }
-          .inv-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-          }
-          .company-title {
-            font-size: 24px;
-            font-weight: 800;
-            color: #2563eb;
-            letter-spacing: -0.5px;
-          }
-          .company-subtitle {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: 4px;
-          }
-          .inv-title {
-            font-size: 28px;
-            font-weight: 800;
-            color: #0f172a;
-            text-align: right;
-          }
-          .inv-badge {
-            display: inline-block;
-            background: #f0fdf4;
-            color: #16a34a;
-            font-size: 14px;
-            font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 6px;
-            margin-top: 6px;
-            text-align: right;
-          }
-          .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-          }
-          .box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px 20px;
-          }
-          .box-title {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #64748b;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-          }
-          .box-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-          }
-          .box-detail {
-            font-size: 13px;
-            color: #475569;
-            margin-top: 4px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 24px;
-          }
-          th {
-            background: #0f172a;
-            color: #ffffff;
-            font-size: 12px;
-            text-transform: uppercase;
-            font-weight: 700;
-            padding: 12px 16px;
-            text-align: left;
-          }
-          td {
-            padding: 14px 16px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 14px;
-            color: #334155;
-          }
-          .text-right { text-align: right; }
-          .totals-table {
-            width: 320px;
-            margin-left: auto;
-            margin-bottom: 30px;
-          }
-          .totals-table td {
-            padding: 8px 16px;
-            border-bottom: none;
-          }
-          .grand-total {
-            font-size: 16px;
-            font-weight: 800;
-            color: #16a34a;
-            border-top: 2px solid #cbd5e1;
-            border-bottom: 2px solid #cbd5e1 !important;
-            background: #f0fdf4;
-          }
-          .signature-block {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-          }
-          .sig-line {
-            border-top: 1px solid #94a3b8;
-            width: 200px;
-            text-align: center;
-            padding-top: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #475569;
-          }
-          .print-btn-bar {
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-          }
-          .btn-print {
-            background: #2563eb;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-          }
-          @media print {
-            .print-btn-bar { display: none !important; }
-            body { padding: 0; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="print-btn-bar">
-          <button class="btn-print" onclick="window.print()">🖨️ Save as PDF / Print</button>
-        </div>
-
-        <div class="inv-header">
-          <div>
-            <div class="company-title">VS DIGITECH ENTERPRISE</div>
-            <div class="company-subtitle">TAX INVOICE</div>
-            <div class="company-subtitle">Email: billing@vsdigitech.com | Web: www.vsdigitech.com</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="inv-title">INVOICE</div>
-            <div class="inv-badge"># ${inv.invoiceNumber}</div>
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <div class="box">
-            <div class="box-title">Billed To</div>
-            <div class="box-name">${inv.clientName || 'Valued Customer'}</div>
-            <div class="box-detail">Email: ${inv.clientEmail || 'N/A'}</div>
-          </div>
-          <div class="box">
-            <div class="box-title">Invoice Details</div>
-            <div class="box-detail"><strong>Invoice Date:</strong> ${createdDateStr}</div>
-            <div class="box-detail"><strong>Due Date:</strong> ${dueDateStr}</div>
-            <div class="box-detail"><strong>Status:</strong> ${inv.status}</div>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Description</th>
-              <th class="text-right">Qty</th>
-              <th class="text-right">Amount (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>Service Fee / Invoice Amount</td>
-              <td class="text-right">1</td>
-              <td class="text-right">₹${inv.totalAmount?.toLocaleString()}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table class="totals-table">
-          <tr>
-            <td>Total Amount:</td>
-            <td class="text-right">₹${inv.totalAmount?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>Paid Amount:</td>
-            <td class="text-right">₹${inv.paidAmount?.toLocaleString()}</td>
-          </tr>
-          <tr class="grand-total">
-            <td>Balance Due:</td>
-            <td class="text-right">₹${inv.balanceAmount?.toLocaleString()}</td>
-          </tr>
-        </table>
-
-        <div class="signature-block">
-          <div style="font-size: 12px; color: #64748b;">
-            Thank you for your business!
-          </div>
-          <div>
-            <div class="sig-line">Authorized Signatory</div>
-          </div>
-        </div>
-
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 300);
-          }
-        </script>
-      </body>
-      </html>
-    `;
-
+    const htmlContent = renderDocumentPDFHtml(inv, 'INVOICE');
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
 
-  const handleSendPaymentReminder = (clientName, invNo) => {
-    alert(`Automated Email & SMS Payment Reminder sent to ${clientName} for Invoice #${invNo}!`);
-  };
+  // Helper render component for Terms & Conditions Checkbox Panel
+  const renderTermsPanel = (termsConfig, setTermsConfig) => (
+    <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '1rem', marginTop: '0.5rem' }}>
+      <div
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: '0.75rem' }}
+        onClick={() => setShowTermsAccordion(!showTermsAccordion)}
+      >
+        <strong style={{ fontSize: '0.88rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          📋 Terms & Conditions Configurator (Akash Engineering Terms)
+        </strong>
+        {showTermsAccordion ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </div>
+
+      {showTermsAccordion && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.82rem', color: '#334155' }}>
+
+          {/* 1. Validity */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontWeight: 600, minWidth: 160 }}>1. Quotation Validity:</span>
+            <select
+              className="select-field"
+              style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.82rem' }}
+              value={termsConfig.validity}
+              onChange={e => setTermsConfig({ ...termsConfig, validity: e.target.value })}
+            >
+              <option value="ten days">ten days</option>
+              <option value="fifteen days">fifteen days</option>
+              <option value="one month">one month</option>
+              <option value="two months">two months</option>
+              <option value="three months">three months</option>
+            </select>
+          </div>
+
+          {/* 2. GST */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontWeight: 600, minWidth: 160 }}>2. GST Rate:</span>
+            <select
+              className="select-field"
+              style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.82rem' }}
+              value={termsConfig.gstRate}
+              onChange={e => setTermsConfig({ ...termsConfig, gstRate: e.target.value })}
+            >
+              <option value="18% extra">18% extra</option>
+              <option value="28% extra">28% extra</option>
+            </select>
+          </div>
+
+          {/* Standard Checkboxes 3-10 */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.additionalCharges}
+              onChange={e => setTermsConfig({ ...termsConfig, additionalCharges: e.target.checked })}
+            />
+            <span>3. Additional charges will be applicable for all other materials and works except mentioned above.</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.jobAccess}
+              onChange={e => setTermsConfig({ ...termsConfig, jobAccess: e.target.checked })}
+            />
+            <span>4. All necessary job accesses and permission should be arranged and ensured from client end.</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.shutdownRequired}
+              onChange={e => setTermsConfig({ ...termsConfig, shutdownRequired: e.target.checked })}
+            />
+            <span>5. Shut down of the system must be required for the job and arranged from client end.</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.officeHoursOnly}
+              onChange={e => setTermsConfig({ ...termsConfig, officeHoursOnly: e.target.checked })}
+            />
+            <span>6. The job will be carried out at office hours / day hours only.</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.electricalPower}
+              onChange={e => setTermsConfig({ ...termsConfig, electricalPower: e.target.checked })}
+            />
+            <span>7. Necessary electrical power should be provided from the client end.</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.storageSpace}
+              onChange={e => setTermsConfig({ ...termsConfig, storageSpace: e.target.checked })}
+            />
+            <span>8. A space should be arranged to stay / keep tools and materials from client end.</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.tankFilled}
+              onChange={e => setTermsConfig({ ...termsConfig, tankFilled: e.target.checked })}
+            />
+            <span>9. The tank / reservoir should be filled up from client end as required for the job.</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={termsConfig.localHazard}
+              onChange={e => setTermsConfig({ ...termsConfig, localHazard: e.target.checked })}
+            />
+            <span>10. Local hazard (if any) should be handled / settled by the client.</span>
+          </label>
+
+          {/* 11 & 12. Actual Delivered Option */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.2rem' }}>
+            <span style={{ fontWeight: 600, minWidth: 160 }}>11/12. Invoice Basis:</span>
+            <select
+              className="select-field"
+              style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.82rem' }}
+              value={termsConfig.actualQuantityOption}
+              onChange={e => setTermsConfig({ ...termsConfig, actualQuantityOption: e.target.value })}
+            >
+              <option value="actual_delivered_and_executed">Invoice raised against actual delivered quantity and work executed therewith</option>
+              <option value="actual_delivered_only">Invoice raised against actual delivered quantity</option>
+            </select>
+          </div>
+
+          {/* 13. Completion Time */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontWeight: 600, minWidth: 160 }}>13. Job Completion Time:</span>
+            <select
+              className="select-field"
+              style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.82rem' }}
+              value={termsConfig.completionTime}
+              onChange={e => setTermsConfig({ ...termsConfig, completionTime: e.target.value })}
+            >
+              <option value="7 working days">7 working days</option>
+              <option value="10 working days">10 working days</option>
+              <option value="15 working days">15 working days</option>
+              <option value="custom">Custom Input Manually</option>
+            </select>
+            {termsConfig.completionTime === 'custom' && (
+              <input
+                className="input-field"
+                style={{ width: 180, padding: '0.3rem 0.6rem', fontSize: '0.82rem' }}
+                placeholder="e.g. 20 working days"
+                value={termsConfig.completionTimeCustom}
+                onChange={e => setTermsConfig({ ...termsConfig, completionTimeCustom: e.target.value })}
+              />
+            )}
+          </div>
+
+          {/* 14. Payment Terms */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.2rem' }}>
+            <span style={{ fontWeight: 600 }}>14. Payment Terms:</span>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="paymentTerms"
+                checked={termsConfig.paymentTerms === 'option_a'}
+                onChange={() => setTermsConfig({ ...termsConfig, paymentTerms: 'option_a' })}
+              />
+              <span>a) 40% advance along with work order. 30% on delivery of materials at site. Balance within 7 days of completion.</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="paymentTerms"
+                checked={termsConfig.paymentTerms === 'option_b'}
+                onChange={() => setTermsConfig({ ...termsConfig, paymentTerms: 'option_b' })}
+              />
+              <span>b) 50% advance along with work order and balance released in full within 7 days of completion.</span>
+            </label>
+          </div>
+
+          {/* Additional Custom Terms */}
+          <div style={{ marginTop: '0.5rem' }}>
+            <label style={{ fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Additional Terms & Conditions (One per line):</label>
+            <textarea
+              className="input-field"
+              rows={2}
+              style={{ fontSize: '0.82rem' }}
+              placeholder="Insert any other custom terms & conditions..."
+              value={termsConfig.customTermsText}
+              onChange={e => setTermsConfig({ ...termsConfig, customTermsText: e.target.value })}
+            />
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
+      {/* Action Notification Message */}
       {actionSuccessMsg && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: 'rgba(16, 185, 129, 0.15)',
-          border: '1px solid rgba(16, 185, 129, 0.4)',
-          padding: '0.45rem 0.85rem',
-          borderRadius: 'var(--radius-md)',
-          color: '#34d399',
-          fontSize: '0.8rem',
-          fontWeight: 600
-        }}>
-          <CheckCircle size={16} />
-          <span>{actionSuccessMsg}</span>
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: '8px', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <CheckCircle size={18} />
+          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{actionSuccessMsg}</span>
         </div>
       )}
 
@@ -1046,102 +1288,102 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
               Automated Billing Ledger & Payment Reminders
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Integrated GST Calculation & Reminder Alerts
+              Akash Engineering GST & Proforma Invoice System
             </span>
           </div>
 
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Invoice No</th>
-                <th>Client</th>
-                <th>Total Amount</th>
-                <th>Paid Amount</th>
-                <th>Balance Due</th>
-                <th>Due Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedInvoices.map(inv => (
-                <tr key={inv.id}>
-                  <td>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)' }}>
-                      {inv.invoiceNumber}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 700 }}>{inv.clientName}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{inv.clientEmail}</div>
-                  </td>
-                  <td>₹{inv.totalAmount.toLocaleString()}</td>
-                  <td style={{ color: 'var(--brand-green)' }}>₹{inv.paidAmount.toLocaleString()}</td>
-                  <td><strong style={{ color: inv.balanceAmount > 0 ? 'var(--brand-red)' : 'var(--text-primary)' }}>₹{inv.balanceAmount.toLocaleString()}</strong></td>
-                  <td>{typeof inv.dueDate === 'string' ? inv.dueDate.slice(0, 10) : new Date(inv.dueDate).toISOString().slice(0, 10)}</td>
-                  <td>
-                    {inv.status === 'PAID' && <span className="badge badge-approved">PAID</span>}
-                    {inv.status === 'PARTIAL' && <span className="badge badge-pending">PARTIAL</span>}
-                    {inv.status === 'OVERDUE' && <span className="badge badge-rejected">OVERDUE</span>}
-                    {inv.status === 'UNPAID' && <span className="badge badge-pending">UNPAID</span>}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                      <button
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.55rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                        title="Download / Print Invoice PDF"
-                        onClick={() => handlePrintInvPDF(inv)}
-                      >
-                        <Download size={14} color="var(--brand-primary)" />
-                        PDF
-                      </button>
-                      {!isClient && inv.balanceAmount > 0 && (
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="custom-table" style={{ width: '100%', minWidth: '950px' }}>
+              <thead>
+                <tr>
+                  <th style={{ whiteSpace: 'nowrap', minWidth: '170px' }}>Invoice No</th>
+                  <th style={{ minWidth: '180px' }}>Client Details</th>
+                  <th style={{ minWidth: '200px' }}>Subject & Head</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Total Amount</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Paid Amount</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Balance Due</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Due Date</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ whiteSpace: 'nowrap', minWidth: '150px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedInvoices.map(inv => (
+                  <tr key={inv.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)', fontSize: '0.85rem' }}>
+                        {inv.invoiceNumber}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700 }}>{inv.clientName}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{inv.clientEmail}</div>
+                      {inv.clientGst && <div style={{ fontSize: '0.7rem', color: '#64748b' }}>GST: {inv.clientGst}</div>}
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a' }}>{inv.subject || 'Equipment Supply'}</div>
+                      <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 700, display: 'inline-block', whiteSpace: 'nowrap', marginTop: '0.2rem' }}>
+                        {inv.documentHead || 'TAX INVOICE'}
+                      </span>
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>₹{inv.totalAmount.toLocaleString()}</td>
+                    <td style={{ color: 'var(--brand-green)', whiteSpace: 'nowrap' }}>₹{inv.paidAmount.toLocaleString()}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}><strong style={{ color: inv.balanceAmount > 0 ? 'var(--brand-red)' : 'var(--text-primary)' }}>₹{inv.balanceAmount.toLocaleString()}</strong></td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{typeof inv.dueDate === 'string' ? inv.dueDate.slice(0, 10) : new Date(inv.dueDate).toISOString().slice(0, 10)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {inv.status === 'PAID' && <span className="badge badge-approved">PAID</span>}
+                      {inv.status === 'PARTIAL' && <span className="badge badge-pending">PARTIAL</span>}
+                      {inv.status === 'OVERDUE' && <span className="badge badge-rejected">OVERDUE</span>}
+                      {inv.status === 'UNPAID' && <span className="badge badge-pending">UNPAID</span>}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', whiteSpace: 'nowrap' }}>
                         <button
                           className="btn btn-secondary"
-                          style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
-                          onClick={() => handleSendPaymentReminder(inv.clientName, inv.invoiceNumber)}
-                          title="Send Payment Reminder"
+                          style={{ padding: '0.35rem 0.55rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          title="Download / Print Invoice PDF"
+                          onClick={() => handlePrintInvPDF(inv)}
                         >
-                          <BellRing style={{ width: 14, height: 14, color: 'var(--brand-yellow)' }} />
+                          <Download size={14} color="var(--brand-primary)" />
+                          PDF
                         </button>
-                      )}
-                      {!isClient && (
-                        <>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(59, 130, 246, 0.4)', color: '#3b82f6' }}
-                            title="Edit Invoice"
-                            onClick={() => {
-                              setEditingInv(inv);
-                              setEditInvData({
-                                clientName: inv.clientName || '',
-                                clientEmail: inv.clientEmail || '',
-                                totalAmount: inv.totalAmount || 0,
-                                paidAmount: inv.paidAmount || 0,
-                                dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : '',
-                                status: inv.status || 'UNPAID'
-                              });
-                            }}
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                            title="Delete Invoice"
-                            onClick={() => setDeletingInv(inv)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        {!isClient && (
+                          <>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(59, 130, 246, 0.4)', color: '#3b82f6' }}
+                              title="Edit Invoice"
+                              onClick={() => {
+                                setEditingInv(inv);
+                                setEditInvData({
+                                  clientName: inv.clientName || '',
+                                  clientEmail: inv.clientEmail || '',
+                                  totalAmount: inv.totalAmount || 0,
+                                  paidAmount: inv.paidAmount || 0,
+                                  dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : '',
+                                  status: inv.status || 'UNPAID'
+                                });
+                              }}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                              title="Delete Invoice"
+                              onClick={() => setDeletingInv(inv)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -1152,123 +1394,191 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 700 }}>
               Client Quotation Management & Approval Track
             </h3>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+              Akash Engineering Quotation & Proforma System
+            </span>
           </div>
 
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Quotation No</th>
-                <th>Client Name</th>
-                <th>Net Amount</th>
-                <th>GST (18%)</th>
-                <th>Grand Total</th>
-                <th>Valid Until</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedQuotations.map(q => (
-                <tr key={q.id}>
-                  <td>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)' }}>
-                      {q.quotationNumber}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 700 }}>{q.clientName}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{q.clientEmail}</div>
-                    {q.client?.clientStatus && (
-                      <div style={{ marginTop: '0.2rem' }}>
-                        <span style={{
-                          fontSize: '0.65rem',
-                          padding: '0.15rem 0.4rem',
-                          borderRadius: '4px',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          background: q.client.clientStatus === 'ACTIVE_CLIENT' ? 'rgba(16, 185, 129, 0.2)' : q.client.clientStatus === 'QUOTATION_SENT' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(234, 179, 8, 0.2)',
-                          color: q.client.clientStatus === 'ACTIVE_CLIENT' ? '#34d399' : q.client.clientStatus === 'QUOTATION_SENT' ? '#60a5fa' : '#facc15'
-                        }}>
-                          {q.client.clientStatus === 'ACTIVE_CLIENT' ? 'Active Client (Won)' : q.client.clientStatus === 'QUOTATION_SENT' ? 'Quotation Sent' : 'Lead'}
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                  <td>₹{q.totalAmount.toLocaleString()}</td>
-                  <td>₹{q.gstAmount.toLocaleString()}</td>
-                  <td><strong style={{ color: 'var(--brand-gold)' }}>₹{q.grandTotal.toLocaleString()}</strong></td>
-                  <td>{typeof q.validUntil === 'string' ? q.validUntil.slice(0, 10) : new Date(q.validUntil).toISOString().slice(0, 10)}</td>
-                  <td>
-                    {(q.status === 'BILLED' || q.status === 'APPROVED') && <span className="badge badge-approved">BILLED & INVOICED</span>}
-                    {q.status === 'ACCEPTED' && (
-                      <span className="badge badge-pending" style={{ background: 'rgba(59, 130, 246, 0.18)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                        ACCEPTED BY CLIENT
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="custom-table" style={{ width: '100%', minWidth: '1050px' }}>
+              <thead>
+                <tr>
+                  <th style={{ whiteSpace: 'nowrap', minWidth: '180px' }}>Quotation No</th>
+                  <th style={{ minWidth: '180px' }}>Client Name & Details</th>
+                  <th style={{ minWidth: '200px' }}>Subject & Head</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Net Amount</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>GST Amount</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Grand Total</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Valid Until</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ whiteSpace: 'nowrap', minWidth: '220px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedQuotations.map(q => (
+                  <tr key={q.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-yellow)', fontSize: '0.85rem' }}>
+                        {q.quotationNumber}
                       </span>
-                    )}
-                    {q.status === 'SENT' && <span className="badge badge-scheduled">SENT TO CLIENT</span>}
-                    {q.status === 'REJECTED' && <span className="badge badge-rejected">REJECTED</span>}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      {/* Download PDF Button */}
-                      <button
-                        className="btn btn-secondary"
-                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                        title="Download / Print Quotation PDF"
-                        onClick={() => handlePrintQuotPDF(q)}
-                      >
-                        <Download size={14} color="var(--brand-yellow)" />
-                        PDF
-                      </button>
-
-                      {/* Client/Admin Accept Quotation button */}
-                      {(q.status === 'SENT' || q.status === 'DRAFT') && (
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700 }}>{q.clientName}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{q.clientEmail}</div>
+                      {q.kindAttention && <div style={{ fontSize: '0.7rem', color: '#2563eb', fontWeight: 600 }}>Attn: {q.kindAttention}</div>}
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a' }}>{q.subject || 'Supply & Works'}</div>
+                      <span style={{ fontSize: '0.68rem', background: '#fef3c7', color: '#b45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 700, display: 'inline-block', whiteSpace: 'nowrap', marginTop: '0.2rem' }}>
+                        {q.documentHead || 'QUOTATION / PROPOSAL'}
+                      </span>
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>₹{q.totalAmount.toLocaleString()}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>₹{q.gstAmount.toLocaleString()}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}><strong style={{ color: 'var(--brand-gold)' }}>₹{q.grandTotal.toLocaleString()}</strong></td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{typeof q.validUntil === 'string' ? q.validUntil.slice(0, 10) : new Date(q.validUntil).toISOString().slice(0, 10)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {(q.status === 'BILLED' || q.status === 'APPROVED') && <span className="badge badge-approved">BILLED & INVOICED</span>}
+                      {q.status === 'ACCEPTED' && (
+                        <span className="badge badge-pending" style={{ background: 'rgba(59, 130, 246, 0.18)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                          ACCEPTED BY CLIENT
+                        </span>
+                      )}
+                      {q.status === 'SENT' && <span className="badge badge-scheduled">SENT TO CLIENT</span>}
+                      {q.status === 'REJECTED' && <span className="badge badge-rejected">REJECTED</span>}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                         <button
                           className="btn btn-secondary"
-                          style={{
-                            padding: '0.35rem 0.65rem',
-                            fontSize: '0.75rem',
-                            background: 'rgba(16, 185, 129, 0.15)',
-                            color: '#34d399',
-                            borderColor: 'rgba(16, 185, 129, 0.35)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            fontWeight: 600
-                          }}
-                          title="Accept Quotation"
-                          onClick={() => handleAcceptQuotation(q)}
+                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          title="Download / Print Quotation PDF"
+                          onClick={() => handlePrintQuotPDF(q)}
                         >
-                          <Check size={14} />
-                          Accept Quotation
+                          <Download size={14} color="var(--brand-yellow)" />
+                          PDF
                         </button>
-                      )}
 
-                      {/* Super Admin Generate Bill Button */}
-                      {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED') && q.status !== 'BILLED' && (
-                        <button
-                          className="btn btn-primary"
-                          style={{
-                            padding: '0.35rem 0.7rem',
-                            fontSize: '0.75rem',
-                            background: 'linear-gradient(135deg, #059669, #10b981)',
-                            color: '#fff',
-                            border: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            fontWeight: 700,
-                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
-                          }}
-                          title="Generate Tax Invoice & Deduct Product Quantity from Inventory"
-                          onClick={() => handleGenerateBill(q)}
-                        >
-                          <DollarSign size={14} />
-                          Generate Bill
-                        </button>
-                      )}
+                        {/* Triple-Dot Action Dropdown Menu for Accept / Reject */}
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <button
+                            className="btn btn-secondary"
+                            style={{
+                              padding: '0.35rem 0.55rem',
+                              fontSize: '0.75rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              borderColor: openQuotMenuId === q.id ? '#2563eb' : 'rgba(148, 163, 184, 0.4)',
+                              background: openQuotMenuId === q.id ? '#eff6ff' : 'transparent'
+                            }}
+                            title="Quotation Actions (Accept / Reject)"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenQuotMenuId(openQuotMenuId === q.id ? null : q.id);
+                            }}
+                          >
+                            <MoreVertical size={15} color="#475569" />
+                          </button>
 
-                      {/* Assign Meeting to Employee button */}
+                          {openQuotMenuId === q.id && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                top: 'calc(100% + 4px)',
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '10px',
+                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25)',
+                                zIndex: 9999,
+                                minWidth: '170px',
+                                padding: '0.35rem 0',
+                                display: 'flex',
+                                flexDirection: 'column'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  padding: '0.55rem 0.85rem',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 600,
+                                  color: '#059669',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  textAlign: 'left'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = '#f0fdf4'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                onClick={() => {
+                                  setOpenQuotMenuId(null);
+                                  handleAcceptQuotation(q);
+                                }}
+                              >
+                                <Check size={15} color="#059669" />
+                                Accept Quotation
+                              </button>
+
+                              <button
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  padding: '0.55rem 0.85rem',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 600,
+                                  color: '#dc2626',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  textAlign: 'left'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                onClick={() => {
+                                  setOpenQuotMenuId(null);
+                                  handleRejectQuotation(q);
+                                }}
+                              >
+                                <XCircle size={15} color="#dc2626" />
+                                Reject Quotation
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED') && q.status !== 'BILLED' && (
+                          <button
+                            className="btn btn-primary"
+                            style={{
+                              padding: '0.35rem 0.7rem',
+                              fontSize: '0.75rem',
+                              background: 'linear-gradient(135deg, #059669, #10b981)',
+                              color: '#fff',
+                              border: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              fontWeight: 700,
+                              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title="Generate Tax Invoice & Deduct Product Quantity from Inventory"
+                            onClick={() => handleGenerateBill(q)}
+                          >
+                            <DollarSign size={14} />
+                            Generate Bill
+                          </button>
+                        )}
+
                       {!isClient && (q.status === 'ACCEPTED' || q.status === 'APPROVED' || q.status === 'BILLED') && (
                         <button
                           className="btn btn-secondary"
@@ -1294,23 +1604,6 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                         <>
                           <button
                             className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(59, 130, 246, 0.4)', color: '#3b82f6' }}
-                            title="Edit Quotation"
-                            onClick={() => {
-                              setEditingQuot(q);
-                              setEditQuotData({
-                                clientName: q.clientName || '',
-                                clientEmail: q.clientEmail || '',
-                                totalAmount: q.totalAmount || 0,
-                                validUntil: q.validUntil ? new Date(q.validUntil).toISOString().slice(0, 10) : '',
-                                status: q.status || 'SENT'
-                              });
-                            }}
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                             title="Delete Quotation"
                             onClick={() => setDeletingQuot(q)}
@@ -1326,40 +1619,156 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
             </tbody>
           </table>
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Modal 1: Generate Invoice */}
+      {/* Modal 1: Generate Tax / Proforma Invoice */}
       {showInvModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Issue Itemized Tax Invoice
-            </h3>
+        <div className="modal-overlay" onClick={() => setShowInvModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '750px', maxHeight: 'calc(100vh - 2.5rem)', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #e2e8f0', margin: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                  AKASH ENGINEERING - Issue Invoice
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>GSTIN: 19AIYPH5363D1ZU | PAN: AIYPH5363D</span>
+              </div>
+              <button type="button" onClick={() => setShowInvModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+
             <form onSubmit={handleCreateInvoice} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Organization Name</label>
-                <input
-                  className="input-field"
-                  required
-                  value={newInv.clientName}
-                  onChange={e => setNewInv({ ...newInv, clientName: e.target.value })}
-                  placeholder="e.g. PwC India / HDFC Bank"
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Email</label>
-                <input
-                  type="email"
-                  className="input-field"
-                  required
-                  value={newInv.clientEmail}
-                  onChange={e => setNewInv({ ...newInv, clientEmail: e.target.value })}
-                  placeholder="accounts@client.com"
-                />
-              </div>
+              
+              {/* Row 1: Document Head & Invoice Number */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Invoice Total (₹)</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Issue Under Head (Document Type)</label>
+                  <select
+                    className="select-field"
+                    value={newInv.documentHead}
+                    onChange={e => setNewInv({ ...newInv, documentHead: e.target.value })}
+                  >
+                    <option value="TAX INVOICE">1) TAX INVOICE</option>
+                    <option value="PROFORMA INVOICE">2) PROFORMA INVOICE</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Invoice Reference No.*</label>
+                  <input
+                    className="input-field"
+                    required
+                    value={newInv.invoiceNumber}
+                    onChange={e => setNewInv({ ...newInv, invoiceNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Kind Attention & Subject */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Kind Attention</label>
+                  <input
+                    className="input-field"
+                    placeholder="e.g. Mr. Arnab Tal / Purchase Manager"
+                    value={newInv.kindAttention}
+                    onChange={e => setNewInv({ ...newInv, kindAttention: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Subject*</label>
+                  <input
+                    className="input-field"
+                    required
+                    placeholder="e.g. Supply & Installation of Electrical Motor"
+                    value={newInv.subject}
+                    onChange={e => setNewInv({ ...newInv, subject: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Client Selector & Info */}
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Select Registered Client (Optional)</label>
+                <select
+                  className="select-field"
+                  onChange={e => handleClientSelect(e.target.value, true)}
+                >
+                  <option value="">-- Choose Registered Client (or enter manually below) --</option>
+                  {registeredClients.map(c => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Name*</label>
+                  <input
+                    className="input-field"
+                    required
+                    value={newInv.clientName}
+                    onChange={e => setNewInv({ ...newInv, clientName: e.target.value })}
+                    placeholder="Client Organization Name"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Email*</label>
+                  <input
+                    type="email"
+                    className="input-field"
+                    required
+                    value={newInv.clientEmail}
+                    onChange={e => setNewInv({ ...newInv, clientEmail: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Customer GSTIN</label>
+                  <input
+                    className="input-field"
+                    placeholder="19XXXXX1234X1ZX"
+                    value={newInv.clientGst}
+                    onChange={e => setNewInv({ ...newInv, clientGst: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Customer PAN</label>
+                  <input
+                    className="input-field"
+                    placeholder="ABCDE1234F"
+                    value={newInv.clientPan}
+                    onChange={e => setNewInv({ ...newInv, clientPan: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Phone</label>
+                  <input
+                    className="input-field"
+                    placeholder="+91 9876543210"
+                    value={newInv.clientPhone}
+                    onChange={e => setNewInv({ ...newInv, clientPhone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Billing Address</label>
+                <textarea
+                  className="input-field"
+                  rows={2}
+                  value={newInv.clientAddress}
+                  onChange={e => setNewInv({ ...newInv, clientAddress: e.target.value })}
+                  placeholder="Full office or site delivery address"
+                />
+              </div>
+
+              {/* Amount & Due Date */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Invoice Total Amount (₹)*</label>
                   <input
                     type="number"
                     className="input-field"
@@ -1369,7 +1778,7 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Payment Due Date</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Payment Due Date</label>
                   <input
                     type="date"
                     className="input-field"
@@ -1378,6 +1787,22 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                   />
                 </div>
               </div>
+
+              {/* Preface Option */}
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Preface Text (Optional)</label>
+                <textarea
+                  className="input-field"
+                  rows={2}
+                  value={newInv.preface}
+                  onChange={e => setNewInv({ ...newInv, preface: e.target.value })}
+                  placeholder="Insert optional preface text before line items..."
+                />
+              </div>
+
+              {/* Terms Panel */}
+              {renderTermsPanel(newInv.termsConfig, (updated) => setNewInv({ ...newInv, termsConfig: updated }))}
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowInvModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Generate Invoice</button>
@@ -1387,135 +1812,166 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
         </div>
       )}
 
-      {/* Modal 1B: Edit Invoice */}
-      {editingInv && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Edit Invoice ({editingInv.invoiceNumber})
-            </h3>
-            <form onSubmit={handleEditInvoice} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Modal 2: Create Official Quotation / Proforma */}
+      {showQuotModal && (
+        <div className="modal-overlay" onClick={() => setShowQuotModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1.5rem' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: 'calc(100vh - 2.5rem)', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #e2e8f0', margin: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                  AKASH ENGINEERING - Create Official Quotation
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>GSTIN: 19AIYPH5363D1ZU | PAN: AIYPH5363D</span>
+              </div>
+              <button type="button" onClick={() => setShowQuotModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateQuotation} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              
+              {/* Row 1: Document Head & Quotation Number */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Name</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Issue Under Head (Document Type)</label>
+                  <select
+                    className="select-field"
+                    value={newQuot.documentHead}
+                    onChange={e => setNewQuot({ ...newQuot, documentHead: e.target.value })}
+                  >
+                    <option value="QUOTATION / PROPOSAL">1) QUOTATION / PROPOSAL</option>
+                    <option value="PROFORMA INVOICE">2) PROFORMA INVOICE</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Quotation Reference No.*</label>
                   <input
                     className="input-field"
                     required
-                    value={editInvData.clientName}
-                    onChange={e => setEditInvData({ ...editInvData, clientName: e.target.value })}
+                    value={newQuot.quotationNumber}
+                    onChange={e => setNewQuot({ ...newQuot, quotationNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Kind Attention & Subject */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Kind Attention</label>
+                  <input
+                    className="input-field"
+                    placeholder="e.g. Mr. Arnab Tal / Purchase Manager"
+                    value={newQuot.kindAttention}
+                    onChange={e => setNewQuot({ ...newQuot, kindAttention: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Email</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Subject*</label>
+                  <input
+                    className="input-field"
+                    required
+                    placeholder="e.g. Supply & Installation of Electrical Motor"
+                    value={newQuot.subject}
+                    onChange={e => setNewQuot({ ...newQuot, subject: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Client Selection & Customer Details */}
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Select Registered Client (Optional)</label>
+                <select
+                  className="select-field"
+                  onChange={e => handleClientSelect(e.target.value, false)}
+                >
+                  <option value="">-- Choose Registered Client (or enter manually below) --</option>
+                  {registeredClients.map(c => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Name*</label>
+                  <input
+                    className="input-field"
+                    required
+                    value={newQuot.clientName}
+                    onChange={e => setNewQuot({ ...newQuot, clientName: e.target.value })}
+                    placeholder="Client Organization Name"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Contact Email*</label>
                   <input
                     type="email"
                     className="input-field"
                     required
-                    value={editInvData.clientEmail}
-                    onChange={e => setEditInvData({ ...editInvData, clientEmail: e.target.value })}
+                    value={newQuot.clientEmail}
+                    onChange={e => setNewQuot({ ...newQuot, clientEmail: e.target.value })}
                   />
                 </div>
               </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Amount (₹)</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Customer GSTIN</label>
                   <input
-                    type="number"
                     className="input-field"
-                    required
-                    value={editInvData.totalAmount}
-                    onChange={e => setEditInvData({ ...editInvData, totalAmount: e.target.value })}
+                    placeholder="19AIYPH5363D1ZU"
+                    value={newQuot.clientGst}
+                    onChange={e => setNewQuot({ ...newQuot, clientGst: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Paid Amount (₹)</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Customer PAN</label>
                   <input
-                    type="number"
                     className="input-field"
-                    value={editInvData.paidAmount}
-                    onChange={e => setEditInvData({ ...editInvData, paidAmount: e.target.value })}
+                    placeholder="AIYPH5363D"
+                    value={newQuot.clientPan}
+                    onChange={e => setNewQuot({ ...newQuot, clientPan: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                  <select
-                    className="select-field"
-                    value={editInvData.status}
-                    onChange={e => setEditInvData({ ...editInvData, status: e.target.value })}
-                  >
-                    <option value="UNPAID">UNPAID</option>
-                    <option value="PARTIAL">PARTIAL</option>
-                    <option value="PAID">PAID</option>
-                    <option value="OVERDUE">OVERDUE</option>
-                  </select>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Phone</label>
+                  <input
+                    className="input-field"
+                    placeholder="+91 98300 00000"
+                    value={newQuot.clientPhone}
+                    onChange={e => setNewQuot({ ...newQuot, clientPhone: e.target.value })}
+                  />
                 </div>
               </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Due Date</label>
-                <input
-                  type="date"
-                  className="input-field"
-                  value={editInvData.dueDate}
-                  onChange={e => setEditInvData({ ...editInvData, dueDate: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingInv(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Invoice Changes</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Modal 2: Create Quotation */}
-      {showQuotModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Create Official Quotation & Request
-            </h3>
-            <form onSubmit={handleCreateQuotation} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Registered Client</label>
-                <select
-                  className="select-field"
-                  onChange={e => handleClientSelect(e.target.value)}
-                  style={{ marginBottom: '0.5rem' }}
-                >
-                  <option value="">-- Choose Registered Client (or enter manually below) --</option>
-                  {registeredClients.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.email}) {c.phone ? `- ${c.phone}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Name</label>
-                <input
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Client Address</label>
+                <textarea
                   className="input-field"
-                  required
-                  value={newQuot.clientName}
-                  onChange={e => setNewQuot({ ...newQuot, clientName: e.target.value })}
-                  placeholder="Client Organization Name"
+                  rows={2}
+                  value={newQuot.clientAddress}
+                  onChange={e => setNewQuot({ ...newQuot, clientAddress: e.target.value })}
+                  placeholder="Full office / site delivery address"
                 />
               </div>
+
+              {/* Preface Option */}
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Contact Email</label>
-                <input
-                  type="email"
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>Preface Text (Optional Manual Preface)</label>
+                <textarea
                   className="input-field"
-                  required
-                  value={newQuot.clientEmail}
-                  onChange={e => setNewQuot({ ...newQuot, clientEmail: e.target.value })}
+                  rows={2}
+                  value={newQuot.preface}
+                  onChange={e => setNewQuot({ ...newQuot, preface: e.target.value })}
+                  placeholder="Insert manual preface text to appear before the item table..."
                 />
               </div>
+
               {/* Product Line Items & Quantities Selection */}
-              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.85rem', marginTop: '0.25rem' }}>
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem', marginTop: '0.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <Briefcase size={15} color="var(--brand-yellow)" />
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Briefcase size={15} color="#d97706" />
                     Product Items & Quantity Selection (From Stock Inventory Catalog)
                   </label>
                   <button
@@ -1531,9 +1987,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                 {quotItems.map((item, index) => (
                   <div key={index} style={{ background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.4fr 0.8fr 1fr auto', gap: '0.6rem', alignItems: 'center' }}>
-                      {/* Select from Inventory */}
                       <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Select Inventory Product</label>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem', display: 'block' }}>Select Inventory Product</label>
                         <select
                           className="select-field"
                           style={{ padding: '0.45rem 0.6rem', fontSize: '0.82rem' }}
@@ -1549,9 +2004,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                         </select>
                       </div>
 
-                      {/* Item Name / Custom */}
                       <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Item Name</label>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem', display: 'block' }}>Item Name</label>
                         <input
                           className="input-field"
                           style={{ padding: '0.45rem 0.6rem', fontSize: '0.82rem' }}
@@ -1561,9 +2015,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                         />
                       </div>
 
-                      {/* Quantity */}
                       <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Quantity (Qty)</label>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem', display: 'block' }}>Quantity (Qty)</label>
                         <input
                           type="number"
                           min="1"
@@ -1574,9 +2027,8 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                         />
                       </div>
 
-                      {/* Unit Price */}
                       <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Unit Price (₹)</label>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem', display: 'block' }}>Unit Price (₹)</label>
                         <input
                           type="number"
                           className="input-field"
@@ -1586,7 +2038,6 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                         />
                       </div>
 
-                      {/* Remove Button */}
                       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '1.25rem' }}>
                         <button
                           type="button"
@@ -1623,86 +2074,23 @@ export default function BillingQuotations({ data = {}, currentRole, currentUser,
                   <strong style={{ color: '#0f172a', fontWeight: 700 }}>₹{quotSubtotal.toLocaleString()}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#475569' }}>
-                  <span>GST (18% Statutory Tax):</span>
-                  <span style={{ color: '#d97706', fontWeight: 700 }}>+ ₹{quotGst.toLocaleString()}</span>
+                  <span>GST ({newQuot.termsConfig.gstRate}):</span>
+                  <span style={{ color: '#d97706', fontWeight: 700 }}>+ ₹{Math.round(quotSubtotal * (newQuot.termsConfig.gstRate.includes('28') ? 0.28 : 0.18)).toLocaleString()}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800, borderTop: '1px solid #cbd5e1', paddingTop: '0.5rem', marginTop: '0.2rem', color: '#0f172a' }}>
                   <span>Grand Total Payable:</span>
-                  <span style={{ color: '#059669', fontSize: '1.1rem' }}>₹{quotGrandTotal.toLocaleString()}</span>
+                  <span style={{ color: '#059669', fontSize: '1.1rem' }}>
+                    ₹{(quotSubtotal + Math.round(quotSubtotal * (newQuot.termsConfig.gstRate.includes('28') ? 0.28 : 0.18))).toLocaleString()}
+                  </span>
                 </div>
               </div>
+
+              {/* Terms Panel */}
+              {renderTermsPanel(newQuot.termsConfig, (updated) => setNewQuot({ ...newQuot, termsConfig: updated }))}
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowQuotModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Send Quotation</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 2B: Edit Quotation */}
-      {editingQuot && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', marginBottom: '1rem' }}>
-              Edit Quotation ({editingQuot.quotationNumber})
-            </h3>
-            <form onSubmit={handleEditQuotation} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Name</label>
-                <input
-                  className="input-field"
-                  required
-                  value={editQuotData.clientName}
-                  onChange={e => setEditQuotData({ ...editQuotData, clientName: e.target.value })}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client Email</label>
-                <input
-                  type="email"
-                  className="input-field"
-                  required
-                  value={editQuotData.clientEmail}
-                  onChange={e => setEditQuotData({ ...editQuotData, clientEmail: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Net Amount (₹)</label>
-                  <input
-                    type="number"
-                    className="input-field"
-                    required
-                    value={editQuotData.totalAmount}
-                    onChange={e => setEditQuotData({ ...editQuotData, totalAmount: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</label>
-                  <select
-                    className="select-field"
-                    value={editQuotData.status}
-                    onChange={e => setEditQuotData({ ...editQuotData, status: e.target.value })}
-                  >
-                    <option value="SENT">SENT TO CLIENT</option>
-                    <option value="APPROVED">APPROVED</option>
-                    <option value="REJECTED">REJECTED</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Valid Until</label>
-                <input
-                  type="date"
-                  className="input-field"
-                  value={editQuotData.validUntil}
-                  onChange={e => setEditQuotData({ ...editQuotData, validUntil: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingQuot(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Quotation Changes</button>
               </div>
             </form>
           </div>
