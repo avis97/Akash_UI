@@ -11,7 +11,9 @@ import {
   CreditCard, 
   Building, 
   Users,
-  FolderKanban
+  FolderKanban,
+  GraduationCap,
+  Settings
 } from 'lucide-react';
 
 export const allNavItems = [
@@ -58,6 +60,13 @@ export const allNavItems = [
     roles: ['SUPERADMIN', 'EMPLOYEE', 'SERVICE_PERSONNEL', 'MASTER_ADMIN', 'SUB_ADMIN', 'FACILITY_MANAGER']
   },
   {
+    id: 'hrm_training',
+    label: 'Employee Training',
+    icon: GraduationCap,
+    url: '/employee-training',
+    roles: ['SUPERADMIN', 'EMPLOYEE', 'SERVICE_PERSONNEL', 'MASTER_ADMIN', 'SUB_ADMIN', 'FACILITY_MANAGER']
+  },
+  {
     id: 'products_inventory',
     label: 'Inventory Management',
     icon: ShoppingCart,
@@ -73,10 +82,26 @@ export const allNavItems = [
   },
   {
     id: 'acc_purchases',
-    label: 'Purchase Entry',
+    label: 'Purchases',
     icon: ShoppingBag,
-    url: '/purchase-entry',
-    roles: ['SUPERADMIN', 'EMPLOYEE', 'SERVICE_PERSONNEL', 'MASTER_ADMIN', 'SUB_ADMIN']
+    url: '/purchases',
+    roles: ['SUPERADMIN', 'MASTER_ADMIN', 'SUB_ADMIN'],
+    subItems: [
+      {
+        id: 'purchases_vendors',
+        label: 'Vendors',
+        icon: Users,
+        url: '/purchases/vendors',
+        roles: ['SUPERADMIN', 'MASTER_ADMIN', 'SUB_ADMIN']
+      },
+      {
+        id: 'purchases_bills',
+        label: 'Bills',
+        icon: FileText,
+        url: '/purchases/bills',
+        roles: ['SUPERADMIN', 'MASTER_ADMIN', 'SUB_ADMIN']
+      }
+    ]
   },
   {
     id: 'acc_vouchers',
@@ -105,5 +130,12 @@ export const allNavItems = [
     icon: Navigation,
     url: '/location-tracking',
     roles: ['SUPERADMIN', 'EMPLOYEE', 'SERVICE_PERSONNEL', 'MASTER_ADMIN', 'SUB_ADMIN', 'FACILITY_MANAGER']
+  },
+  {
+    id: 'master_settings',
+    label: 'Master Settings',
+    icon: Settings,
+    url: '/master-settings',
+    roles: ['SUPERADMIN', 'MASTER_ADMIN', 'SUB_ADMIN']
   }
 ];

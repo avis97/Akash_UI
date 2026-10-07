@@ -70,6 +70,59 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
     }
   }, []);
 
+  // Master Data State & Quick Creation Modal
+  const [masterData, setMasterData] = useState({ categories: [], brands: [], units: [], taxes: [] });
+  const [quickMasterModal, setQuickMasterModal] = useState({ open: false, type: '', name: '', rate: 0 });
+
+  const fetchMasterData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/master-data');
+      const json = await res.json();
+      if (json.success && json.data) {
+        setMasterData(json.data);
+      }
+    } catch (err) {
+      console.error('Master data fetch error:', err);
+    }
+  }, []);
+
+  const handleSaveQuickMaster = async (e) => {
+    e.preventDefault();
+    if (!quickMasterModal.name.trim()) return;
+    let endpoint = '/api/categories';
+    let body = { name: quickMasterModal.name.trim() };
+    if (quickMasterModal.type === 'brand') endpoint = '/api/brands';
+    else if (quickMasterModal.type === 'unit') endpoint = '/api/units';
+    else if (quickMasterModal.type === 'tax') {
+      endpoint = '/api/taxes';
+      body.rate = Number(quickMasterModal.rate) || 0;
+    }
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        const createdName = json.data.name;
+        if (quickMasterModal.type === 'category') setNewProd(prev => ({ ...prev, category: createdName }));
+        else if (quickMasterModal.type === 'brand') setNewProd(prev => ({ ...prev, brand: createdName }));
+        else if (quickMasterModal.type === 'unit') setNewProd(prev => ({ ...prev, unit: createdName }));
+        else if (quickMasterModal.type === 'tax') setNewProd(prev => ({ ...prev, tax: createdName }));
+
+        setQuickMasterModal({ open: false, type: '', name: '', rate: 0 });
+        fetchMasterData();
+      } else {
+        alert(json.message || 'Error creating master item');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save master item');
+    }
+  };
+
   // Fetch Auxiliary Data from API
   const fetchAuxData = useCallback(async () => {
     try {
@@ -88,7 +141,8 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
     fetchInventory();
     fetchMaterialRequests();
     fetchAuxData();
-  }, [fetchInventory, fetchMaterialRequests, fetchAuxData]);
+    fetchMasterData();
+  }, [fetchInventory, fetchMaterialRequests, fetchAuxData, fetchMasterData]);
 
   // Sync prop updates
   useEffect(() => {
@@ -98,10 +152,12 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
     if (data.serviceMeetings || data.meetings) setMeetings(data.serviceMeetings || data.meetings);
   }, [data]);
 
+  const generateRandomSku = () => 'AE - ' + Math.floor(1000 + Math.random() * 9000);
+
   // New Product Form State
   const [newProd, setNewProd] = useState({
     name: '',
-    sku: 'AE - 0313',
+    sku: generateRandomSku(),
     salePrice: '',
     purchasePrice: '',
     tax: '18% GST',
@@ -131,20 +187,21 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
   });
 
   const handleGenerateAIProduct = () => {
+    const dynamicSku = generateRandomSku();
     if (newProd.type === 'Service') {
       const aiServices = [
-        { name: 'Annual AMC Onsite Inspection & Service', sku: 'AE - 0313', salePrice: 15000, purchasePrice: 8000, tax: '18% GST', brand: 'KARTAR', category: 'AMPERE METER', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Comprehensive annual on-site maintenance, testing, and diagnostic service.' },
-        { name: 'CCTV Camera System Installation Service', sku: 'AE - 0452', salePrice: 12000, purchasePrice: 6500, tax: '18% GST', brand: 'HIKVISION', category: 'Security & Surveillance', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Professional mounting, wiring, and network configuration for IP security cameras.' },
-        { name: 'Enterprise Network Audit & Cabling Service', sku: 'AE - 0891', salePrice: 25000, purchasePrice: 15000, tax: '18% GST', brand: 'CISCO', category: 'Networking Equipment', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Complete structural network audit, rack alignment, and fiber optic testing.' }
+        { name: 'Annual AMC Onsite Inspection & Service', sku: dynamicSku, salePrice: 15000, purchasePrice: 8000, tax: '18% GST', brand: 'KARTAR', category: 'AMPERE METER', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Comprehensive annual on-site maintenance, testing, and diagnostic service.' },
+        { name: 'CCTV Camera System Installation Service', sku: generateRandomSku(), salePrice: 12000, purchasePrice: 6500, tax: '18% GST', brand: 'HIKVISION', category: 'Security & Surveillance', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Professional mounting, wiring, and network configuration for IP security cameras.' },
+        { name: 'Enterprise Network Audit & Cabling Service', sku: generateRandomSku(), salePrice: 25000, purchasePrice: 15000, tax: '18% GST', brand: 'CISCO', category: 'Networking Equipment', unit: 'Pics', type: 'Service', stockQuantity: 0, description: 'Complete structural network audit, rack alignment, and fiber optic testing.' }
       ];
       const picked = aiServices[Math.floor(Math.random() * aiServices.length)];
       setNewProd({ ...picked, productImage: '' });
     } else {
       const aiProducts = [
-        { name: 'Digital Ampere Meter 50A', sku: 'AE - 0313', salePrice: 4500, purchasePrice: 3100, tax: '18% GST', brand: 'KARTAR', category: 'AMPERE METER', unit: 'Pics', type: 'Product', stockQuantity: 20, description: 'Digital Ampere Meter with high accuracy LED display and current transformer.' },
-        { name: 'Cisco 48-Port Core Switch', sku: 'AE - 0452', salePrice: 55000, purchasePrice: 42000, tax: '18% GST', brand: 'CISCO', category: 'Networking Equipment', unit: 'Pcs', type: 'Product', stockQuantity: 12, description: 'Gigabit Managed Core Switch for enterprise campus deployment.' },
-        { name: 'Hikvision 4K IP Dome Camera', sku: 'AE - 0891', salePrice: 8500, purchasePrice: 6200, tax: '18% GST', brand: 'HIKVISION', category: 'Security & Surveillance', unit: 'Pcs', type: 'Product', stockQuantity: 35, description: '4K Ultra-HD Weatherproof IP Camera with IR night vision and POE.' },
-        { name: 'Armored Cat6 Fiber Cable 100m', sku: 'AE - 1104', salePrice: 12500, purchasePrice: 9000, tax: '18% GST', brand: 'D-LINK', category: 'Cables & Wiring', unit: 'Meters', type: 'Product', stockQuantity: 50, description: 'Outdoor heavy-duty armored Cat6 Ethernet cable coil.' }
+        { name: 'Digital Ampere Meter 50A', sku: dynamicSku, salePrice: 4500, purchasePrice: 3100, tax: '18% GST', brand: 'KARTAR', category: 'AMPERE METER', unit: 'Pics', type: 'Product', stockQuantity: 20, description: 'Digital Ampere Meter with high accuracy LED display and current transformer.' },
+        { name: 'Cisco 48-Port Core Switch', sku: generateRandomSku(), salePrice: 55000, purchasePrice: 42000, tax: '18% GST', brand: 'CISCO', category: 'Networking Equipment', unit: 'Pcs', type: 'Product', stockQuantity: 12, description: 'Gigabit Managed Core Switch for enterprise campus deployment.' },
+        { name: 'Hikvision 4K IP Dome Camera', sku: generateRandomSku(), salePrice: 8500, purchasePrice: 6200, tax: '18% GST', brand: 'HIKVISION', category: 'Security & Surveillance', unit: 'Pcs', type: 'Product', stockQuantity: 35, description: '4K Ultra-HD Weatherproof IP Camera with IR night vision and POE.' },
+        { name: 'Armored Cat6 Fiber Cable 100m', sku: generateRandomSku(), salePrice: 12500, purchasePrice: 9000, tax: '18% GST', brand: 'D-LINK', category: 'Cables & Wiring', unit: 'Meters', type: 'Product', stockQuantity: 50, description: 'Outdoor heavy-duty armored Cat6 Ethernet cable coil.' }
       ];
       const picked = aiProducts[Math.floor(Math.random() * aiProducts.length)];
       setNewProd({ ...picked, productImage: '' });
@@ -594,7 +651,10 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
           </button>
 
           {activeTab === 'catalog' && (
-            <button className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }} onClick={() => setShowAddProdModal(true)}>
+            <button className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }} onClick={() => {
+              setNewProd(prev => ({ ...prev, sku: generateRandomSku() }));
+              setShowAddProdModal(true);
+            }}>
               <Plus style={{ width: 16, height: 16 }} />
               Add Product Item
             </button>
@@ -1621,15 +1681,19 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.35rem' }}>
                     Tax
                   </label>
-                  <input
-                    className="input-field"
-                    placeholder="Select / Enter Tax (e.g. 18% GST)"
+                  <select
+                    className="select-field"
                     value={newProd.tax}
                     onChange={e => setNewProd({ ...newProd, tax: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
-                  />
+                  >
+                    <option value="">Select Tax</option>
+                    {(masterData.taxes && masterData.taxes.length > 0 ? masterData.taxes : [{ name: '18% GST' }, { name: '12% GST' }, { name: '5% GST' }]).map((t, idx) => (
+                      <option key={t.id || idx} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                    Create tax here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create tax</span>
+                    Create tax here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setQuickMasterModal({ open: true, type: 'tax', name: '', rate: 18 })}>Create tax</span>
                   </div>
                 </div>
 
@@ -1643,15 +1707,13 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     onChange={e => setNewProd({ ...newProd, brand: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
                   >
-                    <option value="KARTAR">KARTAR</option>
-                    <option value="CISCO">CISCO</option>
-                    <option value="HIKVISION">HIKVISION</option>
-                    <option value="D-LINK">D-LINK</option>
-                    <option value="SCHNEIDER">SCHNEIDER</option>
-                    <option value="General">General OEM</option>
+                    <option value="">Select Brand</option>
+                    {(masterData.brands && masterData.brands.length > 0 ? masterData.brands : [{ name: 'KARTAR' }, { name: 'CISCO' }, { name: 'D-LINK' }, { name: 'SCHNEIDER' }, { name: 'General' }]).map((b, idx) => (
+                      <option key={b.id || idx} value={b.name}>{b.name}</option>
+                    ))}
                   </select>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                    Create Brand here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create Brand</span>
+                    Create Brand here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setQuickMasterModal({ open: true, type: 'brand', name: '', rate: 0 })}>Create Brand</span>
                   </div>
                 </div>
               </div>
@@ -1668,15 +1730,13 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     onChange={e => setNewProd({ ...newProd, category: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
                   >
-                    <option value="AMPERE METER">AMPERE METER</option>
-                    <option value="Networking Equipment">Networking Equipment</option>
-                    <option value="Security & Surveillance">Security & Surveillance</option>
-                    <option value="Cables & Wiring">Cables & Wiring</option>
-                    <option value="Power Systems">Power Systems</option>
-                    <option value="Access Control">Access Control</option>
+                    <option value="">Select Category</option>
+                    {(masterData.categories && masterData.categories.length > 0 ? masterData.categories : [{ name: 'AMPERE METER' }, { name: 'Networking Equipment' }, { name: 'CCTV & Security Hardware' }]).map((c, idx) => (
+                      <option key={c.id || idx} value={c.name}>{c.name}</option>
+                    ))}
                   </select>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                    Create category here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create Category</span>
+                    Create category here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setQuickMasterModal({ open: true, type: 'category', name: '', rate: 0 })}>Create Category</span>
                   </div>
                 </div>
 
@@ -1690,14 +1750,13 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                     onChange={e => setNewProd({ ...newProd, unit: e.target.value })}
                     style={{ width: '100%', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.85rem', fontSize: '0.9rem' }}
                   >
-                    <option value="Pics">Pics</option>
-                    <option value="Pcs">Pcs</option>
-                    <option value="Meters">Meters</option>
-                    <option value="Sets">Sets</option>
-                    <option value="Boxes">Boxes</option>
+                    <option value="">Select Unit</option>
+                    {(masterData.units && masterData.units.length > 0 ? masterData.units : [{ name: 'Pics' }, { name: 'Pcs' }, { name: 'Boxes' }, { name: 'Meters' }, { name: 'Kg' }, { name: 'Sets' }]).map((u, idx) => (
+                      <option key={u.id || idx} value={u.name}>{u.name}</option>
+                    ))}
                   </select>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                    Create unit here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer' }}>Create unit</span>
+                    Create unit here. <span style={{ color: '#22c55e', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setQuickMasterModal({ open: true, type: 'unit', name: '', rate: 0 })}>Create unit</span>
                   </div>
                 </div>
               </div>
@@ -2029,6 +2088,61 @@ export default function InventoryManager({ data = {}, currentRole = 'SUPERADMIN'
                 Delete Product
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK MASTER CREATION MODAL */}
+      {quickMasterModal.open && (
+        <div className="modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110000, position: 'fixed', inset: 0 }}>
+          <div className="modal-content" style={{ background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '420px', padding: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+              <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                Create New {quickMasterModal.type.charAt(0).toUpperCase() + quickMasterModal.type.slice(1)}
+              </h4>
+              <button onClick={() => setQuickMasterModal({ open: false, type: '', name: '', rate: 0 })} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuickMaster} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
+                  {quickMasterModal.type.charAt(0).toUpperCase() + quickMasterModal.type.slice(1)} Name*
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  required
+                  placeholder={`Enter ${quickMasterModal.type} name`}
+                  value={quickMasterModal.name}
+                  onChange={e => setQuickMasterModal({ ...quickMasterModal, name: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                />
+              </div>
+
+              {quickMasterModal.type === 'tax' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
+                    Tax Rate (%)*
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-control"
+                    required
+                    value={quickMasterModal.rate}
+                    onChange={e => setQuickMasterModal({ ...quickMasterModal, rate: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setQuickMasterModal({ open: false, type: '', name: '', rate: 0 })}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ background: '#22c55e', borderColor: '#22c55e', fontWeight: 600 }}>Save & Select</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -35,6 +35,8 @@ function MainLayout() {
     invoices: [],
     purchases: [],
     vouchers: [],
+    vendors: [],
+    bills: [],
     siteAMCs: [],
     activityLogs: [],
     erp: null,
@@ -47,15 +49,19 @@ function MainLayout() {
     bankAccounts: [],
     serviceMeetings: [],
     inventory: [],
-    amcs: []
+    amcs: [],
+    trainings: []
   });
+
+  const currentUserId = currentUser?.id;
+  const currentUserEmail = currentUser?.email;
 
   // Fetch Live Data from Backend API
   const fetchLiveData = useCallback(async () => {
     try {
       const [
         usersRes, meetingsRes, matReqRes, attRes, leavesRes, shiftsRes,
-        salRes, locRes, geoRes, prodRes, quotRes, invRes, purRes, vchRes, amcRes, logsRes, projRes
+        salRes, locRes, geoRes, prodRes, quotRes, invRes, purRes, vchRes, amcRes, logsRes, projRes, venRes, billRes, trRes
       ] = await Promise.allSettled([
         fetch(API_URL('/api/users'), {
           headers: {
@@ -78,7 +84,10 @@ function MainLayout() {
         fetch(API_URL('/api/vouchers')).then(r => r.json()),
         fetch(API_URL('/api/amc')).then(r => r.json()),
         fetch(API_URL('/api/activity-logs')).then(r => r.json()),
-        fetch(API_URL('/api/projects')).then(r => r.json())
+        fetch(API_URL('/api/projects')).then(r => r.json()),
+        fetch(API_URL('/api/vendors')).then(r => r.json()),
+        fetch(API_URL('/api/bills')).then(r => r.json()),
+        fetch(API_URL(`/api/trainings?role=${encodeURIComponent(currentRole)}&userId=${encodeURIComponent(currentUserId || '')}&userEmail=${encodeURIComponent(currentUserEmail || '')}`)).then(r => r.json())
       ]);
 
       setCrmData(prev => ({
@@ -99,15 +108,18 @@ function MainLayout() {
         invoices: invRes.status === 'fulfilled' && invRes.value?.success ? invRes.value.data : prev.invoices,
         purchases: purRes.status === 'fulfilled' && purRes.value?.success ? purRes.value.data : prev.purchases,
         vouchers: vchRes.status === 'fulfilled' && vchRes.value?.success ? vchRes.value.data : prev.vouchers,
+        vendors: venRes.status === 'fulfilled' && venRes.value?.success ? venRes.value.data : prev.vendors,
+        bills: billRes.status === 'fulfilled' && billRes.value?.success ? billRes.value.data : prev.bills,
         siteAMCs: amcRes.status === 'fulfilled' && amcRes.value?.success ? amcRes.value.data : prev.siteAMCs,
         amcs: amcRes.status === 'fulfilled' && amcRes.value?.success ? amcRes.value.data : prev.amcs,
         activityLogs: logsRes.status === 'fulfilled' && logsRes.value?.success ? logsRes.value.data : prev.activityLogs,
-        projects: projRes.status === 'fulfilled' && projRes.value?.success ? projRes.value.data : prev.projects
+        projects: projRes.status === 'fulfilled' && projRes.value?.success ? projRes.value.data : prev.projects,
+        trainings: trRes.status === 'fulfilled' && trRes.value?.success ? trRes.value.data : prev.trainings
       }));
     } catch (e) {
       console.warn('API sync fallback active:', e);
     }
-  }, []);
+  }, [currentRole, currentUserId, currentUserEmail]);
 
   // Sync state with current URL pathname
   useEffect(() => {
@@ -150,11 +162,15 @@ function MainLayout() {
       else if (path.includes('inventory') || path.includes('products')) setActiveTab('products_inventory');
       else if (path.includes('attendance')) setActiveTab('hrm_attendance');
       else if (path.includes('payroll')) setActiveTab('hrm_payroll');
+      else if (path.includes('training')) setActiveTab('hrm_training');
       else if (path.includes('leave')) setActiveTab('hrm_leave');
       else if (path.includes('billing') || path.includes('invoices')) setActiveTab('acc_billing');
+      else if (path.includes('purchases/vendors') || path.includes('vendors')) setActiveTab('purchases_vendors');
+      else if (path.includes('purchases/bills') || path.includes('bills')) setActiveTab('purchases_bills');
       else if (path.includes('purchases')) setActiveTab('acc_purchases');
       else if (path.includes('vouchers')) setActiveTab('acc_vouchers');
       else if (path.includes('user')) setActiveTab('user_management');
+      else if (path.includes('master-settings') || path.includes('master_settings')) setActiveTab('master_settings');
       else setActiveTab('dashboard');
     }
   }, [location.pathname, navigate]);

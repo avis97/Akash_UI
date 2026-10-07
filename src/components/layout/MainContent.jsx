@@ -10,6 +10,8 @@ import BillingQuotations from '../BillingQuotations';
 import PurchaseVouchers from '../PurchaseVouchers';
 import SiteAMCTracker from '../SiteAMCTracker';
 import UserManagement from '../UserManagement';
+import MasterSettings from '../MasterSettings';
+import EmployeeTraining from '../hrm/EmployeeTraining';
 
 export default function MainContent({
   activeTab,
@@ -57,6 +59,8 @@ export default function MainContent({
         <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="attendance" />
       ) : activeTab === 'hrm_payroll' ? (
         <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="payroll" />
+      ) : activeTab === 'hrm_training' || activeTab === 'training' || activeTab === 'employee-training' ? (
+        <EmployeeTraining data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'hrm_leave' ? (
         <AttendancePayroll data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="leaves" />
       ) : activeTab === 'hrm_shift' ? (
@@ -65,12 +69,18 @@ export default function MainContent({
         <BillingQuotations data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : activeTab === 'acc_invoices' ? (
         <BillingQuotations data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="invoices" />
+      ) : activeTab === 'purchases_vendors' || activeTab === 'vendors' ? (
+        <PurchaseVouchers data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="vendors" />
+      ) : activeTab === 'purchases_bills' || activeTab === 'bills' ? (
+        <PurchaseVouchers data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="bills" />
       ) : activeTab === 'acc_purchases' || activeTab === 'purchases' ? (
-        <PurchaseVouchers data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
+        <PurchaseVouchers data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="vendors" />
       ) : activeTab === 'acc_vouchers' || activeTab === 'vouchers' ? (
         <PurchaseVouchers data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} defaultTab="vouchers" />
       ) : activeTab === 'user_accounts' || activeTab === 'user_activity_logs' || activeTab === 'user_management' ? (
         <UserManagement data={crmData} currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
+      ) : activeTab === 'master_settings' || activeTab === 'master-settings' ? (
+        <MasterSettings currentRole={currentRole} currentUser={currentUser} onRefresh={onRefresh} />
       ) : (
         <div className="glass-card" style={{ padding: '2.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>

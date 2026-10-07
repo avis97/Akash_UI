@@ -64,6 +64,21 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
   const [projects, setProjects] = useState(initialProjects);
   const [products, setProducts] = useState(initialProducts);
 
+  const [dbBranches, setDbBranches] = useState([]);
+  const [dbDepartments, setDbDepartments] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/master-data')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data) {
+          if (json.data.branches) setDbBranches(json.data.branches);
+          if (json.data.departments) setDbDepartments(json.data.departments);
+        }
+      })
+      .catch(err => console.error('Error fetching master branches/departments:', err));
+  }, []);
+
   // Sync prop updates if parent passes new data
   useEffect(() => {
     if (initialMeetings && initialMeetings.length > 0) setMeetings(initialMeetings);
@@ -1162,8 +1177,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                     onChange={e => setNewMeeting({ ...newMeeting, branch: e.target.value })}
                   >
                     <option value="">Select Branch</option>
-                    {BRANCH_OPTIONS.map((b, idx) => (
-                      <option key={idx} value={b}>{b}</option>
+                    {(dbBranches.length > 0 ? dbBranches.map(b => b.name) : BRANCH_OPTIONS).map((bName, idx) => (
+                      <option key={idx} value={bName}>{bName}</option>
                     ))}
                   </select>
                 </div>
@@ -1178,8 +1193,8 @@ const ServiceMeetings = ({ meetings: initialMeetings = [], materialRequests: ini
                     onChange={e => setNewMeeting({ ...newMeeting, department: e.target.value })}
                   >
                     <option value="">Select Department</option>
-                    {DEPARTMENT_OPTIONS.map((d, idx) => (
-                      <option key={idx} value={d}>{d}</option>
+                    {(dbDepartments.length > 0 ? dbDepartments.map(d => d.name) : DEPARTMENT_OPTIONS).map((dName, idx) => (
+                      <option key={idx} value={dName}>{dName}</option>
                     ))}
                   </select>
                 </div>

@@ -244,10 +244,23 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
     return matchesMonth && matchesYear;
   };
 
+  const isOwnRecord = (item) => {
+    if (!activeUser) return true;
+    const uId = activeUser.id || activeUser.employeeId;
+    const uName = activeUser.name ? activeUser.name.toLowerCase().trim() : '';
+    const uEmail = activeUser.email ? activeUser.email.toLowerCase().trim() : '';
+
+    if (uId && (item.userId === uId || item.employeeId === uId)) return true;
+    if (item.userName && uName && item.userName.toLowerCase().trim() === uName) return true;
+    if (item.email && uEmail && item.email.toLowerCase().trim() === uEmail) return true;
+    return false;
+  };
+
   const displayedAttendance = isEmployee
     ? attendance.filter(a => {
       const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesSearch && isDateInSelectedMonthYear(a.date);
+      const isMine = isOwnRecord(a);
+      return matchesSearch && isMine && isDateInSelectedMonthYear(a.date);
     })
     : attendance.filter(a => {
       const matchesSearch = !searchQuery || a.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || a.location?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -258,8 +271,9 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
   const displayedLeaves = isEmployee
     ? leaves.filter(l => {
       const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
+      const isMine = isOwnRecord(l);
       const matchesMonthYear = selectedMonth === 'ALL' || l.status === 'PENDING' || isDateInSelectedMonthYear(l.startDate) || isDateInSelectedMonthYear(l.endDate) || isDateInSelectedMonthYear(l.createdAt);
-      return matchesSearch && matchesMonthYear;
+      return matchesSearch && isMine && matchesMonthYear;
     })
     : leaves.filter(l => {
       const matchesSearch = !searchQuery || l.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.reason?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -268,14 +282,13 @@ export default function AttendancePayroll({ data = {}, currentRole, currentUser,
       return matchesSearch && matchesStaff && matchesMonthYear;
     });
 
-
-
   const displayedSalaryRecords = isEmployee
     ? salaryRecords.filter(s => {
       const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
+      const isMine = isOwnRecord(s);
       const matchesMonth = !selectedMonth || selectedMonth === 'ALL' || s.month?.toLowerCase() === selectedMonth.toLowerCase();
       const matchesYear = !selectedYear || String(s.year) === String(selectedYear);
-      return matchesSearch && matchesMonth && matchesYear;
+      return matchesSearch && isMine && matchesMonth && matchesYear;
     })
     : salaryRecords.filter(s => {
       const matchesSearch = !searchQuery || s.userName?.toLowerCase().includes(searchQuery.toLowerCase()) || s.month?.toLowerCase().includes(searchQuery.toLowerCase());
